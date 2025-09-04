@@ -1,8 +1,12 @@
+// src/server.ts
 import express from "express";
 import { db } from "./config/db";
+import movieRouter from "./routes/movie.route";
 
 const app = express();
+app.use(express.json());
 
+// Route test DB
 app.get("/test", async (req, res) => {
   try {
     const result = await db.query("SELECT NOW()");
@@ -13,6 +17,10 @@ app.get("/test", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("🚀 Server chạy tại http://localhost:3000");
+// Route movies
+app.use("/movies", movieRouter);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server chạy tại http://localhost:${PORT}`);
 });
