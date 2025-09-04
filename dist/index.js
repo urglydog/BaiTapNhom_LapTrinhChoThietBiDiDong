@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const db_1 = require("./dbs/db");
+const db_1 = require("./config/db");
 async function testDB() {
     try {
         // query trả về [rows, fields]
