@@ -4,14 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.db = void 0;
-const promise_1 = __importDefault(require("mysql2/promise"));
-exports.db = promise_1.default.createPool({
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
+// config/db.ts
+const pg_1 = __importDefault(require("pg"));
+const { Pool } = pg_1.default;
+// Tạo connection pool với thông tin lấy từ environment variables
+exports.db = new Pool({
+    user: process.env.DB_USER, // ví dụ: postgres
+    host: process.env.DB_HOST, // ví dụ: abc123.render.com
+    database: process.env.DB_NAME, // ví dụ: movie_db
+    password: process.env.DB_PASS, // mật khẩu dài trên Render
+    port: Number(process.env.DB_PORT) || 5432, // mặc định 5432 nếu DB_PORT không có
 });
