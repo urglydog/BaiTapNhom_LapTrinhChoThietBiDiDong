@@ -2,6 +2,7 @@
 import express from "express";
 import { db } from "./config/db";
 import movieRouter from "./routes/movie.route";
+import userRouter from "./routes/user.route";
 
 const app = express();
 app.use(express.json());
@@ -19,6 +20,9 @@ app.get("/test", async (req, res) => {
 
 // Route movies
 app.use("/movies", movieRouter);
+// User movies
+
+app.use("/users", userRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
