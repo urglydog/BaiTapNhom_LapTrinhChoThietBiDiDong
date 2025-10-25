@@ -1,15 +1,16 @@
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  RefreshControl,
-  TextInput,
   ActivityIndicator,
+  FlatList,
+  Image,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
 
@@ -66,16 +67,20 @@ export default function HomeScreen() {
     <TouchableOpacity
       style={styles.movieCard}
       onPress={() => handleMoviePress(item)}
+      activeOpacity={0.85}
     >
       <View style={styles.movieImageContainer}>
-        <View style={styles.placeholderImage}>
-          <Text style={styles.placeholderText}>🎬</Text>
-        </View>
+        {/* Nếu có poster thì hiển thị, không thì dùng icon */}
+        {item.posterUrl ? (
+          <Image source={{ uri: item.posterUrl }} style={styles.movieImage} resizeMode="cover" />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Text style={styles.placeholderText}>🎬</Text>
+          </View>
+        )}
       </View>
       <View style={styles.movieInfo}>
-        <Text style={styles.movieTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
+        <Text style={styles.movieTitle} numberOfLines={2}>{item.title}</Text>
         <Text style={styles.movieGenre}>{item.genre}</Text>
         <Text style={styles.movieDuration}>{item.duration} phút</Text>
         <View style={styles.ratingContainer}>
@@ -105,20 +110,31 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>
-          {getGreeting()}, Chào mừng bạn!
-        </Text>
-        <Text style={styles.role}>Khám phá những bộ phim hay</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={{ uri: 'https://i.imgur.com/0y0y0y0.png' }}
+              style={styles.avatar}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>{getGreeting()}, Chào mừng bạn!</Text>
+            <Text style={styles.role}>Khám phá những bộ phim hay</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm phim..."
-          value={searchText}
-          onChangeText={handleSearch}
-          placeholderTextColor="#999"
-        />
+        <View style={styles.searchBox}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm phim..."
+            value={searchText}
+            onChangeText={handleSearch}
+            placeholderTextColor="#999"
+          />
+        </View>
       </View>
 
       <FlatList
@@ -133,9 +149,8 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              Không tìm thấy phim nào
-            </Text>
+            <Text style={styles.emptyIcon}>😢</Text>
+            <Text style={styles.emptyText}>Không tìm thấy phim nào</Text>
           </View>
         }
       />
@@ -146,87 +161,137 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f3f6fb',
   },
   header: {
-    backgroundColor: '#007AFF',
-    padding: 20,
-    paddingTop: 50,
+    backgroundColor: '#4f8cff',
+    paddingHorizontal: 20,
+    paddingTop: 48,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#4f8cff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    marginRight: 16,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   role: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.85)',
   },
   searchContainer: {
-    padding: 16,
-    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'transparent',
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: '#4f8cff',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  searchIcon: {
+    fontSize: 20,
+    marginRight: 8,
+    color: '#4f8cff',
   },
   searchInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    flex: 1,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    color: '#222',
+    backgroundColor: 'transparent',
+    paddingVertical: 4,
   },
   listContainer: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 16,
   },
   row: {
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
   movieCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    marginBottom: 8,
     width: '48%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#4f8cff',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.13,
+    shadowRadius: 10,
+    elevation: 6,
+    overflow: 'hidden',
   },
   movieImageContainer: {
-    height: 200,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    height: 180,
+    backgroundColor: '#eaf0fa',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
     overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  movieImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   placeholderImage: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderText: {
-    fontSize: 48,
+    fontSize: 56,
+    color: '#4f8cff',
   },
   movieInfo: {
-    padding: 12,
+    padding: 14,
   },
   movieTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#222',
     marginBottom: 4,
   },
   movieGenre: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    color: '#4f8cff',
+    marginBottom: 2,
+    fontWeight: '500',
   },
   movieDuration: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 13,
+    color: '#888',
     marginBottom: 8,
   },
   ratingContainer: {
@@ -235,23 +300,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rating: {
-    fontSize: 12,
-    color: '#FFA500',
+    fontSize: 13,
+    color: '#ffb300',
     fontWeight: 'bold',
   },
   ageRating: {
     fontSize: 12,
-    color: '#666',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 6,
+    color: '#fff',
+    backgroundColor: '#4f8cff',
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
+    overflow: 'hidden',
+    fontWeight: 'bold',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 8,
+    color: '#4f8cff',
   },
   emptyText: {
     fontSize: 16,
@@ -261,7 +333,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f3f6fb',
   },
   loadingText: {
     marginTop: 16,
