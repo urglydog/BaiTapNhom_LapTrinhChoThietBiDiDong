@@ -1,7 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { storage } from '../utils/storage';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { authService } from '../services/authService';
-import { User, LoginRequest } from '../types';
+import { LoginRequest, User } from '../types';
+import { storage } from '../utils/storage';
 
 interface AuthState {
   user: User | null;
@@ -42,6 +42,19 @@ export const logout = createAsyncThunk(
     }
   }
 );
+
+// update
+
+
+
+
+// /update
+
+
+
+
+
+// commit
 
 export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
