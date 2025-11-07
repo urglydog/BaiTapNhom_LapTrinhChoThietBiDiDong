@@ -5,6 +5,9 @@ import {
     ScrollView,
     StyleSheet,
     TouchableOpacity,
+    Image,
+    Linking,
+    ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -41,21 +44,44 @@ export default function MovieDetailScreen() {
 
     if (!currentMovie) {
         return (
-            <View style={styles.container}>
-                <Text>Loading...</Text>
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.loadingText}>Đang tải thông tin phim...</Text>
             </View>
         );
     }
 
     return (
         <ScrollView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>{currentMovie.title}</Text>
-                <TouchableOpacity onPress={handleToggleFavourite} style={styles.favouriteButton}>
+            {/* Movie Poster */}
+            <View style={styles.posterContainer}>
+                <Image
+                    source={{
+                        uri: currentMovie.posterUrl || 'https://via.placeholder.com/400x600/cccccc/666666?text=No+Image'
+                    }}
+                    style={styles.poster}
+                    resizeMode="cover"
+                />
+                <TouchableOpacity
+                    onPress={handleToggleFavourite}
+                    style={styles.favouriteButton}
+                >
                     <Text style={styles.favouriteText}>
                         {isFavourite ? '❤️' : '🤍'}
                     </Text>
                 </TouchableOpacity>
+            </View>
+
+            <View style={styles.header}>
+                <Text style={styles.title}>{currentMovie.title}</Text>
+                {currentMovie.trailerUrl && (
+                    <TouchableOpacity
+                        style={styles.trailerButton}
+                        onPress={() => Linking.openURL(currentMovie.trailerUrl!)}
+                    >
+                        <Text style={styles.trailerButtonText}>▶ Xem Trailer</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <View style={styles.movieInfo}>
@@ -94,7 +120,9 @@ export default function MovieDetailScreen() {
                                 {showtime.price.toLocaleString()} VNĐ
                             </Text>
                         </View>
-                        <Text style={styles.bookButton}>Đặt vé</Text>
+                        <View style={styles.bookButton}>
+                            <Text style={styles.bookButtonText}>Đặt vé</Text>
+                        </View>
                     </TouchableOpacity>
                 ))}
             </View>
@@ -118,10 +146,41 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#f5f5f5',
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: '#666',
+    },
+    posterContainer: {
+        width: '100%',
+        height: 400,
+        position: 'relative',
+    },
+    poster: {
+        width: '100%',
+        height: '100%',
+    },
+    favouriteButton: {
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 25,
+        width: 50,
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    favouriteText: {
+        fontSize: 24,
+    },
+    header: {
         padding: 20,
         backgroundColor: 'white',
     },
@@ -129,13 +188,19 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         color: '#333',
-        flex: 1,
+        marginBottom: 12,
     },
-    favouriteButton: {
-        padding: 8,
+    trailerButton: {
+        backgroundColor: '#FF0000',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
     },
-    favouriteText: {
-        fontSize: 24,
+    trailerButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     movieInfo: {
         flexDirection: 'row',
@@ -209,10 +274,14 @@ const styles = StyleSheet.create({
     },
     bookButton: {
         backgroundColor: '#007AFF',
-        color: 'white',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 6,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    bookButtonText: {
+        color: 'white',
         fontSize: 14,
         fontWeight: 'bold',
     },
