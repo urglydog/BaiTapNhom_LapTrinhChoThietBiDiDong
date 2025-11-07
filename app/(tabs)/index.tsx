@@ -8,8 +8,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
-  View,
+  ActivityIndicator,
+  Image,
+  Alert,
 } from 'react-native';
 import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
@@ -25,11 +26,46 @@ export default function HomeScreen() {
   const fetchMovies = async () => {
     try {
       setIsLoading(true);
-      const response = await movieService.getMovies();
-      console.log('Movies response:', response);
-      setMovies(response);
+      setImageErrors(new Set()); // Reset image errors khi fetch lại
+      const response = await movieService.getMovies(0, 100); // Lấy nhiều phim hơn
+      console.log('Movies response:', JSON.stringify(response, null, 2));
+
+      // Xử lý response có thể là paginated hoặc array trực tiếp
+      let moviesList: Movie[] = [];
+      if (Array.isArray(response)) {
+        moviesList = response;
+      } else if (response?.content && Array.isArray(response.content)) {
+        moviesList = response.content;
+      } else if (response?.result) {
+        // Nếu có result wrapper
+        if (Array.isArray(response.result)) {
+          moviesList = response.result;
+        } else if (response.result?.content && Array.isArray(response.result.content)) {
+          moviesList = response.result.content;
+        }
+      }
+
+      // Loại bỏ duplicate dựa trên id - sử dụng Map để đảm bảo unique
+      const moviesMap = new Map<number, Movie>();
+      moviesList.forEach((movie) => {
+        if (movie && movie.id) {
+          // Chỉ lấy phim đầu tiên nếu có duplicate id
+          if (!moviesMap.has(movie.id)) {
+            moviesMap.set(movie.id, movie);
+          }
+        }
+      });
+
+      const uniqueMovies = Array.from(moviesMap.values());
+      console.log(`Loaded ${uniqueMovies.length} unique movies from ${moviesList.length} total`);
+
+      setMovies(uniqueMovies);
     } catch (error) {
       console.error('Error fetching movies:', error);
+      // Chỉ set empty nếu không phải đang refresh
+      if (!refreshing) {
+        setMovies([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -43,10 +79,30 @@ export default function HomeScreen() {
     setSearchText(text);
     if (text.trim()) {
       try {
-        const response = await movieService.searchMovies(text);
-        setMovies(response);
-      } catch (error) {
+        setIsLoading(true);
+        // Truyền danh sách phim hiện tại để tìm kiếm local nhanh hơn
+        const response = await movieService.searchMovies(text, movies);
+
+        // searchMovies đã trả về Movie[] rồi, không cần xử lý thêm
+        // Loại bỏ duplicate
+        const moviesMap = new Map<number, Movie>();
+        response.forEach((movie) => {
+          if (movie && movie.id) {
+            if (!moviesMap.has(movie.id)) {
+              moviesMap.set(movie.id, movie);
+            }
+          }
+        });
+        const uniqueMovies = Array.from(moviesMap.values());
+
+        setMovies(uniqueMovies);
+      } catch (error: any) {
         console.error('Search error:', error);
+        // Hiển thị thông báo lỗi cho user
+        setMovies([]);
+        Alert.alert('Lỗi', error?.message || 'Không thể tìm kiếm phim. Vui lòng thử lại.');
+      } finally {
+        setIsLoading(false);
       }
     } else {
       fetchMovies();
@@ -54,42 +110,111 @@ export default function HomeScreen() {
   };
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchMovies();
-    setRefreshing(false);
+    try {
+      setRefreshing(true);
+      setImageErrors(new Set()); // Reset image errors khi refresh
+      const response = await movieService.getMovies(0, 100);
+
+      // Xử lý response
+      let moviesList: Movie[] = [];
+      if (Array.isArray(response)) {
+        moviesList = response;
+      } else if (response?.content && Array.isArray(response.content)) {
+        moviesList = response.content;
+      } else if (response?.result) {
+        if (Array.isArray(response.result)) {
+          moviesList = response.result;
+        } else if (response.result?.content && Array.isArray(response.result.content)) {
+          moviesList = response.result.content;
+        }
+      }
+
+      // Loại bỏ duplicate
+      const moviesMap = new Map<number, Movie>();
+      moviesList.forEach((movie) => {
+        if (movie && movie.id) {
+          if (!moviesMap.has(movie.id)) {
+            moviesMap.set(movie.id, movie);
+          }
+        }
+      });
+
+      const uniqueMovies = Array.from(moviesMap.values());
+      setMovies(uniqueMovies);
+    } catch (error) {
+      console.error('Error refreshing movies:', error);
+      // Không set empty khi refresh, giữ nguyên danh sách cũ
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleMoviePress = (movie: Movie) => {
     router.push(`/movie-detail?movieId=${movie.id}`);
   };
 
-  const renderMovie = ({ item }: { item: Movie }) => (
-    <TouchableOpacity
-      style={styles.movieCard}
-      onPress={() => handleMoviePress(item)}
-      activeOpacity={0.85}
-    >
-      <View style={styles.movieImageContainer}>
-        {/* Nếu có poster thì hiển thị, không thì dùng icon */}
-        {item.posterUrl ? (
-          <Image source={{ uri: item.posterUrl }} style={styles.movieImage} resizeMode="cover" />
-        ) : (
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>🎬</Text>
-          </View>
-        )}
-      </View>
-      <View style={styles.movieInfo}>
-        <Text style={styles.movieTitle} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.movieGenre}>{item.genre}</Text>
-        <Text style={styles.movieDuration}>{item.duration} phút</Text>
-        <View style={styles.ratingContainer}>
-          <Text style={styles.rating}>⭐ {item.rating}</Text>
-          <Text style={styles.ageRating}>{item.ageRating}</Text>
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+
+  const handleImageError = (movieId: number) => {
+    setImageErrors((prev) => new Set(prev).add(movieId));
+  };
+
+  const renderMovie = ({ item }: { item: Movie }) => {
+    // Xử lý URL ảnh - đảm bảo là URL hợp lệ
+    let imageUri = item.posterUrl || '';
+
+    // Kiểm tra URL hợp lệ
+    if (imageUri) {
+      // Nếu không bắt đầu bằng http, thử thêm https://
+      if (!imageUri.startsWith('http://') && !imageUri.startsWith('https://')) {
+        imageUri = '';
+      }
+      // Xử lý .webp - React Native có thể cần hỗ trợ đặc biệt
+      // Giữ nguyên URL vì Cloudinary hỗ trợ .webp tốt
+    }
+
+    const finalImageUri = imageUri || 'https://via.placeholder.com/300x400/cccccc/666666?text=No+Image';
+    const hasImageError = imageErrors.has(item.id);
+
+    return (
+      <TouchableOpacity
+        style={styles.movieCard}
+        onPress={() => handleMoviePress(item)}
+      >
+        <View style={styles.movieImageContainer}>
+          {!hasImageError ? (
+            <Image
+              source={{ uri: finalImageUri }}
+              style={styles.moviePoster}
+              resizeMode="cover"
+              onError={() => {
+                console.log('Image load error for movie:', item.title, finalImageUri);
+                handleImageError(item.id);
+              }}
+            />
+          ) : (
+            <View style={[styles.moviePoster, styles.placeholderImage]}>
+              <Text style={styles.placeholderText}>📽️</Text>
+              <Text style={styles.placeholderTitle} numberOfLines={2}>
+                {item.title}
+              </Text>
+            </View>
+          )}
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.movieInfo}>
+          <Text style={styles.movieTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+          <Text style={styles.movieGenre}>{item.genre}</Text>
+          <Text style={styles.movieDuration}>{item.duration} phút</Text>
+          <View style={styles.ratingContainer}>
+            <Text style={styles.rating}>⭐ {item.rating}</Text>
+            <Text style={styles.ageRating}>{item.ageRating}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -148,10 +273,13 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>😢</Text>
-            <Text style={styles.emptyText}>Không tìm thấy phim nào</Text>
-          </View>
+          !refreshing ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {isLoading ? 'Đang tải...' : 'Không tìm thấy phim nào'}
+              </Text>
+            </View>
+          ) : null
         }
       />
     </View>
@@ -265,14 +393,9 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  placeholderImage: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    fontSize: 56,
-    color: '#4f8cff',
+  moviePoster: {
+    width: '100%',
+    height: '100%',
   },
   movieInfo: {
     padding: 14,
@@ -339,5 +462,20 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#666',
+  },
+  placeholderImage: {
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  placeholderTitle: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 8,
   },
 });

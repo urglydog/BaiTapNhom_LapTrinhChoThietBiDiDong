@@ -26,6 +26,10 @@ function AppNavigator() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="movie-detail" />
       <Stack.Screen name="booking" />
+      <Stack.Screen name="cinemas" />
+      <Stack.Screen name="favourites" />
+      <Stack.Screen name="promotions" />
+      <Stack.Screen name="login" />
     </Stack>
   );
 }
