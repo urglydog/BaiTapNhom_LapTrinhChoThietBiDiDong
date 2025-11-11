@@ -25,19 +25,20 @@ export interface LoginResponse {
 export interface Movie {
   id: number;
   title: string;
-  description: string;
+  description?: string;
   duration: number;
   releaseDate: string;
-  endDate: string;
-  genre: string;
-  director: string;
-  cast: string;
-  rating: number;
-  language: string;
-  subtitle: string;
-  ageRating: string;
+  endDate?: string;
+  genre?: string;
+  director?: string;
+  cast?: string;
+  rating?: number;
+  language?: string;
+  subtitle?: string;
+  ageRating?: string;
   posterUrl?: string;
   trailerUrl?: string;
+  active?: boolean;
 }
 
 // Cinema Types

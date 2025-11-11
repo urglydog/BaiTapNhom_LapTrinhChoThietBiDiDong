@@ -7,7 +7,7 @@ const API_BASE_URL =
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // Tăng timeout lên 30s vì Render.com free tier có thể mất thời gian để wake up
   headers: {
     "Content-Type": "application/json",
   },

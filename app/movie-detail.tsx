@@ -1,141 +1,187 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
     ScrollView,
+    Image,
     StyleSheet,
     TouchableOpacity,
-    Image,
-    Linking,
     ActivityIndicator,
+    Linking,
+    Alert,
+    Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../src/store';
-import { fetchMovieById, fetchShowtimes, fetchReviews, toggleFavourite } from '../src/store/movieSlice';
-import { Showtime } from '../src/types';
+import { movieService } from '../src/services/movieService';
+import { Movie } from '../src/types';
+
+const { width } = Dimensions.get('window');
 
 export default function MovieDetailScreen() {
     const { movieId } = useLocalSearchParams();
     const router = useRouter();
-    const dispatch = useDispatch<AppDispatch>();
-
-    const { currentMovie, showtimes, reviews, favourites } = useSelector((state: RootState) => state.movie);
+    const [movie, setMovie] = useState<Movie | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (movieId) {
-            dispatch(fetchMovieById(Number(movieId)));
-            dispatch(fetchShowtimes(Number(movieId)));
-            dispatch(fetchReviews(Number(movieId)));
-        }
-    }, [dispatch, movieId]);
+        const loadMovie = async () => {
+            if (!movieId) return;
+            try {
+                setIsLoading(true);
+                const movieData = await movieService.getMovieById(Number(movieId));
+                setMovie(movieData);
+            } catch (error: any) {
+                console.error('Error loading movie:', error);
+                Alert.alert('Lỗi', 'Không thể tải thông tin phim', [
+                    { text: 'OK', onPress: () => router.back() },
+                ]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    const isFavourite = favourites.some((fav: any) => fav.movieId === Number(movieId));
+        loadMovie();
+    }, [movieId, router]);
 
-    const handleToggleFavourite = () => {
-        if (movieId) {
-            dispatch(toggleFavourite(Number(movieId)));
+    const handleWatchTrailer = () => {
+        if (movie?.trailerUrl) {
+            Linking.openURL(movie.trailerUrl).catch((err) => {
+                console.error('Error opening trailer:', err);
+                Alert.alert('Lỗi', 'Không thể mở trailer. Vui lòng kiểm tra URL.');
+            });
+        } else {
+            Alert.alert('Thông báo', 'Phim này chưa có trailer');
         }
     };
 
-    const handleBookTicket = (showtime: Showtime) => {
-        router.push(`/booking?showtimeId=${showtime.id}` as any);
-    };
-
-    if (!currentMovie) {
+    if (isLoading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View style={styles.centerContainer}>
                 <ActivityIndicator size="large" color="#007AFF" />
                 <Text style={styles.loadingText}>Đang tải thông tin phim...</Text>
             </View>
         );
     }
 
+    if (!movie) {
+        return (
+            <View style={styles.centerContainer}>
+                <Text style={styles.errorText}>Không tìm thấy phim</Text>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <Text style={styles.backButtonText}>Quay lại</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
-        <ScrollView style={styles.container}>
-            {/* Movie Poster */}
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            {/* Poster */}
             <View style={styles.posterContainer}>
-                <Image
-                    source={{
-                        uri: currentMovie.posterUrl || 'https://via.placeholder.com/400x600/cccccc/666666?text=No+Image'
-                    }}
-                    style={styles.poster}
-                    resizeMode="cover"
-                />
-                <TouchableOpacity
-                    onPress={handleToggleFavourite}
-                    style={styles.favouriteButton}
-                >
-                    <Text style={styles.favouriteText}>
-                        {isFavourite ? '❤️' : '🤍'}
-                    </Text>
+                {movie.posterUrl ? (
+                    <Image
+                        source={{ uri: movie.posterUrl }}
+                        style={styles.poster}
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <View style={styles.placeholderPoster}>
+                        <Text style={styles.placeholderText}>📽️</Text>
+                        <Text style={styles.placeholderSubtext}>Không có ảnh</Text>
+                    </View>
+                )}
+                <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
+                    <Text style={styles.backIconText}>←</Text>
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.header}>
-                <Text style={styles.title}>{currentMovie.title}</Text>
-                {currentMovie.trailerUrl && (
-                    <TouchableOpacity
-                        style={styles.trailerButton}
-                        onPress={() => Linking.openURL(currentMovie.trailerUrl!)}
-                    >
-                        <Text style={styles.trailerButtonText}>▶ Xem Trailer</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+            {/* Content */}
+            <View style={styles.content}>
+                {/* Title and Trailer Button */}
+                <View style={styles.titleSection}>
+                    <Text style={styles.title}>{movie.title}</Text>
+                    {movie.trailerUrl && (
+                        <TouchableOpacity style={styles.trailerButton} onPress={handleWatchTrailer}>
+                            <Text style={styles.trailerButtonText}>▶ Xem Trailer</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
 
-            <View style={styles.movieInfo}>
-                <Text style={styles.genre}>{currentMovie.genre}</Text>
-                <Text style={styles.duration}>{currentMovie.duration} phút</Text>
-                <Text style={styles.rating}>⭐ {currentMovie.rating}</Text>
-                <Text style={styles.ageRating}>{currentMovie.ageRating}</Text>
-            </View>
+                {/* Movie Info */}
+                <View style={styles.infoRow}>
+                    {movie.rating && (
+                        <View style={styles.infoBadge}>
+                            <Text style={styles.infoBadgeText}>⭐ {movie.rating.toFixed(1)}</Text>
+                        </View>
+                    )}
+                    {movie.duration && (
+                        <View style={styles.infoBadge}>
+                            <Text style={styles.infoBadgeText}>⏱️ {movie.duration} phút</Text>
+                        </View>
+                    )}
+                    {movie.ageRating && (
+                        <View style={styles.infoBadge}>
+                            <Text style={styles.infoBadgeText}>{movie.ageRating}</Text>
+                        </View>
+                    )}
+                </View>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Mô tả</Text>
-                <Text style={styles.description}>{currentMovie.description}</Text>
-            </View>
+                {/* Description */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Mô tả</Text>
+                    <Text style={styles.description}>{movie.description || 'Chưa có mô tả'}</Text>
+                </View>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Thông tin</Text>
-                <Text style={styles.info}>Đạo diễn: {currentMovie.director}</Text>
-                <Text style={styles.info}>Diễn viên: {currentMovie.cast}</Text>
-                <Text style={styles.info}>Ngôn ngữ: {currentMovie.language}</Text>
-                <Text style={styles.info}>Phụ đề: {currentMovie.subtitle}</Text>
-            </View>
-
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Lịch chiếu</Text>
-                {showtimes.map((showtime: any) => (
-                    <TouchableOpacity
-                        key={showtime.id}
-                        style={styles.showtimeCard}
-                        onPress={() => handleBookTicket(showtime)}
-                    >
-                        <View style={styles.showtimeInfo}>
-                            <Text style={styles.showtimeTime}>
-                                {showtime.startTime} - {showtime.endTime}
-                            </Text>
-                            <Text style={styles.showtimePrice}>
-                                {showtime.price.toLocaleString()} VNĐ
+                {/* Details */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
+                    {movie.genre && (
+                        <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Thể loại:</Text>
+                            <Text style={styles.detailValue}>{movie.genre}</Text>
+                        </View>
+                    )}
+                    {movie.director && (
+                        <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Đạo diễn:</Text>
+                            <Text style={styles.detailValue}>{movie.director}</Text>
+                        </View>
+                    )}
+                    {movie.cast && (
+                        <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Diễn viên:</Text>
+                            <Text style={styles.detailValue}>{movie.cast}</Text>
+                        </View>
+                    )}
+                    {movie.language && (
+                        <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Ngôn ngữ:</Text>
+                            <Text style={styles.detailValue}>{movie.language}</Text>
+                        </View>
+                    )}
+                    {movie.subtitle && (
+                        <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Phụ đề:</Text>
+                            <Text style={styles.detailValue}>{movie.subtitle}</Text>
+                        </View>
+                    )}
+                    {movie.releaseDate && (
+                        <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Ngày khởi chiếu:</Text>
+                            <Text style={styles.detailValue}>
+                                {new Date(movie.releaseDate).toLocaleDateString('vi-VN')}
                             </Text>
                         </View>
-                        <View style={styles.bookButton}>
-                            <Text style={styles.bookButtonText}>Đặt vé</Text>
+                    )}
+                    {movie.endDate && (
+                        <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Ngày kết thúc:</Text>
+                            <Text style={styles.detailValue}>
+                                {new Date(movie.endDate).toLocaleDateString('vi-VN')}
+                            </Text>
                         </View>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Đánh giá</Text>
-                {reviews.map((review: any) => (
-                    <View key={review.id} style={styles.reviewCard}>
-                        <Text style={styles.reviewRating}>⭐ {review.rating}</Text>
-                        <Text style={styles.reviewComment}>{review.comment}</Text>
-                        <Text style={styles.reviewUser}>- {review.user?.fullName}</Text>
-                    </View>
-                ))}
+                    )}
+                </View>
             </View>
         </ScrollView>
     );
@@ -146,7 +192,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
     },
-    loadingContainer: {
+    centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
@@ -157,86 +203,112 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
     },
+    errorText: {
+        fontSize: 18,
+        color: '#999',
+        marginBottom: 16,
+    },
+    backButton: {
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    backButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
     posterContainer: {
         width: '100%',
-        height: 400,
+        height: width * 0.75,
         position: 'relative',
     },
     poster: {
         width: '100%',
         height: '100%',
     },
-    favouriteButton: {
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: 25,
-        width: 50,
-        height: 50,
+    placeholderPoster: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#e0e0e0',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    favouriteText: {
-        fontSize: 24,
+    placeholderText: {
+        fontSize: 64,
+        marginBottom: 8,
     },
-    header: {
+    placeholderSubtext: {
+        fontSize: 16,
+        color: '#999',
+    },
+    backIcon: {
+        position: 'absolute',
+        top: 50,
+        left: 16,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backIconText: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    content: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        marginTop: -24,
         padding: 20,
-        backgroundColor: 'white',
+    },
+    titleSection: {
+        marginBottom: 16,
     },
     title: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: 'bold',
         color: '#333',
         marginBottom: 12,
     },
     trailerButton: {
         backgroundColor: '#FF0000',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
         borderRadius: 8,
         alignSelf: 'flex-start',
     },
     trailerButtonText: {
-        color: 'white',
+        color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
     },
-    movieInfo: {
+    infoRow: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 20,
-        backgroundColor: 'white',
-        marginTop: 1,
+        flexWrap: 'wrap',
+        marginBottom: 24,
+        gap: 8,
     },
-    genre: {
-        fontSize: 14,
-        color: '#666',
-    },
-    duration: {
-        fontSize: 14,
-        color: '#666',
-    },
-    rating: {
-        fontSize: 14,
-        color: '#FFA500',
-        fontWeight: 'bold',
-    },
-    ageRating: {
-        fontSize: 14,
-        color: '#666',
+    infoBadge: {
         backgroundColor: '#f0f0f0',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    infoBadgeText: {
+        fontSize: 14,
+        color: '#333',
+        fontWeight: '500',
     },
     section: {
-        backgroundColor: 'white',
-        marginTop: 1,
-        padding: 20,
+        marginBottom: 24,
     },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#333',
         marginBottom: 12,
@@ -246,65 +318,20 @@ const styles = StyleSheet.create({
         color: '#666',
         lineHeight: 24,
     },
-    info: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 8,
-    },
-    showtimeCard: {
+    detailRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#f9f9f9',
-        borderRadius: 8,
-        marginBottom: 8,
+        marginBottom: 12,
+        flexWrap: 'wrap',
     },
-    showtimeInfo: {
+    detailLabel: {
+        fontSize: 16,
+        color: '#666',
+        fontWeight: '500',
+        width: 120,
+    },
+    detailValue: {
+        fontSize: 16,
+        color: '#333',
         flex: 1,
-    },
-    showtimeTime: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    showtimePrice: {
-        fontSize: 14,
-        color: '#666',
-    },
-    bookButton: {
-        backgroundColor: '#007AFF',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 6,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    bookButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    reviewCard: {
-        backgroundColor: '#f9f9f9',
-        padding: 16,
-        borderRadius: 8,
-        marginBottom: 8,
-    },
-    reviewRating: {
-        fontSize: 16,
-        color: '#FFA500',
-        fontWeight: 'bold',
-        marginBottom: 4,
-    },
-    reviewComment: {
-        fontSize: 14,
-        color: '#333',
-        marginBottom: 8,
-    },
-    reviewUser: {
-        fontSize: 12,
-        color: '#666',
-        fontStyle: 'italic',
     },
 });

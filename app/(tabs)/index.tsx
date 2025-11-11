@@ -10,10 +10,13 @@ import {
   TextInput,
   ActivityIndicator,
   Image,
-  Alert,
+  Dimensions,
 } from 'react-native';
 import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 48) / 2;
 
 export default function HomeScreen() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -153,68 +156,51 @@ export default function HomeScreen() {
     router.push(`/movie-detail?movieId=${movie.id}`);
   };
 
-  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
-
-  const handleImageError = (movieId: number) => {
-    setImageErrors((prev) => new Set(prev).add(movieId));
-  };
-
-  const renderMovie = ({ item }: { item: Movie }) => {
-    // Xử lý URL ảnh - đảm bảo là URL hợp lệ
-    let imageUri = item.posterUrl || '';
-
-    // Kiểm tra URL hợp lệ
-    if (imageUri) {
-      // Nếu không bắt đầu bằng http, thử thêm https://
-      if (!imageUri.startsWith('http://') && !imageUri.startsWith('https://')) {
-        imageUri = '';
-      }
-      // Xử lý .webp - React Native có thể cần hỗ trợ đặc biệt
-      // Giữ nguyên URL vì Cloudinary hỗ trợ .webp tốt
-    }
-
-    const finalImageUri = imageUri || 'https://via.placeholder.com/300x400/cccccc/666666?text=No+Image';
-    const hasImageError = imageErrors.has(item.id);
-
-    return (
-      <TouchableOpacity
-        style={styles.movieCard}
-        onPress={() => handleMoviePress(item)}
-      >
-        <View style={styles.movieImageContainer}>
-          {!hasImageError ? (
-            <Image
-              source={{ uri: finalImageUri }}
-              style={styles.moviePoster}
-              resizeMode="cover"
-              onError={() => {
-                console.log('Image load error for movie:', item.title, finalImageUri);
-                handleImageError(item.id);
-              }}
-            />
-          ) : (
-            <View style={[styles.moviePoster, styles.placeholderImage]}>
-              <Text style={styles.placeholderText}>📽️</Text>
-              <Text style={styles.placeholderTitle} numberOfLines={2}>
-                {item.title}
-              </Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.movieInfo}>
-          <Text style={styles.movieTitle} numberOfLines={2}>
-            {item.title}
+  const renderMovie = ({ item }: { item: Movie }) => (
+    <TouchableOpacity
+      style={styles.movieCard}
+      onPress={() => handleMoviePress(item)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.movieImageContainer}>
+        {item.posterUrl ? (
+          <Image
+            source={{ uri: item.posterUrl }}
+            style={styles.posterImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Text style={styles.placeholderText}>📽️</Text>
+            <Text style={styles.placeholderSubtext}>Không có ảnh</Text>
+          </View>
+        )}
+        {item.rating && (
+          <View style={styles.ratingBadge}>
+            <Text style={styles.ratingBadgeText}>⭐ {item.rating.toFixed(1)}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.movieInfo}>
+        <Text style={styles.movieTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
+        {item.genre && (
+          <Text style={styles.movieGenre} numberOfLines={1}>
+            {item.genre}
           </Text>
-          <Text style={styles.movieGenre}>{item.genre}</Text>
+        )}
+        {item.duration && (
           <Text style={styles.movieDuration}>{item.duration} phút</Text>
-          <View style={styles.ratingContainer}>
-            <Text style={styles.rating}>⭐ {item.rating}</Text>
+        )}
+        {item.ageRating && (
+          <View style={styles.ageRatingContainer}>
             <Text style={styles.ageRating}>{item.ageRating}</Text>
           </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -368,34 +354,61 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   movieCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    marginBottom: 8,
-    width: '48%',
-    shadowColor: '#4f8cff',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.13,
-    shadowRadius: 10,
-    elevation: 6,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginBottom: 16,
+    width: CARD_WIDTH,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     overflow: 'hidden',
   },
   movieImageContainer: {
-    height: 180,
-    backgroundColor: '#eaf0fa',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
+    width: '100%',
+    height: CARD_WIDTH * 1.5,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  posterImage: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  movieImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+  placeholderText: {
+    fontSize: 48,
+    marginBottom: 8,
   },
-  moviePoster: {
-    width: '100%',
-    height: '100%',
+  placeholderSubtext: {
+    fontSize: 12,
+    color: '#999',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ratingBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   movieInfo: {
     padding: 14,
@@ -417,15 +430,8 @@ const styles = StyleSheet.create({
     color: '#888',
     marginBottom: 8,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  rating: {
-    fontSize: 13,
-    color: '#ffb300',
-    fontWeight: 'bold',
+  ageRatingContainer: {
+    marginTop: 4,
   },
   ageRating: {
     fontSize: 12,
@@ -433,9 +439,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#4f8cff',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
-    overflow: 'hidden',
-    fontWeight: 'bold',
+    borderRadius: 4,
+    alignSelf: 'flex-start',
   },
   emptyContainer: {
     flex: 1,
