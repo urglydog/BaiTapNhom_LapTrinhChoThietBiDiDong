@@ -29,40 +29,8 @@ export default function HomeScreen() {
   const fetchMovies = async () => {
     try {
       setIsLoading(true);
-      setImageErrors(new Set()); // Reset image errors khi fetch lại
-      const response = await movieService.getMovies(0, 100); // Lấy nhiều phim hơn
-      console.log('Movies response:', JSON.stringify(response, null, 2));
-
-      // Xử lý response có thể là paginated hoặc array trực tiếp
-      let moviesList: Movie[] = [];
-      if (Array.isArray(response)) {
-        moviesList = response;
-      } else if (response?.content && Array.isArray(response.content)) {
-        moviesList = response.content;
-      } else if (response?.result) {
-        // Nếu có result wrapper
-        if (Array.isArray(response.result)) {
-          moviesList = response.result;
-        } else if (response.result?.content && Array.isArray(response.result.content)) {
-          moviesList = response.result.content;
-        }
-      }
-
-      // Loại bỏ duplicate dựa trên id - sử dụng Map để đảm bảo unique
-      const moviesMap = new Map<number, Movie>();
-      moviesList.forEach((movie) => {
-        if (movie && movie.id) {
-          // Chỉ lấy phim đầu tiên nếu có duplicate id
-          if (!moviesMap.has(movie.id)) {
-            moviesMap.set(movie.id, movie);
-          }
-        }
-      });
-
-      const uniqueMovies = Array.from(moviesMap.values());
-      console.log(`Loaded ${uniqueMovies.length} unique movies from ${moviesList.length} total`);
-
-      setMovies(uniqueMovies);
+      const moviesList = await movieService.getMovies();
+      setMovies(moviesList);
     } catch (error) {
       console.error('Error fetching movies:', error);
       // Chỉ set empty nếu không phải đang refresh
@@ -418,12 +386,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#222',
     marginBottom: 4,
+    minHeight: 40,
   },
   movieGenre: {
-    fontSize: 14,
-    color: '#4f8cff',
-    marginBottom: 2,
-    fontWeight: '500',
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
   },
   movieDuration: {
     fontSize: 13,
