@@ -50,6 +50,7 @@ export interface Cinema {
   phone: string;
   email: string;
   description: string;
+  imageUrl?: string;
 }
 
 export interface CinemaHall {
@@ -124,13 +125,16 @@ export interface Favourite {
 // Promotion Types
 export interface Promotion {
   id: number;
-  code: string;
+  code?: string;
   name: string;
   description: string;
-  discountPercentage: number;
-  minOrderAmount: number;
+  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountValue: number;
+  minAmount?: number;
+  maxDiscount?: number;
   startDate: string;
   endDate: string;
+  usageLimit?: number;
 }
 
 // API Response Types

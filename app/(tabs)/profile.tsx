@@ -7,11 +7,13 @@ import {
     Alert,
     ScrollView,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../src/store';
 import { logout } from '../../src/store/authSlice';
 
 export default function ProfileScreen() {
+    const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { user } = useSelector((state: RootState) => state.auth);
 
@@ -92,12 +94,25 @@ export default function ProfileScreen() {
 
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Chức năng</Text>
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuText}>Lịch sử đặt vé</Text>
+                <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => router.push('/favourites')}
+                >
+                    <Text style={styles.menuText}>Phim yêu thích</Text>
                     <Text style={styles.menuArrow}>›</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuText}>Phim yêu thích</Text>
+                <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => router.push('/cinemas')}
+                >
+                    <Text style={styles.menuText}>Rạp chiếu phim</Text>
+                    <Text style={styles.menuArrow}>›</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => router.push('/promotions')}
+                >
+                    <Text style={styles.menuText}>Khuyến mãi</Text>
                     <Text style={styles.menuArrow}>›</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem}>
