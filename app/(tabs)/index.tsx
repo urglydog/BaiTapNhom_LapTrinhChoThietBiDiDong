@@ -1,17 +1,17 @@
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
   FlatList,
-  TouchableOpacity,
-  StyleSheet,
+  Image,
   RefreshControl,
+  StyleSheet,
+  Text,
   TextInput,
   ActivityIndicator,
   Image,
   Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
 
@@ -33,6 +33,10 @@ export default function HomeScreen() {
       setMovies(moviesList);
     } catch (error) {
       console.error('Error fetching movies:', error);
+      // Chỉ set empty nếu không phải đang refresh
+      if (!refreshing) {
+        setMovies([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -46,10 +50,30 @@ export default function HomeScreen() {
     setSearchText(text);
     if (text.trim()) {
       try {
-        const response = await movieService.searchMovies(text);
-        setMovies(response);
-      } catch (error) {
+        setIsLoading(true);
+        // Truyền danh sách phim hiện tại để tìm kiếm local nhanh hơn
+        const response = await movieService.searchMovies(text, movies);
+
+        // searchMovies đã trả về Movie[] rồi, không cần xử lý thêm
+        // Loại bỏ duplicate
+        const moviesMap = new Map<number, Movie>();
+        response.forEach((movie) => {
+          if (movie && movie.id) {
+            if (!moviesMap.has(movie.id)) {
+              moviesMap.set(movie.id, movie);
+            }
+          }
+        });
+        const uniqueMovies = Array.from(moviesMap.values());
+
+        setMovies(uniqueMovies);
+      } catch (error: any) {
         console.error('Search error:', error);
+        // Hiển thị thông báo lỗi cho user
+        setMovies([]);
+        Alert.alert('Lỗi', error?.message || 'Không thể tìm kiếm phim. Vui lòng thử lại.');
+      } finally {
+        setIsLoading(false);
       }
     } else {
       fetchMovies();
@@ -57,9 +81,43 @@ export default function HomeScreen() {
   };
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchMovies();
-    setRefreshing(false);
+    try {
+      setRefreshing(true);
+      setImageErrors(new Set()); // Reset image errors khi refresh
+      const response = await movieService.getMovies(0, 100);
+
+      // Xử lý response
+      let moviesList: Movie[] = [];
+      if (Array.isArray(response)) {
+        moviesList = response;
+      } else if (response?.content && Array.isArray(response.content)) {
+        moviesList = response.content;
+      } else if (response?.result) {
+        if (Array.isArray(response.result)) {
+          moviesList = response.result;
+        } else if (response.result?.content && Array.isArray(response.result.content)) {
+          moviesList = response.result.content;
+        }
+      }
+
+      // Loại bỏ duplicate
+      const moviesMap = new Map<number, Movie>();
+      moviesList.forEach((movie) => {
+        if (movie && movie.id) {
+          if (!moviesMap.has(movie.id)) {
+            moviesMap.set(movie.id, movie);
+          }
+        }
+      });
+
+      const uniqueMovies = Array.from(moviesMap.values());
+      setMovies(uniqueMovies);
+    } catch (error) {
+      console.error('Error refreshing movies:', error);
+      // Không set empty khi refresh, giữ nguyên danh sách cũ
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleMoviePress = (movie: Movie) => {
@@ -131,20 +189,31 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>
-          {getGreeting()}, Chào mừng bạn!
-        </Text>
-        <Text style={styles.role}>Khám phá những bộ phim hay</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={{ uri: 'https://i.imgur.com/0y0y0y0.png' }}
+              style={styles.avatar}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>{getGreeting()}, Chào mừng bạn!</Text>
+            <Text style={styles.role}>Khám phá những bộ phim hay</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm phim..."
-          value={searchText}
-          onChangeText={handleSearch}
-          placeholderTextColor="#999"
-        />
+        <View style={styles.searchBox}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm phim..."
+            value={searchText}
+            onChangeText={handleSearch}
+            placeholderTextColor="#999"
+          />
+        </View>
       </View>
 
       <FlatList
@@ -158,11 +227,13 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              Không tìm thấy phim nào
-            </Text>
-          </View>
+          !refreshing ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {isLoading ? 'Đang tải...' : 'Không tìm thấy phim nào'}
+              </Text>
+            </View>
+          ) : null
         }
       />
     </View>
@@ -172,40 +243,83 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f3f6fb',
   },
   header: {
-    backgroundColor: '#007AFF',
-    padding: 20,
-    paddingTop: 50,
+    backgroundColor: '#4f8cff',
+    paddingHorizontal: 20,
+    paddingTop: 48,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#4f8cff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    marginRight: 16,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   role: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.85)',
   },
   searchContainer: {
-    padding: 16,
-    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'transparent',
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: '#4f8cff',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  searchIcon: {
+    fontSize: 20,
+    marginRight: 8,
+    color: '#4f8cff',
   },
   searchInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    flex: 1,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    color: '#222',
+    backgroundColor: 'transparent',
+    paddingVertical: 4,
   },
   listContainer: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 16,
   },
   row: {
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
   movieCard: {
     backgroundColor: 'white',
@@ -265,12 +379,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   movieInfo: {
-    padding: 12,
+    padding: 14,
   },
   movieTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#222',
     marginBottom: 4,
     minHeight: 40,
   },
@@ -280,8 +394,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   movieDuration: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 13,
+    color: '#888',
     marginBottom: 8,
   },
   ageRatingContainer: {
@@ -289,9 +403,9 @@ const styles = StyleSheet.create({
   },
   ageRating: {
     fontSize: 12,
-    color: '#666',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 6,
+    color: '#fff',
+    backgroundColor: '#4f8cff',
+    paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
     alignSelf: 'flex-start',
@@ -302,6 +416,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 100,
   },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 8,
+    color: '#4f8cff',
+  },
   emptyText: {
     fontSize: 16,
     color: '#666',
@@ -310,11 +429,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f3f6fb',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: '#666',
+  },
+  placeholderImage: {
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  placeholderTitle: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 8,
   },
 });

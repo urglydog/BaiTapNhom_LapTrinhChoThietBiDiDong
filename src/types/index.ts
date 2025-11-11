@@ -25,17 +25,20 @@ export interface LoginResponse {
 export interface Movie {
   id: number;
   title: string;
-  description: string;
+  description?: string;
   duration: number;
   releaseDate: string;
-  endDate: string;
-  genre: string;
-  director: string;
-  cast: string;
-  rating: number;
-  language: string;
-  subtitle: string;
-  ageRating: string;
+  endDate?: string;
+  genre?: string;
+  director?: string;
+  cast?: string;
+  rating?: number;
+  language?: string;
+  subtitle?: string;
+  ageRating?: string;
+  posterUrl?: string;
+  trailerUrl?: string;
+  active?: boolean;
 }
 
 // Cinema Types
@@ -47,6 +50,7 @@ export interface Cinema {
   phone: string;
   email: string;
   description: string;
+  imageUrl?: string;
 }
 
 export interface CinemaHall {
@@ -121,13 +125,16 @@ export interface Favourite {
 // Promotion Types
 export interface Promotion {
   id: number;
-  code: string;
+  code?: string;
   name: string;
   description: string;
-  discountPercentage: number;
-  minOrderAmount: number;
+  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountValue: number;
+  minAmount?: number;
+  maxDiscount?: number;
   startDate: string;
   endDate: string;
+  usageLimit?: number;
 }
 
 // API Response Types
