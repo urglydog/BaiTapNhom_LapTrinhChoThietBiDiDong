@@ -8,10 +8,15 @@ import {
   RefreshControl,
   TextInput,
   ActivityIndicator,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 48) / 2;
 
 export default function HomeScreen() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -24,9 +29,8 @@ export default function HomeScreen() {
   const fetchMovies = async () => {
     try {
       setIsLoading(true);
-      const response = await movieService.getMovies();
-      console.log('Movies response:', response);
-      setMovies(response);
+      const moviesList = await movieService.getMovies();
+      setMovies(moviesList);
     } catch (error) {
       console.error('Error fetching movies:', error);
     } finally {
@@ -66,22 +70,44 @@ export default function HomeScreen() {
     <TouchableOpacity
       style={styles.movieCard}
       onPress={() => handleMoviePress(item)}
+      activeOpacity={0.8}
     >
       <View style={styles.movieImageContainer}>
-        <View style={styles.placeholderImage}>
-          <Text style={styles.placeholderText}>🎬</Text>
-        </View>
+        {item.posterUrl ? (
+          <Image
+            source={{ uri: item.posterUrl }}
+            style={styles.posterImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Text style={styles.placeholderText}>📽️</Text>
+            <Text style={styles.placeholderSubtext}>Không có ảnh</Text>
+          </View>
+        )}
+        {item.rating && (
+          <View style={styles.ratingBadge}>
+            <Text style={styles.ratingBadgeText}>⭐ {item.rating.toFixed(1)}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.movieInfo}>
         <Text style={styles.movieTitle} numberOfLines={2}>
           {item.title}
         </Text>
-        <Text style={styles.movieGenre}>{item.genre}</Text>
-        <Text style={styles.movieDuration}>{item.duration} phút</Text>
-        <View style={styles.ratingContainer}>
-          <Text style={styles.rating}>⭐ {item.rating}</Text>
-          <Text style={styles.ageRating}>{item.ageRating}</Text>
-        </View>
+        {item.genre && (
+          <Text style={styles.movieGenre} numberOfLines={1}>
+            {item.genre}
+          </Text>
+        )}
+        {item.duration && (
+          <Text style={styles.movieDuration}>{item.duration} phút</Text>
+        )}
+        {item.ageRating && (
+          <View style={styles.ageRatingContainer}>
+            <Text style={styles.ageRating}>{item.ageRating}</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -185,7 +211,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     marginBottom: 16,
-    width: '48%',
+    width: CARD_WIDTH,
+    marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -194,21 +221,48 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    overflow: 'hidden',
   },
   movieImageContainer: {
-    height: 200,
+    width: '100%',
+    height: CARD_WIDTH * 1.5,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  posterImage: {
+    width: '100%',
+    height: '100%',
   },
   placeholderImage: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderText: {
     fontSize: 48,
+    marginBottom: 8,
+  },
+  placeholderSubtext: {
+    fontSize: 12,
+    color: '#999',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ratingBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   movieInfo: {
     padding: 12,
@@ -218,9 +272,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
+    minHeight: 40,
   },
   movieGenre: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     marginBottom: 4,
   },
@@ -229,15 +284,8 @@ const styles = StyleSheet.create({
     color: '#999',
     marginBottom: 8,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  rating: {
-    fontSize: 12,
-    color: '#FFA500',
-    fontWeight: 'bold',
+  ageRatingContainer: {
+    marginTop: 4,
   },
   ageRating: {
     fontSize: 12,
@@ -246,6 +294,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    alignSelf: 'flex-start',
   },
   emptyContainer: {
     flex: 1,
