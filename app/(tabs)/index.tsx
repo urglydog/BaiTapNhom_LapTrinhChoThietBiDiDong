@@ -1,17 +1,18 @@
-import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  RefreshControl,
-  StyleSheet,
+  View,
   Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
   TextInput,
   ActivityIndicator,
   Image,
   Dimensions,
+  Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
 
@@ -33,10 +34,6 @@ export default function HomeScreen() {
       setMovies(moviesList);
     } catch (error) {
       console.error('Error fetching movies:', error);
-      // Chỉ set empty nếu không phải đang refresh
-      if (!refreshing) {
-        setMovies([]);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -51,25 +48,10 @@ export default function HomeScreen() {
     if (text.trim()) {
       try {
         setIsLoading(true);
-        // Truyền danh sách phim hiện tại để tìm kiếm local nhanh hơn
-        const response = await movieService.searchMovies(text, movies);
-
-        // searchMovies đã trả về Movie[] rồi, không cần xử lý thêm
-        // Loại bỏ duplicate
-        const moviesMap = new Map<number, Movie>();
-        response.forEach((movie) => {
-          if (movie && movie.id) {
-            if (!moviesMap.has(movie.id)) {
-              moviesMap.set(movie.id, movie);
-            }
-          }
-        });
-        const uniqueMovies = Array.from(moviesMap.values());
-
-        setMovies(uniqueMovies);
+        const response = await movieService.searchMovies(text);
+        setMovies(response);
       } catch (error: any) {
         console.error('Search error:', error);
-        // Hiển thị thông báo lỗi cho user
         setMovies([]);
         Alert.alert('Lỗi', error?.message || 'Không thể tìm kiếm phim. Vui lòng thử lại.');
       } finally {
@@ -81,43 +63,9 @@ export default function HomeScreen() {
   };
 
   const handleRefresh = async () => {
-    try {
-      setRefreshing(true);
-      setImageErrors(new Set()); // Reset image errors khi refresh
-      const response = await movieService.getMovies(0, 100);
-
-      // Xử lý response
-      let moviesList: Movie[] = [];
-      if (Array.isArray(response)) {
-        moviesList = response;
-      } else if (response?.content && Array.isArray(response.content)) {
-        moviesList = response.content;
-      } else if (response?.result) {
-        if (Array.isArray(response.result)) {
-          moviesList = response.result;
-        } else if (response.result?.content && Array.isArray(response.result.content)) {
-          moviesList = response.result.content;
-        }
-      }
-
-      // Loại bỏ duplicate
-      const moviesMap = new Map<number, Movie>();
-      moviesList.forEach((movie) => {
-        if (movie && movie.id) {
-          if (!moviesMap.has(movie.id)) {
-            moviesMap.set(movie.id, movie);
-          }
-        }
-      });
-
-      const uniqueMovies = Array.from(moviesMap.values());
-      setMovies(uniqueMovies);
-    } catch (error) {
-      console.error('Error refreshing movies:', error);
-      // Không set empty khi refresh, giữ nguyên danh sách cũ
-    } finally {
-      setRefreshing(false);
-    }
+    setRefreshing(true);
+    await fetchMovies();
+    setRefreshing(false);
   };
 
   const handleMoviePress = (movie: Movie) => {
@@ -189,18 +137,10 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: 'https://i.imgur.com/0y0y0y0.png' }}
-              style={styles.avatar}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>{getGreeting()}, Chào mừng bạn!</Text>
-            <Text style={styles.role}>Khám phá những bộ phim hay</Text>
-          </View>
-        </View>
+        <Text style={styles.greeting}>
+          {getGreeting()}, Chào mừng bạn!
+        </Text>
+        <Text style={styles.role}>Khám phá những bộ phim hay</Text>
       </View>
 
       <View style={styles.searchContainer}>
@@ -227,13 +167,11 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListEmptyComponent={
-          !refreshing ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                {isLoading ? 'Đang tải...' : 'Không tìm thấy phim nào'}
-              </Text>
-            </View>
-          ) : null
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              Không tìm thấy phim nào
+            </Text>
+          </View>
         }
       />
     </View>
@@ -257,21 +195,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    marginRight: 16,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#fff',
   },
   greeting: {
     fontSize: 22,
@@ -389,9 +312,10 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   movieGenre: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 14,
+    color: '#4f8cff',
+    marginBottom: 2,
+    fontWeight: '500',
   },
   movieDuration: {
     fontSize: 13,
@@ -416,11 +340,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 100,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-    color: '#4f8cff',
-  },
   emptyText: {
     fontSize: 16,
     color: '#666',
@@ -435,20 +354,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#666',
-  },
-  placeholderImage: {
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  placeholderTitle: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    paddingHorizontal: 8,
   },
 });
