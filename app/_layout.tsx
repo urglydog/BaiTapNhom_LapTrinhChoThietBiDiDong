@@ -21,12 +21,6 @@ export default function RootLayout() {
 }
 
 function AppNavigator() {
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    dispatch(loadStoredAuth());
-  }, [dispatch]);
-
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />

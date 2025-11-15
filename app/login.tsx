@@ -39,6 +39,9 @@ export default function LoginScreen() {
                 navigate('/(tabs)');
             }
 
+            if (result) {
+                navigate('/(tabs)/profile');
+            }
         } catch (error) {
             Alert.alert('Đăng nhập thất bại', error as string);
         } finally {
