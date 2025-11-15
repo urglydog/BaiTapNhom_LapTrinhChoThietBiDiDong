@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '../src/store';
-import { loadStoredAuth } from '../src/store/authSlice';
+import { loadStoredAuth }  from '../src/store/authSlice';
 import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
 
 export default function RootLayout() {
@@ -21,6 +21,12 @@ export default function RootLayout() {
 }
 
 function AppNavigator() {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(loadStoredAuth());
+  }, [dispatch]);
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />

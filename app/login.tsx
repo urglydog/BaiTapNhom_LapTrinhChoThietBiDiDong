@@ -13,6 +13,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../src/store';
 import { login, clearError } from '../src/store/authSlice';
+import { navigate } from 'expo-router/build/global-state/routing';
 
 export default function LoginScreen() {
     const [username, setUsername] = useState('');
@@ -30,7 +31,14 @@ export default function LoginScreen() {
 
         setIsLoading(true);
         try {
-            await dispatch(login({ username, password })).unwrap();
+            const result = await dispatch(login({ username, password })).unwrap();
+
+            if(result) {
+                Alert.alert('Thành công', 'Đăng nhập thành công');
+                
+                navigate('/(tabs)');
+            }
+
         } catch (error) {
             Alert.alert('Đăng nhập thất bại', error as string);
         } finally {
