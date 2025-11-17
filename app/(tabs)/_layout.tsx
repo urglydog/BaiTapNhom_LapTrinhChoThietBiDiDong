@@ -1,5 +1,7 @@
-import { Tabs } from 'expo-router';
+import { setUser } from '@/src/store/authSlice';
+import { Tabs, useFocusEffect } from 'expo-router';
 import { Text } from 'react-native';
+import { useDispatch } from 'react-redux';
 
 export default function TabLayout() {
     return (
