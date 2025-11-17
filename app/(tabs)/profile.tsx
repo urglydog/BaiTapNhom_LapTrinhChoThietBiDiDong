@@ -7,20 +7,21 @@ import {
     Alert,
     ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../src/store';
-import { logout } from '../../src/store/authSlice';
+import { logout, setUser } from '../../src/store/authSlice';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { user } = useSelector((state: RootState) => state.auth);
 
+
     const handleLogout = () => {
         Alert.alert(
             'Đăng xuất',
-            'Bạn có chắc chắn muốn đăng xuất?',
+            'Bạn có chắc chắn muốn đăng xuất?', 
             [
                 { text: 'Hủy', style: 'cancel' },
                 { text: 'Đăng xuất', onPress: () => dispatch(logout()) }
@@ -45,6 +46,23 @@ export default function ProfileScreen() {
             default: return '#666';
         }
     };
+
+    if (!user) {
+        return (
+            <View style={[styles.container, styles.centeredContainer]}>
+                <View style={styles.notLoggedInCard}>
+                    <View style={styles.avatarLarge}>
+                        <Text style={styles.avatarLargeText}>?</Text>
+                    </View>
+                    <Text style={styles.notLoggedInTitle}>Bạn chưa đăng nhập</Text>
+                    <Text style={styles.notLoggedInSubtitle}>Hãy đăng nhập để sử dụng các chức năng cá nhân hóa!</Text>
+                    <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/login')}>
+                        <Text style={styles.loginButtonText}>Đăng nhập</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <ScrollView style={styles.container}>
@@ -241,5 +259,70 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    // Đẹp cho phần chưa đăng nhập
+    centeredContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f5f5f5',
+    },
+    notLoggedInCard: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 32,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
+        minWidth: 300,
+        maxWidth: 350,
+    },
+    avatarLarge: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#e0e7ff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 18,
+    },
+    avatarLargeText: {
+        fontSize: 40,
+        color: '#6366f1',
+        fontWeight: 'bold',
+    },
+    notLoggedInTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#22223b',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    notLoggedInSubtitle: {
+        fontSize: 15,
+        color: '#6c757d',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    loginButton: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 14,
+        paddingHorizontal: 48,
+        borderRadius: 8,
+        alignItems: 'center',
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    loginButtonText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+        letterSpacing: 1,
     },
 });
