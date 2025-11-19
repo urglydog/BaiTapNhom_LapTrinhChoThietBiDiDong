@@ -86,6 +86,7 @@ export default function PromotionsScreen() {
   };
 
   const getDiscountText = (promotion: Promotion) => {
+    if (!promotion.discountValue) return 'Giảm giá';
     if (promotion.discountType === 'PERCENTAGE') {
       return `Giảm ${promotion.discountValue}%`;
     } else {
@@ -95,7 +96,7 @@ export default function PromotionsScreen() {
 
   const renderPromotion = ({ item }: { item: Promotion }) => {
     const isExpired = new Date(item.endDate) < new Date();
-    
+
     return (
       <View style={[styles.promotionCard, isExpired && styles.expiredCard]}>
         <View style={styles.promotionHeader}>
@@ -110,8 +111,12 @@ export default function PromotionsScreen() {
             </View>
           )}
         </View>
-        <Text style={styles.promotionName}>{item.name}</Text>
-        <Text style={styles.promotionDescription}>{item.description}</Text>
+        {item.name && (
+          <Text style={styles.promotionName}>{item.name}</Text>
+        )}
+        {item.description && (
+          <Text style={styles.promotionDescription}>{item.description}</Text>
+        )}
         <View style={styles.promotionDetails}>
           {item.minAmount && (
             <Text style={styles.promotionDetail}>
@@ -123,9 +128,11 @@ export default function PromotionsScreen() {
               Giảm tối đa: {item.maxDiscount.toLocaleString()} VNĐ
             </Text>
           )}
-          <Text style={styles.promotionDetail}>
-            Áp dụng đến: {formatDate(item.endDate)}
-          </Text>
+          {item.endDate && (
+            <Text style={styles.promotionDetail}>
+              Áp dụng đến: {formatDate(item.endDate)}
+            </Text>
+          )}
           {item.usageLimit && (
             <Text style={styles.promotionDetail}>
               Số lượng: {item.usageLimit} lượt
