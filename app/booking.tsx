@@ -20,7 +20,7 @@ export default function BookingScreen() {
   const dispatch = useDispatch<AppDispatch>();
 
   const { user } = useSelector((state: RootState) => state.auth);
-  const showtime = useSelector((state: RootState) => 
+  const showtime = useSelector((state: RootState) =>
     state.movie.showtimes.find(s => s.id === Number(showtimeId))
   );
 
@@ -90,10 +90,14 @@ export default function BookingScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Đặt vé</Text>
-        <Text style={styles.movieTitle}>{showtime.movie?.title}</Text>
-        <Text style={styles.showtime}>
-          {showtime.startTime} - {showtime.endTime}
-        </Text>
+        {showtime.movie?.title && (
+          <Text style={styles.movieTitle}>{showtime.movie.title}</Text>
+        )}
+        {showtime.startTime && showtime.endTime && (
+          <Text style={styles.showtime}>
+            {showtime.startTime} - {showtime.endTime}
+          </Text>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -147,7 +151,9 @@ export default function BookingScreen() {
         </View>
         <View style={styles.summaryRow}>
           <Text>Giá mỗi vé:</Text>
-          <Text>{showtime.price.toLocaleString()} VNĐ</Text>
+          {showtime.price != null && (
+            <Text>{showtime.price.toLocaleString()} VNĐ</Text>
+          )}
         </View>
         <View style={styles.summaryRow}>
           <Text>Tổng cộng:</Text>

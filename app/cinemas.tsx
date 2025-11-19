@@ -21,7 +21,7 @@ export default function CinemasScreen() {
   const [showtimes, setShowtimes] = useState<Showtime[]>([]);
   const [loadingShowtimes, setLoadingShowtimes] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { cinemas } = useSelector((state: RootState) => state.movie);
@@ -72,10 +72,16 @@ export default function CinemasScreen() {
         />
       </View>
       <View style={styles.cinemaInfo}>
-        <Text style={styles.cinemaName}>{item.name}</Text>
-        <Text style={styles.cinemaAddress}>{item.address}</Text>
-        <Text style={styles.cinemaCity}>{item.city}</Text>
-        <Text style={styles.cinemaPhone}>📞 {item.phone}</Text>
+        <Text style={styles.cinemaName}>{item.name || 'Rạp chiếu phim'}</Text>
+        {item.address && (
+          <Text style={styles.cinemaAddress}>{item.address}</Text>
+        )}
+        {item.city && (
+          <Text style={styles.cinemaCity}>{item.city}</Text>
+        )}
+        {item.phone && (
+          <Text style={styles.cinemaPhone}>📞 {item.phone}</Text>
+        )}
         {item.description && (
           <Text style={styles.cinemaDescription} numberOfLines={2}>
             {item.description}
@@ -94,17 +100,23 @@ export default function CinemasScreen() {
         <Text style={styles.showtimeMovie}>
           {item.movie?.title || 'Phim'}
         </Text>
-        <Text style={styles.showtimeTime}>
-          {item.startTime} - {item.endTime}
-        </Text>
-        <Text style={styles.showtimeDate}>
-          {new Date(item.showDate).toLocaleDateString('vi-VN')}
-        </Text>
+        {item.startTime && item.endTime && (
+          <Text style={styles.showtimeTime}>
+            {item.startTime} - {item.endTime}
+          </Text>
+        )}
+        {item.showDate && (
+          <Text style={styles.showtimeDate}>
+            {new Date(item.showDate).toLocaleDateString('vi-VN')}
+          </Text>
+        )}
       </View>
       <View style={styles.showtimePriceContainer}>
-        <Text style={styles.showtimePrice}>
-          {item.price.toLocaleString()} VNĐ
-        </Text>
+        {item.price != null && (
+          <Text style={styles.showtimePrice}>
+            {item.price.toLocaleString()} VNĐ
+          </Text>
+        )}
         <TouchableOpacity
           style={styles.bookButton}
           onPress={() => router.push(`/booking?showtimeId=${item.id}`)}

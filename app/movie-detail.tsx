@@ -109,12 +109,12 @@ export default function MovieDetailScreen() {
 
                 {/* Movie Info */}
                 <View style={styles.infoRow}>
-                    {movie.rating && (
+                    {movie.rating != null && movie.rating > 0 && (
                         <View style={styles.infoBadge}>
                             <Text style={styles.infoBadgeText}>⭐ {movie.rating.toFixed(1)}</Text>
                         </View>
                     )}
-                    {movie.duration && (
+                    {movie.duration != null && movie.duration > 0 && (
                         <View style={styles.infoBadge}>
                             <Text style={styles.infoBadgeText}>⏱️ {movie.duration} phút</Text>
                         </View>

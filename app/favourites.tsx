@@ -69,11 +69,19 @@ export default function FavouritesScreen() {
               <Text style={styles.removeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.movieGenre}>{movie.genre}</Text>
-          <Text style={styles.movieDuration}>{movie.duration} phút</Text>
+          {movie.genre && (
+            <Text style={styles.movieGenre}>{movie.genre}</Text>
+          )}
+          {movie.duration != null && movie.duration > 0 && (
+            <Text style={styles.movieDuration}>{movie.duration} phút</Text>
+          )}
           <View style={styles.ratingContainer}>
-            <Text style={styles.rating}>⭐ {movie.rating}</Text>
-            <Text style={styles.ageRating}>{movie.ageRating}</Text>
+            {movie.rating != null && movie.rating > 0 && (
+              <Text style={styles.rating}>⭐ {movie.rating.toFixed(1)}</Text>
+            )}
+            {movie.ageRating && (
+              <Text style={styles.ageRating}>{movie.ageRating}</Text>
+            )}
           </View>
           {movie.description && (
             <Text style={styles.movieDescription} numberOfLines={2}>

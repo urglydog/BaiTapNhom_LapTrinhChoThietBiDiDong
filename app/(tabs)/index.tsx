@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,12 +18,16 @@ import { Movie } from '../../src/types';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
+const SEARCH_DEBOUNCE_DELAY = 500; // 500ms delay
 
 export default function HomeScreen() {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [allMovies, setAllMovies] = useState<Movie[]>([]); // Lưu danh sách phim gốc
+  const [movies, setMovies] = useState<Movie[]>([]); // Danh sách phim hiển thị
+  const [isLoading, setIsLoading] = useState(true); // Loading ban đầu
+  const [isSearching, setIsSearching] = useState(false); // Loading khi search
   const [searchText, setSearchText] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const router = useRouter();
 
@@ -31,6 +35,7 @@ export default function HomeScreen() {
     try {
       setIsLoading(true);
       const moviesList = await movieService.getMovies();
+      setAllMovies(moviesList);
       setMovies(moviesList);
     } catch (error) {
       console.error('Error fetching movies:', error);
@@ -43,28 +48,83 @@ export default function HomeScreen() {
     fetchMovies();
   }, []);
 
-  const handleSearch = async (text: string) => {
-    setSearchText(text);
-    if (text.trim()) {
-      try {
-        setIsLoading(true);
-        const response = await movieService.searchMovies(text);
-        setMovies(response);
-      } catch (error: any) {
-        console.error('Search error:', error);
-        setMovies([]);
-        Alert.alert('Lỗi', error?.message || 'Không thể tìm kiếm phim. Vui lòng thử lại.');
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      fetchMovies();
+  // Client-side search ngay lập tức
+  const performClientSearch = (query: string) => {
+    if (!query.trim()) {
+      setMovies(allMovies);
+      return;
+    }
+
+    const queryLower = query.toLowerCase().trim();
+    const filtered = allMovies.filter((movie: Movie) => 
+      movie.title?.toLowerCase().includes(queryLower) ||
+      movie.genre?.toLowerCase().includes(queryLower) ||
+      movie.director?.toLowerCase().includes(queryLower) ||
+      movie.cast?.toLowerCase().includes(queryLower)
+    );
+    setMovies(filtered);
+  };
+
+  // API search với debounce
+  const performApiSearch = async (query: string) => {
+    if (!query.trim()) {
+      setMovies(allMovies);
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const response = await movieService.searchMovies(query, allMovies);
+      setMovies(response);
+    } catch (error: any) {
+      console.error('Search error:', error);
+      // Nếu API search lỗi, vẫn giữ kết quả client-side search
+      // Không hiển thị alert để không làm gián đoạn UX
+    } finally {
+      setIsSearching(false);
     }
   };
+
+  const handleSearch = (text: string) => {
+    setSearchText(text);
+    
+    // Client-side search ngay lập tức để UX mượt mà
+    performClientSearch(text);
+
+    // Clear timeout cũ nếu có
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Debounce API search
+    if (text.trim().length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        performApiSearch(text);
+      }, SEARCH_DEBOUNCE_DELAY);
+    } else if (!text.trim()) {
+      // Nếu xóa hết text, reset về danh sách gốc
+      setMovies(allMovies);
+      setIsSearching(false);
+    }
+  };
+
+  // Cleanup timeout khi component unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchMovies();
+    // Reset search khi refresh
+    if (searchText.trim()) {
+      performClientSearch(searchText);
+    }
     setRefreshing(false);
   };
 
@@ -91,7 +151,7 @@ export default function HomeScreen() {
             <Text style={styles.placeholderSubtext}>Không có ảnh</Text>
           </View>
         )}
-        {item.rating && (
+        {item.rating != null && item.rating > 0 && (
           <View style={styles.ratingBadge}>
             <Text style={styles.ratingBadgeText}>⭐ {item.rating.toFixed(1)}</Text>
           </View>
@@ -106,7 +166,7 @@ export default function HomeScreen() {
             {item.genre}
           </Text>
         )}
-        {item.duration && (
+        {item.duration != null && item.duration > 0 && (
           <Text style={styles.movieDuration}>{item.duration} phút</Text>
         )}
         {item.ageRating && (
@@ -152,7 +212,16 @@ export default function HomeScreen() {
             value={searchText}
             onChangeText={handleSearch}
             placeholderTextColor="#999"
+            returnKeyType="search"
+            clearButtonMode="while-editing"
           />
+          {isSearching && (
+            <ActivityIndicator 
+              size="small" 
+              color="#4f8cff" 
+              style={styles.searchLoading}
+            />
+          )}
         </View>
       </View>
 
@@ -168,9 +237,21 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              Không tìm thấy phim nào
-            </Text>
+            {searchText.trim() ? (
+              <>
+                <Text style={styles.emptyIcon}>🔍</Text>
+                <Text style={styles.emptyText}>
+                  Không tìm thấy phim nào với từ khóa "{searchText}"
+                </Text>
+                <Text style={styles.emptySubtext}>
+                  Thử tìm kiếm với từ khóa khác
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.emptyText}>
+                Không có phim nào
+              </Text>
+            )}
           </View>
         }
       />
@@ -235,6 +316,9 @@ const styles = StyleSheet.create({
     color: '#222',
     backgroundColor: 'transparent',
     paddingVertical: 4,
+  },
+  searchLoading: {
+    marginLeft: 8,
   },
   listContainer: {
     paddingHorizontal: 12,
@@ -339,10 +423,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
     color: '#666',
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
