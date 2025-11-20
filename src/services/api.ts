@@ -2,9 +2,16 @@ import axios from "axios";
 import { storage } from "../utils/storage";
 
 // Base API configuration
+// ⚠️ QUAN TRỌNG: Để chạy app trên điện thoại, cần thay IP bên dưới bằng IP LAN của máy tính bạn
+// Cách tìm IP:
+// - Windows: Mở CMD chạy "ipconfig", tìm "IPv4 Address" của adapter đang kết nối internet
+// - macOS: Mở Terminal chạy "ifconfig | grep inet", tìm địa chỉ IP private (192.168.x.x hoặc 10.x.x.x)
+// - Linux: Mở Terminal chạy "ip addr show", tìm inet addr trong eth0/wlan0
+// Ví dụ: "http://192.168.1.10:8080/api"
 const API_BASE_URL =
-  "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api"; // Thay thế bằng URL Railway thực tế của bạn
-
+  __DEV__
+    ? "http://192.168.1.15:8080/api" // ⚠️ THAY IP NÀY BẰNG IP THỰC CỦA MÁY TÍNH BẠN
+    : "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api"; // URL production
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // Tăng timeout lên 30s vì Render.com free tier có thể mất thời gian để wake up

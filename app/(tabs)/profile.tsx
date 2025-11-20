@@ -1,32 +1,47 @@
-import React from 'react';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
     Alert,
     ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    Modal,
+    Platform,
 } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../src/store';
-import { logout, setUser } from '../../src/store/authSlice';
+import { AppDispatch, RootState } from '../../src/store';
+import { logout } from '../../src/store/authSlice';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { user } = useSelector((state: RootState) => state.auth);
-
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const handleLogout = () => {
-        Alert.alert(
-            'Đăng xuất',
-            'Bạn có chắc chắn muốn đăng xuất?', 
-            [
-                { text: 'Hủy', style: 'cancel' },
-                { text: 'Đăng xuất', onPress: () => dispatch(logout()) }
-            ]
-        );
+        if (Platform.OS === 'web') {
+            setShowLogoutModal(true);
+        } else {
+            Alert.alert(
+                'Đăng xuất',
+                'Bạn có chắc chắn muốn đăng xuất?', 
+                [
+                    { text: 'Hủy', style: 'cancel' },
+                    { text: 'Đăng xuất', onPress: () => dispatch(logout()) }
+                ]
+            );
+        }
+    };
+
+    const confirmLogout = () => {
+        setShowLogoutModal(false);
+        dispatch(logout());
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutModal(false);
     };
 
     const getRoleDisplayName = (role: string) => {
@@ -59,13 +74,39 @@ export default function ProfileScreen() {
                     <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/login')}>
                         <Text style={styles.loginButtonText}>Đăng nhập</Text>
                     </TouchableOpacity>
+                    <Text style={styles.orText}>hoặc</Text>
+                    <TouchableOpacity style={styles.registerLink} onPress={() => router.push('/register')}>
+                        <Text style={styles.registerLinkText}>Tạo tài khoản</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         );
     }
 
     return (
-        <ScrollView style={styles.container}>
+        <>
+            <Modal
+                visible={showLogoutModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={cancelLogout}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Đăng xuất</Text>
+                        <Text style={styles.modalMessage}>Bạn có chắc chắn muốn đăng xuất?</Text>
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity style={styles.cancelButton} onPress={cancelLogout}>
+                                <Text style={styles.cancelButtonText}>Hủy</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.confirmButton} onPress={confirmLogout}>
+                                <Text style={styles.confirmButtonText}>Đăng xuất</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+            <ScrollView style={styles.container}>
             <View style={styles.header}>
                 <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
@@ -149,12 +190,20 @@ export default function ProfileScreen() {
                         <Text style={styles.menuArrow}>›</Text>
                     </TouchableOpacity>
                 )}
+                <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => router.push('/change-password')}
+                >
+                    <Text style={styles.menuText}>Đổi mật khẩu</Text>
+                    <Text style={styles.menuArrow}>›</Text>
+                </TouchableOpacity>
             </View>
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText}>Đăng xuất</Text>
+                <Text style={styles.logoutButtonText} onPress={handleLogout}>Đăng xuất</Text>
             </TouchableOpacity>
         </ScrollView>
+        </>
     );
 }
 
@@ -324,5 +373,87 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         letterSpacing: 1,
+    },
+    orText: {
+        marginTop: 12,
+        marginBottom: 8,
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+    },
+    registerLink: {
+        marginTop: 16,
+        padding: 8,
+    },
+    registerLinkText: {
+        color: '#007AFF',
+        fontSize: 16,
+        textDecorationLine: 'underline',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 24,
+        margin: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        minWidth: 280,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    modalMessage: {
+        fontSize: 16,
+        color: '#666',
+        marginBottom: 24,
+        textAlign: 'center',
+        lineHeight: 22,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    cancelButton: {
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        marginRight: 8,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        color: '#666',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    confirmButton: {
+        flex: 1,
+        backgroundColor: '#FF6B6B',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        marginLeft: 8,
+        alignItems: 'center',
+    },
+    confirmButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
