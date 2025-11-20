@@ -1,19 +1,20 @@
+import { navigate } from 'expo-router/build/global-state/routing';
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
     Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../src/store';
-import { login, clearError } from '../src/store/authSlice';
-import { navigate } from 'expo-router/build/global-state/routing';
+import { AppDispatch, RootState } from '../src/store';
+import { clearError, login } from '../src/store/authSlice';
+import { useRouter } from 'expo-router';
 
 export default function LoginScreen() {
     const [username, setUsername] = useState('');
@@ -22,6 +23,7 @@ export default function LoginScreen() {
 
     const dispatch = useDispatch<AppDispatch>();
     const { error } = useSelector((state: RootState) => state.auth);
+    const router = useRouter();
 
     const handleLogin = async () => {
         if (!username.trim() || !password.trim()) {
@@ -36,11 +38,11 @@ export default function LoginScreen() {
             if(result) {
                 Alert.alert('Thành công', 'Đăng nhập thành công');
                 
-                navigate('/(tabs)');
+                router.replace('/(tabs)');
             }
 
             if (result) {
-                navigate('/(tabs)/profile');
+                router.replace('/(tabs)/profile');
             }
         } catch (error) {
             Alert.alert('Đăng nhập thất bại', error as string);
@@ -68,6 +70,15 @@ export default function LoginScreen() {
                 </View>
 
                 <View style={styles.form}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => router.replace('/(tabs)')}
+                    >
+                        <Text style={styles.backButtonText}>← Quay lại</Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.formTitle}>Đăng nhập</Text>
+
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Tên đăng nhập</Text>
                         <TextInput
@@ -102,6 +113,23 @@ export default function LoginScreen() {
                             {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
                         </Text>
                     </TouchableOpacity>
+
+                    <Text
+                        style={{ marginTop: 20, textAlign: 'center' }}
+                    >Bạn chưa có tài khoản 
+                        <TouchableOpacity 
+                            onPress={() => router.push('/register')}
+                        >
+                                <Text style={{color: '#007AFF'}}> Đăng ký ngay</Text>
+                        </TouchableOpacity>
+                    </Text>
+
+                    <TouchableOpacity 
+                            onPress={() => router.push('/forgot-password')}
+                            style={{ marginTop: 10, alignSelf: 'center' }}
+                        >
+                                <Text style={{color: '#007AFF'}}> Quên mật khẩu?</Text>
+                        </TouchableOpacity>
                 </View>
 
                 <View style={styles.footer}>
@@ -199,5 +227,22 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#999',
         marginBottom: 4,
+    },
+    backButton: {
+        alignSelf: 'flex-start',
+        marginBottom: 16,
+        padding: 8,
+    },
+    backButtonText: {
+        color: '#007AFF',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    formTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
+        textAlign: 'center',
+        marginBottom: 24,
     },
 });
