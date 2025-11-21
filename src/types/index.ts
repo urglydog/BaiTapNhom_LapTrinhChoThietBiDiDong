@@ -21,6 +21,33 @@ export interface LoginResponse {
   user: User;
 }
 
+// OTP Types
+export interface SendOtpRequest {
+  email?: string;
+  phone?: string;
+  type: 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD';
+}
+
+export interface VerifyOtpRequest {
+  email?: string;
+  phone?: string;
+  otp: string;
+  type: 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD';
+}
+
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  expiresIn?: number; // thời gian hết hạn OTP (giây)
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
+  token?: string; // token tạm thời nếu verify thành công
+  user?: User; // user info nếu verify cho login/register
+}
+
 // Movie Types
 export interface Movie {
   id: number;
@@ -49,9 +76,8 @@ export interface Cinema {
   city: string;
   phone: string;
   email: string;
-  description?: string;
+  description: string;
   imageUrl?: string;
-  active?: boolean;
 }
 
 export interface CinemaHall {
@@ -59,9 +85,6 @@ export interface CinemaHall {
   cinemaId: number;
   hallName: string;
   totalSeats: number;
-  seatLayout?: string;
-  active?: boolean;
-  cinema?: Cinema;
 }
 
 // Showtime Types
@@ -73,14 +96,8 @@ export interface Showtime {
   startTime: string;
   endTime: string;
   price: number;
-  active?: boolean;
   movie?: Movie;
   cinemaHall?: CinemaHall;
-}
-
-// Showtime with Cinema info for display
-export interface ShowtimeWithCinema extends Showtime {
-  cinema?: Cinema;
 }
 
 // Seat Types
@@ -89,17 +106,7 @@ export interface Seat {
   cinemaHallId: number;
   seatNumber: string;
   seatRow: string;
-  seatType: 'NORMAL' | 'VIP' | 'COUPLE';
-  active?: boolean;
-  rowNumber?: number;
-  price?: number;
-}
-
-// Seat with booking status
-export interface SeatWithStatus extends Seat {
-  isBooked?: boolean;
-  isSelected?: boolean;
-  status?: string; // Để hỗ trợ cả 2 cách: isBooked hoặc status === 'BOOKED'
+  seatType: 'NORMAL' | 'VIP';
 }
 
 // Booking Types
@@ -107,30 +114,19 @@ export interface Booking {
   id: number;
   userId: number;
   showtimeId: number;
-  bookingCode?: string;
   totalAmount: number;
   bookingDate: string;
-  bookingStatus: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
-  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-  paymentMethod?: 'CASH' | 'CREDIT_CARD' | 'BANK_TRANSFER';
-  bookingItems?: BookingItem[];
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+  seats: BookingSeat[];
   user?: User;
   showtime?: Showtime;
 }
 
-export interface BookingItem {
+export interface BookingSeat {
   id: number;
   bookingId: number;
   seatId: number;
-  price: number;
   seat?: Seat;
-}
-
-export interface CreateBookingRequest {
-  showtimeId: number;
-  seatIds: number[];
-  paymentMethod: 'CASH' | 'CREDIT_CARD' | 'BANK_TRANSFER';
-  promotionCode?: string;
 }
 
 // Review Types
@@ -166,6 +162,17 @@ export interface Promotion {
   startDate: string;
   endDate: string;
   usageLimit?: number;
+}
+
+// Register Request (match với backend)
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE';
 }
 
 // API Response Types
