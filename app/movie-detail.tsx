@@ -109,12 +109,12 @@ export default function MovieDetailScreen() {
 
                 {/* Movie Info */}
                 <View style={styles.infoRow}>
-                    {movie.rating != null && movie.rating > 0 && (
+                    {movie.rating && (
                         <View style={styles.infoBadge}>
                             <Text style={styles.infoBadgeText}>⭐ {movie.rating.toFixed(1)}</Text>
                         </View>
                     )}
-                    {movie.duration != null && movie.duration > 0 && (
+                    {movie.duration && (
                         <View style={styles.infoBadge}>
                             <Text style={styles.infoBadgeText}>⏱️ {movie.duration} phút</Text>
                         </View>
@@ -182,6 +182,14 @@ export default function MovieDetailScreen() {
                         </View>
                     )}
                 </View>
+
+                {/* Buy Ticket Button */}
+                <TouchableOpacity
+                    style={styles.buyTicketButton}
+                    onPress={() => router.push(`/showtime-selection?movieId=${movie.id}`)}
+                >
+                    <Text style={styles.buyTicketButtonText}>Mua vé</Text>
+                </TouchableOpacity>
             </View>
         </ScrollView>
     );
@@ -333,5 +341,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
         flex: 1,
+    },
+    buyTicketButton: {
+        backgroundColor: '#E91E63',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 8,
+        marginBottom: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    buyTicketButtonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
 });
