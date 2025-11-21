@@ -6,25 +6,25 @@ import { storage } from "../utils/storage";
 const API_BASE_URL = "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000, // Tăng timeout lên 30s vì Render.com free tier có thể mất thời gian để wake up
-  headers: {
-    "Content-Type": "application/json",
-  },
+    baseURL: API_BASE_URL,
+    timeout: 30000, // Tăng timeout lên 30s vì Render.com free tier có thể mất thời gian để wake up
+    headers: {
+        "Content-Type": "application/json",
+    },
 });
 
 // Request interceptor để thêm token
 api.interceptors.request.use(
-  async (config) => {
-    const token = await storage.getItem("authToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    async (config) => {
+        const token = await storage.getItem("authToken");
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
 );
 
 // Response interceptor để xử lý lỗi
@@ -57,8 +57,6 @@ api.interceptors.response.use(
       await storage.removeItem("authToken");
       await storage.removeItem("user");
     }
-    return Promise.reject(error);
-  }
 );
 
 export default api;
