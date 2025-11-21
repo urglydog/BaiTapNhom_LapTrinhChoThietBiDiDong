@@ -122,8 +122,61 @@ export default function ShowtimeSelectionScreen() {
         }
     };
 
-    const handleShowtimeSelect = (showtimeId: number) => {
-        router.push(`/seat-selection?showtimeId=${showtimeId}`);
+    const handleShowtimeSelect = async (showtime: ShowtimeWithCinema) => {
+        try {
+            // Load showtime details để lấy đầy đủ thông tin (bao gồm cinemaHall)
+            const showtimeDetails = await showtimeService.getShowtimeById(showtime.id);
+            
+            // Load cinema hall nếu cần để lấy thông tin cinema
+            let finalCinemaName = showtime.cinema?.name || 'Rạp chiếu';
+            let finalHallName = showtime.cinemaHall?.hallName || showtimeDetails.cinemaHall?.hallName || 'Phòng chiếu';
+            
+            // Nếu chưa có cinema name, thử load từ cinema hall
+            if (!showtime.cinema && showtimeDetails.cinemaHall) {
+                try {
+                    const { cinemaService } = await import('../src/services/cinemaService');
+                    const hallInfo = await cinemaService.getCinemaHallById(showtimeDetails.cinemaHallId);
+                    // CinemaHall có thể có cinema info hoặc cần load riêng
+                    // Tạm thời dùng fallback
+                } catch (e) {
+                    console.error('Error loading cinema hall:', e);
+                }
+            }
+            
+            // Lấy thông tin từ showtime hoặc showtimeDetails
+            const movieTitle = movie?.title || showtimeDetails.movie?.title || 'Phim';
+            const showDate = showtime.showDate || showtimeDetails.showDate;
+            const showTime = showtime.startTime || showtimeDetails.startTime;
+            const price = showtime.price || showtimeDetails.price || 0;
+
+            router.push({
+                pathname: '/seat-selection',
+                params: {
+                    showtimeId: showtime.id.toString(),
+                    movieTitle,
+                    cinemaName: finalCinemaName,
+                    hallName: finalHallName,
+                    showDate,
+                    showTime,
+                    price: price.toString(),
+                },
+            });
+        } catch (error: any) {
+            console.error('Error loading showtime details:', error);
+            // Fallback: truyền thông tin có sẵn
+            router.push({
+                pathname: '/seat-selection',
+                params: {
+                    showtimeId: showtime.id.toString(),
+                    movieTitle: movie?.title || 'Phim',
+                    cinemaName: showtime.cinema?.name || 'Rạp chiếu',
+                    hallName: showtime.cinemaHall?.hallName || 'Phòng chiếu',
+                    showDate: showtime.showDate,
+                    showTime: showtime.startTime,
+                    price: (showtime.price || 0).toString(),
+                },
+            });
+        }
     };
 
     const formatDate = (dateString: string) => {
@@ -243,7 +296,7 @@ export default function ShowtimeSelectionScreen() {
                                         <TouchableOpacity
                                             key={showtime.id}
                                             style={styles.timeButton}
-                                            onPress={() => handleShowtimeSelect(showtime.id)}
+                                            onPress={() => handleShowtimeSelect(showtime)}
                                         >
                                             <Text style={styles.timeText}>
                                                 {formatTime(showtime.startTime)}

@@ -38,11 +38,6 @@ export const showtimeService = {
             const cinemaHallIds = Array.from(new Set(showtimes.map(st => st.cinemaHallId)));
             console.log('Cinema hall IDs to fetch:', cinemaHallIds);
 
-            // Fetch cinema halls with their cinema info
-            // Since backend has @JsonBackReference on cinemaHall, 
-            // we need to fetch cinemas that have halls matching our IDs
-            // For simplicity, we'll map all cinemas to halls
-
             // Create cinema hall to cinema mapping from cinema.halls if available
             const hallToCinemaMap: { [hallId: number]: any } = {};
 
@@ -85,7 +80,9 @@ export const showtimeService = {
                 error.response?.data?.message || 'Không thể tải lịch chiếu'
             );
         }
-    },    // Lấy lịch chiếu theo phim (tất cả ngày)
+    },
+    
+    // Lấy lịch chiếu theo phim (tất cả ngày)
     getShowtimesByMovie: async (movieId: number): Promise<Showtime[]> => {
         try {
             const response = await api.get<ApiResponse<Showtime[]>>(
@@ -177,3 +174,4 @@ export const showtimeService = {
         }
     },
 };
+

@@ -188,7 +188,7 @@ export default function RegisterScreen() {
       await authService.register(userData);
       Alert.alert('Thành công', 'Đăng ký tài khoản thành công!', [
         { text: 'OK', onPress: () => {
-          // Có thể navigate về login screen
+          router.replace('/login');
         }}
       ]);
     } catch (error: any) {
@@ -222,7 +222,7 @@ export default function RegisterScreen() {
     <>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => router.replace('/login')}
+        onPress={() => router.replace('/login' as any)}
       >
         <Text style={styles.backButtonText}>← Quay lại</Text>
       </TouchableOpacity>
@@ -474,7 +474,7 @@ export default function RegisterScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             Đã có tài khoản?
-            <TouchableOpacity onPress={() => router.replace('/login')}>
+            <TouchableOpacity onPress={() => router.replace('/login' as any)}>
               <Text style={styles.linkText}> Đăng nhập</Text>
             </TouchableOpacity>
           </Text>
@@ -664,3 +664,4 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 });
+

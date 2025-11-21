@@ -11,35 +11,81 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { showtimeService } from "../src/services/showtimeService";
-import { SeatWithStatus } from "../src/types";
+import { SeatWithStatus, Showtime } from "../src/types";
 
 export default function SeatSelectionScreen() {
   const router = useRouter();
   const {
     showtimeId,
-    movieTitle,
-    cinemaName,
-    hallName,
-    showDate,
-    showTime,
-    price,
+    movieTitle: movieTitleParam,
+    cinemaName: cinemaNameParam,
+    hallName: hallNameParam,
+    showDate: showDateParam,
+    showTime: showTimeParam,
+    price: priceParam,
   } = useLocalSearchParams();
 
   const [seats, setSeats] = useState<SeatWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
+  const [showtime, setShowtime] = useState<Showtime | null>(null);
+  const [movieTitle, setMovieTitle] = useState<string>(movieTitleParam as string || '');
+  const [cinemaName, setCinemaName] = useState<string>(cinemaNameParam as string || '');
+  const [hallName, setHallName] = useState<string>(hallNameParam as string || '');
+  const [showDate, setShowDate] = useState<string>(showDateParam as string || '');
+  const [showTime, setShowTime] = useState<string>(showTimeParam as string || '');
+  const [price, setPrice] = useState<string>(priceParam as string || '0');
 
-  // Load seats when component mounts
+  // Load seats and showtime info when component mounts
   useEffect(() => {
     if (showtimeId) {
-      loadSeats();
+      loadShowtimeAndSeats();
     }
   }, [showtimeId]);
 
-  const loadSeats = async () => {
+  const loadShowtimeAndSeats = async () => {
     try {
       setLoading(true);
-      console.log("🪑 Loading seats for showtime:", showtimeId);
+      console.log("🪑 Loading showtime and seats:", showtimeId);
+      
+      // Load showtime details nếu thiếu thông tin
+      if (!movieTitleParam || !cinemaNameParam || !hallNameParam) {
+        try {
+          const showtimeData = await showtimeService.getShowtimeById(Number(showtimeId));
+          setShowtime(showtimeData);
+          
+          if (!movieTitleParam && showtimeData.movie) {
+            setMovieTitle(showtimeData.movie.title);
+          }
+          if (!cinemaNameParam && showtimeData.cinemaHall) {
+            // Load cinema hall để lấy thông tin cinema
+            try {
+              const { cinemaService } = await import('../src/services/cinemaService');
+              const hallInfo = await cinemaService.getCinemaHallById(showtimeData.cinemaHallId);
+              // Note: CinemaHall có thể không có cinema info trực tiếp
+              // Cần load cinema riêng nếu cần, tạm thời dùng fallback
+              setCinemaName('Rạp chiếu');
+            } catch (e) {
+              console.error('Error loading cinema hall:', e);
+              setCinemaName('Rạp chiếu');
+            }
+          }
+          if (!hallNameParam && showtimeData.cinemaHall) {
+            setHallName(showtimeData.cinemaHall.hallName);
+          }
+          if (!showDateParam && showtimeData.showDate) {
+            setShowDate(showtimeData.showDate);
+          }
+          if (!showTimeParam && showtimeData.startTime) {
+            setShowTime(showtimeData.startTime);
+          }
+          if (!priceParam && showtimeData.price) {
+            setPrice(showtimeData.price.toString());
+          }
+        } catch (error) {
+          console.error('Error loading showtime:', error);
+        }
+      }
       
       // Fetch all seats for this showtime with status
       const seatsData = await showtimeService.getSeatsWithStatus(Number(showtimeId));
@@ -132,15 +178,15 @@ export default function SeatSelectionScreen() {
     router.push({
       pathname: "/booking",
       params: {
-        showtimeId,
-        movieTitle,
-        cinemaName,
-        hallName,
-        showDate,
-        showTime,
+        showtimeId: String(showtimeId),
+        movieTitle: movieTitle || movieTitleParam || '',
+        cinemaName: cinemaName || cinemaNameParam || '',
+        hallName: hallName || hallNameParam || '',
+        showDate: showDate || showDateParam || '',
+        showTime: showTime || showTimeParam || '',
         seatIds: JSON.stringify(selectedSeats),
         seatNumbers: selectedSeatsData.map((s) => s.seatNumber).join(", "),
-        totalAmount: calculateTotal(),
+        totalAmount: String(calculateTotal()),
       },
     });
   };
