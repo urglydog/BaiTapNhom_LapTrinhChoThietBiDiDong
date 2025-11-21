@@ -21,27 +21,14 @@ export default function ProfileScreen() {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const handleLogout = () => {
-        if (Platform.OS === 'web') {
-            setShowLogoutModal(true);
-        } else {
-            Alert.alert(
-                'Đăng xuất',
-                'Bạn có chắc chắn muốn đăng xuất?', 
-                [
-                    { text: 'Hủy', style: 'cancel' },
-                    { text: 'Đăng xuất', onPress: () => dispatch(logout()) }
-                ]
-            );
-        }
-    };
-
-    const confirmLogout = () => {
-        setShowLogoutModal(false);
-        dispatch(logout());
-    };
-
-    const cancelLogout = () => {
-        setShowLogoutModal(false);
+        Alert.alert(
+            'Đăng xuất',
+            'Bạn có chắc chắn muốn đăng xuất?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                { text: 'Đăng xuất', onPress: () => dispatch(logout()) }
+            ]
+        );
     };
 
     const getRoleDisplayName = (role: string) => {
@@ -153,40 +140,58 @@ export default function ProfileScreen() {
 
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Chức năng</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => router.push('/favourites')}
+                    onPress={() => router.push('/(tabs)/favourites')}
                 >
-                    <Text style={styles.menuText}>Phim yêu thích</Text>
+                    <View style={styles.menuItemLeft}>
+                        <Text style={styles.menuIcon}>❤️</Text>
+                        <Text style={styles.menuText}>Phim yêu thích</Text>
+                    </View>
                     <Text style={styles.menuArrow}>›</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => router.push('/cinemas')}
+                    onPress={() => router.push('/(tabs)/cinemas')}
                 >
-                    <Text style={styles.menuText}>Rạp chiếu phim</Text>
+                    <View style={styles.menuItemLeft}>
+                        <Text style={styles.menuIcon}>🎭</Text>
+                        <Text style={styles.menuText}>Rạp chiếu phim</Text>
+                    </View>
                     <Text style={styles.menuArrow}>›</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => router.push('/promotions')}
+                    onPress={() => router.push('/(tabs)/promotions')}
                 >
-                    <Text style={styles.menuText}>Khuyến mãi</Text>
+                    <View style={styles.menuItemLeft}>
+                        <Text style={styles.menuIcon}>🎁</Text>
+                        <Text style={styles.menuText}>Khuyến mãi</Text>
+                    </View>
                     <Text style={styles.menuArrow}>›</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuText}>Cài đặt</Text>
+                    <View style={styles.menuItemLeft}>
+                        <Text style={styles.menuIcon}>⚙️</Text>
+                        <Text style={styles.menuText}>Cài đặt</Text>
+                    </View>
                     <Text style={styles.menuArrow}>›</Text>
                 </TouchableOpacity>
                 {user?.role === 'ADMIN' && (
                     <TouchableOpacity style={styles.menuItem}>
-                        <Text style={styles.menuText}>Quản lý hệ thống</Text>
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>👑</Text>
+                            <Text style={styles.menuText}>Quản lý hệ thống</Text>
+                        </View>
                         <Text style={styles.menuArrow}>›</Text>
                     </TouchableOpacity>
                 )}
                 {user?.role === 'STAFF' && (
                     <TouchableOpacity style={styles.menuItem}>
-                        <Text style={styles.menuText}>Quản lý đặt vé</Text>
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>🎫</Text>
+                            <Text style={styles.menuText}>Quản lý đặt vé</Text>
+                        </View>
                         <Text style={styles.menuArrow}>›</Text>
                     </TouchableOpacity>
                 )}
@@ -289,13 +294,24 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
     },
+    menuItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    menuIcon: {
+        fontSize: 20,
+        marginRight: 12,
+    },
     menuText: {
         fontSize: 16,
         color: '#333',
+        fontWeight: '500',
     },
     menuArrow: {
         fontSize: 20,
         color: '#ccc',
+        fontWeight: '300',
     },
     logoutButton: {
         backgroundColor: '#FF6B6B',

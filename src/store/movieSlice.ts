@@ -138,7 +138,10 @@ export const toggleFavourite = createAsyncThunk(
         return { favourite, action: 'add' };
       }
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to toggle favourite');
+      // Trả về message lỗi cụ thể từ service
+      const errorMessage = error?.message || error?.response?.data?.message || 'Không thể cập nhật yêu thích. Vui lòng thử lại.';
+      console.error('Toggle favourite error:', error);
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -209,6 +212,9 @@ const movieSlice = createSlice({
         } else {
           state.favourites = state.favourites.filter(fav => fav.movieId !== action.payload.movieId);
         }
+      })
+      .addCase(toggleFavourite.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
   },
 });

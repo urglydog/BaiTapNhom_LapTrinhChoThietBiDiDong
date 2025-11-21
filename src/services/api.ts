@@ -2,16 +2,9 @@ import axios from "axios";
 import { storage } from "../utils/storage";
 
 // Base API configuration
-// ⚠️ QUAN TRỌNG: Để chạy app trên điện thoại, cần thay IP bên dưới bằng IP LAN của máy tính bạn
-// Cách tìm IP:
-// - Windows: Mở CMD chạy "ipconfig", tìm "IPv4 Address" của adapter đang kết nối internet
-// - macOS: Mở Terminal chạy "ifconfig | grep inet", tìm địa chỉ IP private (192.168.x.x hoặc 10.x.x.x)
-// - Linux: Mở Terminal chạy "ip addr show", tìm inet addr trong eth0/wlan0
-// Ví dụ: "http://192.168.1.10:8080/api"
-const API_BASE_URL =
-    __DEV__
-        ? "http://192.168.1.15:8080/api" // ⚠️ THAY IP NÀY BẰNG IP THỰC CỦA MÁY TÍNH BẠN
-        : "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api"; // URL production
+// Server Render.com
+const API_BASE_URL = "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
+
 const api = axios.create({
     baseURL: API_BASE_URL,
     timeout: 30000, // Tăng timeout lên 30s vì Render.com free tier có thể mất thời gian để wake up
@@ -36,14 +29,33 @@ api.interceptors.request.use(
 
 // Response interceptor để xử lý lỗi
 api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        if (error.response?.status === 401) {
-            // Token hết hạn, xóa token và redirect về login
-            await storage.removeItem("authToken");
-            await storage.removeItem("user");
-        }
-        return Promise.reject(error);
+  (response) => response,
+  async (error) => {
+    // Xử lý lỗi network
+    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      console.error('🌐 Network Error:', {
+        message: error.message,
+        baseURL: error.config?.baseURL,
+        url: error.config?.url,
+      });
+      // Tạo error message rõ ràng hơn
+      const networkError = new Error('Không thể kết nối đến server. Vui lòng:\n• Kiểm tra kết nối internet\n• Đảm bảo server đang chạy\n• Kiểm tra URL API trong cấu hình');
+      (networkError as any).isNetworkError = true;
+      (networkError as any).originalError = error;
+      return Promise.reject(networkError);
+    }
+
+    // Xử lý timeout
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      const timeoutError = new Error('Kết nối quá lâu. Server có thể đang tạm thời không phản hồi. Vui lòng thử lại sau.');
+      (timeoutError as any).isTimeoutError = true;
+      return Promise.reject(timeoutError);
+    }
+
+    if (error.response?.status === 401) {
+      // Token hết hạn, xóa token và redirect về login
+      await storage.removeItem("authToken");
+      await storage.removeItem("user");
     }
 );
 

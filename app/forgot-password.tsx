@@ -202,7 +202,7 @@ export default function ForgotPassword() {
           <Text style={styles.linkSeparator}>|</Text>
 
           <TouchableOpacity
-            onPress={() => router.push('/register')}
+            onPress={() => router.push('/register' as any)}
             style={styles.linkButton}
           >
             <Text style={styles.linkText}>Đăng ký</Text>

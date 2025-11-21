@@ -7,7 +7,6 @@ import { storage } from '../utils/storage';
 import authReducer from './authSlice';
 import movieReducer from './movieSlice';
 import bookingReducer from './bookingSlice';
-import userReducer from './userSlice';
 import otpReducer from './otpSlice';
 
 // Chỉ sử dụng persist cho mobile, không dùng cho web
@@ -21,7 +20,6 @@ const rootReducer = combineReducers({
   auth: authReducer,
   movie: movieReducer,
   booking: bookingReducer,
-  user: userReducer,
   otp: otpReducer,
 });
 
