@@ -2,14 +2,50 @@ import api from './api';
 import { Movie, Showtime, Cinema, Review, Favourite } from '../types';
 
 export const movieService = {
-  // Lấy danh sách phim
+  // Lấy danh sách phim (chỉ lấy phim active)
   getMovies: async (): Promise<Movie[]> => {
     try {
+      // Dùng API /movies và filter client-side (vì /movies/active có thể trả về rỗng)
       const response = await api.get('/movies');
+      
       console.log('📡 API Response:', JSON.stringify(response.data, null, 2));
       
       if (response.data.code === 200 && Array.isArray(response.data.result)) {
-        const movies = response.data.result;
+        let movies = response.data.result;
+        console.log(`📊 Raw movies count: ${movies.length}`);
+        
+        if (movies.length === 0) {
+          console.warn('⚠️ No movies returned from API');
+          return [];
+        }
+        
+        // Đảm bảo chỉ lấy phim active
+        // Nếu active = null hoặc undefined, coi như active (giữ lại)
+        // Chỉ loại bỏ phim có active = false
+        const beforeCount = movies.length;
+        
+        // Log để debug
+        const activeCount = movies.filter(m => m.active === true).length;
+        const inactiveCount = movies.filter(m => m.active === false).length;
+        const nullActiveCount = movies.filter(m => m.active == null).length;
+        console.log(`📊 Active status: ${activeCount} active, ${inactiveCount} inactive, ${nullActiveCount} null/undefined`);
+        
+        movies = movies.filter((movie: Movie) => {
+          // Giữ lại nếu active = true, null, hoặc undefined
+          // Chỉ loại bỏ nếu active = false
+          return movie.active !== false;
+        });
+        
+        if (beforeCount !== movies.length) {
+          console.log(`🔍 Filtered from ${beforeCount} to ${movies.length} active movies`);
+        } else {
+          console.log(`✅ All ${movies.length} movies are active (or active field not set)`);
+        }
+        
+        if (movies.length === 0) {
+          console.warn('⚠️ No active movies after filtering');
+          return [];
+        }
         
         // Hàm normalize title để so sánh
         const normalizeTitle = (title: string): string => {
@@ -100,8 +136,21 @@ export const movieService = {
         message: error?.message,
         response: error?.response?.data,
         status: error?.response?.status,
+        code: error?.code,
+        isNetworkError: error?.isNetworkError,
+        isTimeoutError: error?.isTimeoutError,
       });
-      throw new Error(error.response?.data?.message || 'Không thể tải danh sách phim');
+      
+      // Xử lý lỗi network cụ thể
+      if (error?.isNetworkError) {
+        throw new Error('Không thể kết nối đến server. Vui lòng:\n• Kiểm tra kết nối internet\n• Đảm bảo server đang chạy\n• Kiểm tra URL API trong cấu hình');
+      }
+      
+      if (error?.isTimeoutError) {
+        throw new Error('Kết nối quá lâu. Server có thể đang tạm thời không phản hồi. Vui lòng thử lại sau.');
+      }
+      
+      throw new Error(error.response?.data?.message || error?.message || 'Không thể tải danh sách phim');
     }
   },
 
@@ -227,18 +276,36 @@ export const movieService = {
 
   // Thêm vào yêu thích
   addToFavourites: async (movieId: number): Promise<Favourite> => {
-    const response = await api.post('/favourites', { movieId });
-    if (response.data.code === 200) {
-      return response.data.result;
+    try {
+      const response = await api.post('/favourites', { movieId });
+      // Backend trả về code 201 (FAVOURITE_CREATED) khi tạo thành công
+      if (response.data.code === 200 || response.data.code === 201) {
+        return response.data.result;
+      }
+      throw new Error(response.data.message || 'Failed to add to favourites');
+    } catch (error: any) {
+      // Xử lý lỗi từ API
+      if (error.response?.data?.code === 409) {
+        throw new Error('Phim này đã có trong danh sách yêu thích');
+      }
+      throw new Error(error.response?.data?.message || error?.message || 'Không thể thêm vào yêu thích. Vui lòng thử lại.');
     }
-    throw new Error(response.data.message || 'Failed to add to favourites');
   },
 
   // Xóa khỏi yêu thích
   removeFromFavourites: async (movieId: number): Promise<void> => {
-    const response = await api.delete(`/favourites/${movieId}`);
-    if (response.data.code !== 200) {
+    try {
+      const response = await api.delete(`/favourites/${movieId}`);
+      if (response.data.code === 200) {
+        return;
+      }
       throw new Error(response.data.message || 'Failed to remove from favourites');
+    } catch (error: any) {
+      // Xử lý lỗi từ API
+      if (error.response?.status === 404) {
+        throw new Error('Phim này không có trong danh sách yêu thích');
+      }
+      throw new Error(error.response?.data?.message || error?.message || 'Không thể xóa khỏi yêu thích. Vui lòng thử lại.');
     }
   },
 
@@ -249,5 +316,90 @@ export const movieService = {
       return response.data.result;
     }
     throw new Error(response.data.message || 'Failed to fetch favourites');
+  },
+
+  // Lấy phim đang chiếu (dựa vào releaseDate, endDate và active = true)
+  getCurrentlyShowingMovies: async (): Promise<Movie[]> => {
+    try {
+      // Thử gọi API trước
+      try {
+        const response = await api.get('/movies/currently-showing');
+        if (response.data.code === 200 && Array.isArray(response.data.result)) {
+          // Đảm bảo chỉ lấy phim active
+          return response.data.result.filter((movie: Movie) => movie.active !== false);
+        }
+      } catch (apiError) {
+        // Nếu API không có, filter từ danh sách tất cả phim
+        console.log('API currently-showing not available, filtering from all movies');
+      }
+      
+      // Fallback: Lấy tất cả phim active và filter client-side
+      const allMovies = await movieService.getMovies();
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      
+      return allMovies.filter((movie) => {
+        // Chỉ lấy phim active
+        if (movie.active === false) return false;
+        
+        if (!movie.releaseDate) return false;
+        
+        const releaseDate = new Date(movie.releaseDate);
+        releaseDate.setHours(0, 0, 0, 0);
+        
+        // Phim đang chiếu: releaseDate <= now <= endDate (nếu có)
+        if (releaseDate > now) return false;
+        
+        if (movie.endDate) {
+          const endDate = new Date(movie.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          return now <= endDate;
+        }
+        
+        // Nếu không có endDate, coi như đang chiếu nếu releaseDate <= now
+        return true;
+      });
+    } catch (error) {
+      console.error('Error fetching currently showing movies:', error);
+      return [];
+    }
+  },
+
+  // Lấy phim sắp chiếu (dựa vào releaseDate và active = true)
+  getUpcomingMovies: async (): Promise<Movie[]> => {
+    try {
+      // Thử gọi API trước
+      try {
+        const response = await api.get('/movies/upcoming');
+        if (response.data.code === 200 && Array.isArray(response.data.result)) {
+          // Đảm bảo chỉ lấy phim active
+          return response.data.result.filter((movie: Movie) => movie.active !== false);
+        }
+      } catch (apiError) {
+        // Nếu API không có, filter từ danh sách tất cả phim
+        console.log('API upcoming not available, filtering from all movies');
+      }
+      
+      // Fallback: Lấy tất cả phim active và filter client-side
+      const allMovies = await movieService.getMovies();
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      
+      return allMovies.filter((movie) => {
+        // Chỉ lấy phim active
+        if (movie.active === false) return false;
+        
+        if (!movie.releaseDate) return false;
+        
+        const releaseDate = new Date(movie.releaseDate);
+        releaseDate.setHours(0, 0, 0, 0);
+        
+        // Phim sắp chiếu: releaseDate > now
+        return releaseDate > now;
+      });
+    } catch (error) {
+      console.error('Error fetching upcoming movies:', error);
+      return [];
+    }
   },
 };

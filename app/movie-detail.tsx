@@ -12,16 +12,26 @@ import {
     Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../src/store';
+import { fetchFavourites, toggleFavourite } from '../src/store/movieSlice';
 import { movieService } from '../src/services/movieService';
 import { Movie } from '../src/types';
+import { useFocusEffect } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
 export default function MovieDetailScreen() {
     const { movieId } = useLocalSearchParams();
     const router = useRouter();
+    const dispatch = useDispatch<AppDispatch>();
+    const { favourites } = useSelector((state: RootState) => state.movie);
+    const { user } = useSelector((state: RootState) => state.auth);
     const [movie, setMovie] = useState<Movie | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    
+    // Kiểm tra xem phim đã được thêm vào yêu thích chưa
+    const isFavourite = movie ? favourites.some(fav => fav.movieId === movie.id) : false;
 
     useEffect(() => {
         const loadMovie = async () => {
@@ -42,6 +52,41 @@ export default function MovieDetailScreen() {
 
         loadMovie();
     }, [movieId, router]);
+    
+    // Load favourites khi vào màn hình
+    useFocusEffect(
+        React.useCallback(() => {
+            if (user) {
+                dispatch(fetchFavourites());
+            }
+        }, [user, dispatch])
+    );
+    
+    const handleToggleFavourite = async () => {
+        if (!movie) return;
+        if (!user) {
+            Alert.alert('Thông báo', 'Vui lòng đăng nhập để thêm phim vào yêu thích', [
+                { text: 'Đăng nhập', onPress: () => router.push('/login') },
+                { text: 'Hủy', style: 'cancel' },
+            ]);
+            return;
+        }
+        try {
+            const result = await dispatch(toggleFavourite(movie.id));
+            if (toggleFavourite.fulfilled.match(result)) {
+                // Refresh favourites sau khi toggle để đảm bảo sync với server
+                await dispatch(fetchFavourites());
+            } else if (toggleFavourite.rejected.match(result)) {
+                // Hiển thị lỗi cụ thể từ server
+                const errorMessage = result.payload as string || 'Không thể cập nhật yêu thích. Vui lòng thử lại.';
+                Alert.alert('Lỗi', errorMessage);
+            }
+        } catch (error: any) {
+            console.error('Toggle favourite error:', error);
+            const errorMessage = error?.message || error?.response?.data?.message || 'Không thể cập nhật yêu thích. Vui lòng thử lại.';
+            Alert.alert('Lỗi', errorMessage);
+        }
+    };
 
     const handleWatchTrailer = () => {
         if (movie?.trailerUrl) {
@@ -92,6 +137,15 @@ export default function MovieDetailScreen() {
                 )}
                 <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
                     <Text style={styles.backIconText}>←</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={styles.favouriteButton} 
+                    onPress={handleToggleFavourite}
+                    activeOpacity={0.8}
+                >
+                    <Text style={styles.favouriteIcon}>
+                        {isFavourite ? '❤️' : '🤍'}
+                    </Text>
                 </TouchableOpacity>
             </View>
 
@@ -182,6 +236,14 @@ export default function MovieDetailScreen() {
                         </View>
                     )}
                 </View>
+
+                {/* Buy Ticket Button */}
+                <TouchableOpacity
+                    style={styles.buyTicketButton}
+                    onPress={() => router.push(`/showtime-selection?movieId=${movie.id}`)}
+                >
+                    <Text style={styles.buyTicketButtonText}>Mua vé</Text>
+                </TouchableOpacity>
             </View>
         </ScrollView>
     );
@@ -259,6 +321,25 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
     },
+    favouriteButton: {
+        position: 'absolute',
+        top: 50,
+        right: 16,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    favouriteIcon: {
+        fontSize: 28,
+    },
     content: {
         backgroundColor: '#fff',
         borderTopLeftRadius: 24,
@@ -333,5 +414,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
         flex: 1,
+    },
+    buyTicketButton: {
+        backgroundColor: '#E91E63',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 8,
+        marginBottom: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    buyTicketButtonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
 });

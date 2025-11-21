@@ -15,7 +15,17 @@ import { createBooking } from '../src/store/bookingSlice';
 import { Showtime, Seat } from '../src/types';
 
 export default function BookingScreen() {
-  const { showtimeId } = useLocalSearchParams();
+  const { 
+    showtimeId, 
+    seatIds, 
+    seatNumbers, 
+    totalAmount: totalAmountParam,
+    movieTitle,
+    cinemaName,
+    hallName,
+    showDate,
+    showTime,
+  } = useLocalSearchParams();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -27,20 +37,26 @@ export default function BookingScreen() {
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
   const [promotionCode, setPromotionCode] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (showtime) {
-      setTotalAmount(showtime.price * selectedSeats.length);
+    // Parse seatIds từ params
+    if (seatIds) {
+      try {
+        const parsedSeatIds = JSON.parse(seatIds as string);
+        setSelectedSeats(Array.isArray(parsedSeatIds) ? parsedSeatIds : []);
+      } catch (e) {
+        console.error('Error parsing seatIds:', e);
+      }
     }
-  }, [selectedSeats, showtime]);
-
-  const handleSeatSelect = (seatId: number) => {
-    if (selectedSeats.includes(seatId)) {
-      setSelectedSeats(selectedSeats.filter(id => id !== seatId));
-    } else {
-      setSelectedSeats([...selectedSeats, seatId]);
+    
+    // Set total amount từ params hoặc tính toán
+    if (totalAmountParam) {
+      setTotalAmount(Number(totalAmountParam));
+    } else if (showtime && selectedSeats.length > 0) {
+      setTotalAmount((showtime.price || 0) * selectedSeats.length);
     }
-  };
+  }, [seatIds, totalAmountParam, showtime]);
 
   const handleBookTicket = async () => {
     if (selectedSeats.length === 0) {
@@ -48,89 +64,83 @@ export default function BookingScreen() {
       return;
     }
 
-    if (!showtime) {
+    if (!showtimeId) {
       Alert.alert('Lỗi', 'Không tìm thấy thông tin suất chiếu');
       return;
     }
 
+    if (!user) {
+      Alert.alert('Thông báo', 'Vui lòng đăng nhập để đặt vé', [
+        { text: 'Đăng nhập', onPress: () => router.push('/login' as any) },
+        { text: 'Hủy', style: 'cancel' },
+      ]);
+      return;
+    }
+
+    setIsLoading(true);
     try {
       await dispatch(createBooking({
-        showtimeId: showtime.id,
+        showtimeId: Number(showtimeId),
         seatIds: selectedSeats,
         promotionCode: promotionCode || undefined,
       })).unwrap();
 
       Alert.alert('Thành công', 'Đặt vé thành công!', [
-        { text: 'OK', onPress: () => router.back() }
+        { text: 'OK', onPress: () => router.replace('/(tabs)') }
       ]);
-    } catch (error) {
-      Alert.alert('Lỗi', error as string);
+    } catch (error: any) {
+      Alert.alert('Lỗi', error?.message || error || 'Đặt vé thất bại');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (!showtime) {
+  if (!showtimeId) {
     return (
       <View style={styles.container}>
         <Text>Không tìm thấy thông tin suất chiếu</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text>Quay lại</Text>
+        </TouchableOpacity>
       </View>
     );
   }
-
-  // Mock seats data - trong thực tế sẽ fetch từ API
-  const seats: Seat[] = [
-    { id: 1, cinemaHallId: showtime.cinemaHallId, seatNumber: 'A1', seatRow: 'A', seatType: 'NORMAL' },
-    { id: 2, cinemaHallId: showtime.cinemaHallId, seatNumber: 'A2', seatRow: 'A', seatType: 'NORMAL' },
-    { id: 3, cinemaHallId: showtime.cinemaHallId, seatNumber: 'A3', seatRow: 'A', seatType: 'NORMAL' },
-    { id: 4, cinemaHallId: showtime.cinemaHallId, seatNumber: 'B1', seatRow: 'B', seatType: 'VIP' },
-    { id: 5, cinemaHallId: showtime.cinemaHallId, seatNumber: 'B2', seatRow: 'B', seatType: 'VIP' },
-    { id: 6, cinemaHallId: showtime.cinemaHallId, seatNumber: 'B3', seatRow: 'B', seatType: 'VIP' },
-  ];
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Đặt vé</Text>
-        {showtime.movie?.title && (
-          <Text style={styles.movieTitle}>{showtime.movie.title}</Text>
-        )}
-        {showtime.startTime && showtime.endTime && (
+        <Text style={styles.movieTitle}>{movieTitle || showtime?.movie?.title || 'Phim'}</Text>
+        <Text style={styles.cinemaInfo}>
+          {cinemaName || 'Rạp chiếu'} • {hallName || 'Phòng chiếu'}
+        </Text>
+        {showDate && showTime && (
           <Text style={styles.showtime}>
-            {showtime.startTime} - {showtime.endTime}
+            {new Date(showDate as string).toLocaleDateString('vi-VN')} • {String(showTime).substring(0, 5)}
+          </Text>
+        )}
+        {showtime?.startTime && showtime?.endTime && (
+          <Text style={styles.showtime}>
+            {showtime.startTime.substring(0, 5)} - {showtime.endTime.substring(0, 5)}
           </Text>
         )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Chọn ghế</Text>
-        <View style={styles.seatMap}>
-          {seats.map((seat) => (
-            <TouchableOpacity
-              key={seat.id}
-              style={[
-                styles.seat,
-                selectedSeats.includes(seat.id) && styles.selectedSeat,
-                seat.seatType === 'VIP' && styles.vipSeat,
-              ]}
-              onPress={() => handleSeatSelect(seat.id)}
-            >
-              <Text style={styles.seatText}>{seat.seatNumber}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendSeat, styles.normalSeat]} />
-            <Text>Ghế thường</Text>
+        <Text style={styles.sectionTitle}>Ghế đã chọn</Text>
+        {seatNumbers ? (
+          <View style={styles.selectedSeatsContainer}>
+            <Text style={styles.selectedSeatsText}>{seatNumbers}</Text>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendSeat, styles.vipSeat]} />
-            <Text>Ghế VIP</Text>
+        ) : selectedSeats.length > 0 ? (
+          <View style={styles.selectedSeatsContainer}>
+            <Text style={styles.selectedSeatsText}>
+              {selectedSeats.length} ghế đã chọn
+            </Text>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendSeat, styles.selectedSeat]} />
-            <Text>Đã chọn</Text>
-          </View>
-        </View>
+        ) : (
+          <Text style={styles.noSeatsText}>Chưa chọn ghế</Text>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -150,9 +160,17 @@ export default function BookingScreen() {
           <Text>{selectedSeats.length}</Text>
         </View>
         <View style={styles.summaryRow}>
+          <Text>Số lượng ghế:</Text>
+          <Text>{selectedSeats.length || (seatNumbers ? seatNumbers.split(',').length : 0)} ghế</Text>
+        </View>
+        <View style={styles.summaryRow}>
           <Text>Giá mỗi vé:</Text>
-          {showtime.price != null && (
+          {showtime?.price != null ? (
             <Text>{showtime.price.toLocaleString()} VNĐ</Text>
+          ) : totalAmount > 0 && selectedSeats.length > 0 ? (
+            <Text>{(totalAmount / selectedSeats.length).toLocaleString()} VNĐ</Text>
+          ) : (
+            <Text>-- VNĐ</Text>
           )}
         </View>
         <View style={styles.summaryRow}>
@@ -164,13 +182,17 @@ export default function BookingScreen() {
       </View>
 
       <TouchableOpacity
-        style={[styles.bookButton, selectedSeats.length === 0 && styles.disabledButton]}
+        style={[styles.bookButton, (selectedSeats.length === 0 && !seatIds) && styles.disabledButton]}
         onPress={handleBookTicket}
-        disabled={selectedSeats.length === 0}
+        disabled={(selectedSeats.length === 0 && !seatIds) || isLoading}
       >
-        <Text style={styles.bookButtonText}>
-          Đặt vé ({totalAmount.toLocaleString()} VNĐ)
-        </Text>
+        {isLoading ? (
+          <Text style={styles.bookButtonText}>Đang xử lý...</Text>
+        ) : (
+          <Text style={styles.bookButtonText}>
+            Đặt vé ({totalAmount.toLocaleString()} VNĐ)
+          </Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -196,10 +218,34 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#666',
     marginBottom: 4,
+    fontWeight: '600',
+  },
+  cinemaInfo: {
+    fontSize: 14,
+    color: '#999',
+    marginBottom: 4,
   },
   showtime: {
     fontSize: 16,
     color: '#007AFF',
+    marginTop: 4,
+  },
+  selectedSeatsContainer: {
+    backgroundColor: '#f0f0f0',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  selectedSeatsText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  noSeatsText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 8,
   },
   section: {
     backgroundColor: 'white',

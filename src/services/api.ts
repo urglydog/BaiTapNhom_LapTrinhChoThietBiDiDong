@@ -2,8 +2,8 @@ import axios from "axios";
 import { storage } from "../utils/storage";
 
 // Base API configuration
-const API_BASE_URL =
-  "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api"; // Thay thế bằng URL Railway thực tế của bạn
+// Server Render.com
+const API_BASE_URL = "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -31,6 +31,27 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Xử lý lỗi network
+    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      console.error('🌐 Network Error:', {
+        message: error.message,
+        baseURL: error.config?.baseURL,
+        url: error.config?.url,
+      });
+      // Tạo error message rõ ràng hơn
+      const networkError = new Error('Không thể kết nối đến server. Vui lòng:\n• Kiểm tra kết nối internet\n• Đảm bảo server đang chạy\n• Kiểm tra URL API trong cấu hình');
+      (networkError as any).isNetworkError = true;
+      (networkError as any).originalError = error;
+      return Promise.reject(networkError);
+    }
+
+    // Xử lý timeout
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      const timeoutError = new Error('Kết nối quá lâu. Server có thể đang tạm thời không phản hồi. Vui lòng thử lại sau.');
+      (timeoutError as any).isTimeoutError = true;
+      return Promise.reject(timeoutError);
+    }
+
     if (error.response?.status === 401) {
       // Token hết hạn, xóa token và redirect về login
       await storage.removeItem("authToken");

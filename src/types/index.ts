@@ -68,9 +68,14 @@ export interface Showtime {
   showDate: string;
   startTime: string;
   endTime: string;
-  price: number;
+  price?: number; // Optional vì có thể lấy từ seat
   movie?: Movie;
   cinemaHall?: CinemaHall;
+}
+
+// Showtime với thông tin cinema
+export interface ShowtimeWithCinema extends Showtime {
+  cinema?: Cinema;
 }
 
 // Seat Types
@@ -79,7 +84,15 @@ export interface Seat {
   cinemaHallId: number;
   seatNumber: string;
   seatRow: string;
-  seatType: 'NORMAL' | 'VIP';
+  seatType: 'NORMAL' | 'VIP' | 'COUPLE';
+  price?: number; // Giá ghế (nếu có)
+  basePrice?: number;
+}
+
+// Seat với trạng thái đặt
+export interface SeatWithStatus extends Seat {
+  isBooked: boolean;
+  isSelected?: boolean;
 }
 
 // Booking Types
@@ -135,6 +148,46 @@ export interface Promotion {
   startDate: string;
   endDate: string;
   usageLimit?: number;
+  usedCount?: number;
+  active?: boolean;
+}
+
+// OTP Types
+export interface SendOtpRequest {
+  email?: string;
+  phone?: string;
+  type: 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD';
+}
+
+export interface VerifyOtpRequest {
+  email?: string;
+  phone?: string;
+  otp: string;
+  type: 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD';
+}
+
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  expiresIn?: number; // thời gian hết hạn OTP (giây)
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
+  token?: string; // token tạm thời nếu verify thành công
+  user?: User; // user info nếu verify cho login/register
+}
+
+// Register Request (match với backend)
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE';
 }
 
 // API Response Types

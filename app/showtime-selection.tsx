@@ -1,0 +1,490 @@
+import React, { useEffect, useState } from 'react';
+import {
+    View,
+    Text,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+} from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { movieService } from '../src/services/movieService';
+import { showtimeService } from '../src/services/showtimeService';
+import { Movie, ShowtimeWithCinema } from '../src/types';
+
+const { width } = Dimensions.get('window');
+
+interface ShowtimesByDate {
+    [date: string]: {
+        [cinemaId: number]: {
+            cinema: any;
+            showtimes: ShowtimeWithCinema[];
+        };
+    };
+}
+
+export default function ShowtimeSelectionScreen() {
+    const { movieId } = useLocalSearchParams();
+    const router = useRouter();
+    const [movie, setMovie] = useState<Movie | null>(null);
+    const [showtimesByDate, setShowtimesByDate] = useState<ShowtimesByDate>({});
+    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [availableDates, setAvailableDates] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        loadMovieAndShowtimes();
+    }, [movieId]);
+
+    const loadMovieAndShowtimes = async () => {
+        if (!movieId) return;
+        try {
+            setIsLoading(true);
+            
+            // Load movie info
+            const movieData = await movieService.getMovieById(Number(movieId));
+            setMovie(movieData);
+
+            // Get all showtimes for this movie
+            const allShowtimes = await showtimeService.getShowtimesByMovie(Number(movieId));
+            
+            // Generate dates for next 7 days
+            const dates: string[] = [];
+            const today = new Date();
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                dates.push(date.toISOString().split('T')[0]);
+            }
+            setAvailableDates(dates);
+            setSelectedDate(dates[0]);
+
+            // Load showtimes for the first date
+            await loadShowtimesForDate(dates[0]);
+        } catch (error: any) {
+            console.error('Error loading data:', error);
+            Alert.alert('Lỗi', 'Không thể tải thông tin phim', [
+                { text: 'OK', onPress: () => router.back() },
+            ]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const loadShowtimesForDate = async (date: string) => {
+        if (!movieId) return;
+        
+        try {
+            console.log('🔄 Loading showtimes for date:', date);
+            const showtimes = await showtimeService.getShowtimesByMovieAndDate(
+                Number(movieId),
+                date
+            );
+
+            console.log('📦 Received showtimes:', showtimes.length);
+
+            // Group by cinema
+            const grouped: ShowtimesByDate[string] = {};
+            showtimes.forEach((showtime) => {
+                console.log('Processing showtime:', showtime);
+                if (showtime.cinema) {
+                    const cinemaId = showtime.cinema.id;
+                    if (!grouped[cinemaId]) {
+                        grouped[cinemaId] = {
+                            cinema: showtime.cinema,
+                            showtimes: [],
+                        };
+                    }
+                    grouped[cinemaId].showtimes.push(showtime);
+                } else {
+                    console.warn('⚠️ Showtime without cinema:', showtime);
+                }
+            });
+
+            console.log('🎯 Grouped showtimes:', Object.keys(grouped).length, 'cinemas');
+
+            setShowtimesByDate((prev) => ({
+                ...prev,
+                [date]: grouped,
+            }));
+        } catch (error: any) {
+            console.error('❌ Error loading showtimes for date:', error);
+            Alert.alert('Lỗi', error.message || 'Không thể tải lịch chiếu cho ngày này');
+        }
+    };
+
+    const handleDateSelect = async (date: string) => {
+        setSelectedDate(date);
+        if (!showtimesByDate[date]) {
+            await loadShowtimesForDate(date);
+        }
+    };
+
+    const handleShowtimeSelect = async (showtime: ShowtimeWithCinema) => {
+        try {
+            // Load showtime details để lấy đầy đủ thông tin (bao gồm cinemaHall)
+            const showtimeDetails = await showtimeService.getShowtimeById(showtime.id);
+            
+            // Load cinema hall nếu cần để lấy thông tin cinema
+            let finalCinemaName = showtime.cinema?.name || 'Rạp chiếu';
+            let finalHallName = showtime.cinemaHall?.hallName || showtimeDetails.cinemaHall?.hallName || 'Phòng chiếu';
+            
+            // Nếu chưa có cinema name, thử load từ cinema hall
+            if (!showtime.cinema && showtimeDetails.cinemaHall) {
+                try {
+                    const { cinemaService } = await import('../src/services/cinemaService');
+                    const hallInfo = await cinemaService.getCinemaHallById(showtimeDetails.cinemaHallId);
+                    // CinemaHall có thể có cinema info hoặc cần load riêng
+                    // Tạm thời dùng fallback
+                } catch (e) {
+                    console.error('Error loading cinema hall:', e);
+                }
+            }
+            
+            // Lấy thông tin từ showtime hoặc showtimeDetails
+            const movieTitle = movie?.title || showtimeDetails.movie?.title || 'Phim';
+            const showDate = showtime.showDate || showtimeDetails.showDate;
+            const showTime = showtime.startTime || showtimeDetails.startTime;
+            const price = showtime.price || showtimeDetails.price || 0;
+
+            router.push({
+                pathname: '/seat-selection',
+                params: {
+                    showtimeId: showtime.id.toString(),
+                    movieTitle,
+                    cinemaName: finalCinemaName,
+                    hallName: finalHallName,
+                    showDate,
+                    showTime,
+                    price: price.toString(),
+                },
+            });
+        } catch (error: any) {
+            console.error('Error loading showtime details:', error);
+            // Fallback: truyền thông tin có sẵn
+            router.push({
+                pathname: '/seat-selection',
+                params: {
+                    showtimeId: showtime.id.toString(),
+                    movieTitle: movie?.title || 'Phim',
+                    cinemaName: showtime.cinema?.name || 'Rạp chiếu',
+                    hallName: showtime.cinemaHall?.hallName || 'Phòng chiếu',
+                    showDate: showtime.showDate,
+                    showTime: showtime.startTime,
+                    price: (showtime.price || 0).toString(),
+                },
+            });
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const targetDate = new Date(date);
+        targetDate.setHours(0, 0, 0, 0);
+
+        const diffTime = targetDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return 'H.nay';
+        if (diffDays === 1) return 'Thứ ' + (date.getDay() === 0 ? 'CN' : date.getDay() + 1);
+        
+        const dayNames = ['CN', '2', '3', '4', '5', '6', '7'];
+        return 'Thứ ' + dayNames[date.getDay()];
+    };
+
+    const formatDateFull = (dateString: string) => {
+        const date = new Date(dateString);
+        return `${date.getDate()}/${date.getMonth() + 1}`;
+    };
+
+    const formatTime = (timeString: string) => {
+        return timeString.substring(0, 5); // HH:mm
+    };
+
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+        }).format(price);
+    };
+
+    if (isLoading) {
+        return (
+            <View style={styles.centerContainer}>
+                <ActivityIndicator size="large" color="#E91E63" />
+                <Text style={styles.loadingText}>Đang tải lịch chiếu...</Text>
+            </View>
+        );
+    }
+
+    if (!movie) {
+        return (
+            <View style={styles.centerContainer}>
+                <Text style={styles.errorText}>Không tìm thấy phim</Text>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <Text style={styles.backButtonText}>Quay lại</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
+                    <Text style={styles.backIconText}>←</Text>
+                </TouchableOpacity>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                    {movie.title}
+                </Text>
+            </View>
+
+            {/* Date Selector */}
+            <View style={styles.dateSelector}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {availableDates.map((date) => (
+                        <TouchableOpacity
+                            key={date}
+                            style={[
+                                styles.dateButton,
+                                selectedDate === date && styles.dateButtonSelected,
+                            ]}
+                            onPress={() => handleDateSelect(date)}
+                        >
+                            <Text
+                                style={[
+                                    styles.dateFull,
+                                    selectedDate === date && styles.dateTextSelected,
+                                ]}
+                            >
+                                {formatDateFull(date)}
+                            </Text>
+                            <Text
+                                style={[
+                                    styles.dateDay,
+                                    selectedDate === date && styles.dateTextSelected,
+                                ]}
+                            >
+                                {formatDate(date)}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
+            {/* Showtimes by Cinema */}
+            <ScrollView style={styles.showtimesList} showsVerticalScrollIndicator={false}>
+                {selectedDate && showtimesByDate[selectedDate] ? (
+                    Object.values(showtimesByDate[selectedDate]).map((cinemaData: any) => (
+                        <View key={cinemaData.cinema.id} style={styles.cinemaSection}>
+                            <View style={styles.cinemaHeader}>
+                                <Text style={styles.cinemaName}>{cinemaData.cinema.name}</Text>
+                                <Text style={styles.cinemaAddress}>
+                                    {cinemaData.cinema.address}
+                                </Text>
+                            </View>
+
+                            <View style={styles.showtimesGrid}>
+                                <Text style={styles.format2D}>2D Phụ đề</Text>
+                                <View style={styles.timeButtonsContainer}>
+                                    {cinemaData.showtimes.map((showtime: ShowtimeWithCinema) => (
+                                        <TouchableOpacity
+                                            key={showtime.id}
+                                            style={styles.timeButton}
+                                            onPress={() => handleShowtimeSelect(showtime)}
+                                        >
+                                            <Text style={styles.timeText}>
+                                                {formatTime(showtime.startTime)}
+                                            </Text>
+                                            <Text style={styles.endTimeText}>
+                                                ~{formatTime(showtime.endTime)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        </View>
+                    ))
+                ) : (
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>Chưa có lịch chiếu cho ngày này</Text>
+                    </View>
+                )}
+            </ScrollView>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f5f5f5',
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: '#666',
+    },
+    errorText: {
+        fontSize: 18,
+        color: '#999',
+        marginBottom: 16,
+    },
+    backButton: {
+        backgroundColor: '#E91E63',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    backButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 50,
+        paddingBottom: 16,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    backIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#f0f0f0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    backIconText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+        flex: 1,
+    },
+    dateSelector: {
+        backgroundColor: '#fff',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    dateButton: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        marginHorizontal: 6,
+        borderRadius: 12,
+        backgroundColor: '#f5f5f5',
+        alignItems: 'center',
+        minWidth: 70,
+    },
+    dateButtonSelected: {
+        backgroundColor: '#E91E63',
+    },
+    dateFull: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
+    },
+    dateDay: {
+        fontSize: 14,
+        color: '#666',
+    },
+    dateTextSelected: {
+        color: '#fff',
+    },
+    showtimesList: {
+        flex: 1,
+    },
+    cinemaSection: {
+        backgroundColor: '#fff',
+        marginVertical: 8,
+        marginHorizontal: 16,
+        borderRadius: 12,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    cinemaHeader: {
+        marginBottom: 12,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    cinemaName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
+    },
+    cinemaAddress: {
+        fontSize: 14,
+        color: '#666',
+    },
+    showtimesGrid: {
+        marginTop: 8,
+    },
+    format2D: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#E91E63',
+        marginBottom: 12,
+    },
+    timeButtonsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    timeButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E91E63',
+        backgroundColor: '#fff',
+        minWidth: 90,
+        alignItems: 'center',
+    },
+    timeText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#E91E63',
+    },
+    endTimeText: {
+        fontSize: 12,
+        color: '#999',
+        marginTop: 2,
+    },
+    emptyContainer: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#999',
+        textAlign: 'center',
+    },
+});
