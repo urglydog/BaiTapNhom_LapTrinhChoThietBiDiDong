@@ -69,125 +69,37 @@ export const movieService = {
             moviesById.set(movie.id, movie);
           }
         }
-    },
-
-    // Lấy chi tiết phim
-    getMovieById: async (id: number): Promise<Movie> => {
-        const response = await api.get(`/movies/${id}`);
-        if (response.data.code === 200) {
-            return response.data.result;
-        }
-        throw new Error(response.data.message || 'Failed to fetch movie');
-    },
-
-    // Tìm kiếm phim (client-side search vì server không có endpoint)
-    searchMovies: async (query: string, allMoviesList?: Movie[]): Promise<Movie[]> => {
-        try {
-            // Thử gọi API search trước (nếu có trong tương lai)
-            try {
-                const response = await api.get(`/movies/search?q=${encodeURIComponent(query)}`);
-                if (response.data.code === 200) {
-                    const result = response.data.result;
-                    if (Array.isArray(result)) {
-                        return result;
-                    } else if (result?.content && Array.isArray(result.content)) {
-                        return result.content;
-                    }
-                    return [];
-                }
-            } catch (apiError: any) {
-                // Nếu API không tồn tại (404/400), thực hiện tìm kiếm local
-                if (apiError.response?.status === 404 || apiError.response?.status === 400) {
-                    console.log('Search API not available, using local search');
-
-                    // Nếu đã có danh sách phim, dùng luôn; nếu không thì fetch
-                    let allMovies: Movie[] = allMoviesList || [];
-
-                    if (allMovies.length === 0) {
-                        const allMoviesResponse = await api.get(`/movies?page=0&size=100`);
-                        if (allMoviesResponse.data.code === 200) {
-                            const result = allMoviesResponse.data.result;
-                            if (Array.isArray(result)) {
-                                allMovies = result;
-                            } else if (result?.content && Array.isArray(result.content)) {
-                                allMovies = result.content;
-                            } else if (result?.result) {
-                                if (Array.isArray(result.result)) {
-                                    allMovies = result.result;
-                                } else if (result.result?.content && Array.isArray(result.result.content)) {
-                                    allMovies = result.result.content;
-                                }
-                            }
-                        }
-                    }
-
-                    // Tìm kiếm local
-                    const queryLower = query.toLowerCase().trim();
-                    return allMovies.filter((movie: Movie) =>
-                        movie.title?.toLowerCase().includes(queryLower) ||
-                        movie.genre?.toLowerCase().includes(queryLower) ||
-                        movie.director?.toLowerCase().includes(queryLower) ||
-                        movie.cast?.toLowerCase().includes(queryLower) ||
-                        movie.description?.toLowerCase().includes(queryLower)
-                    );
-                }
-                throw apiError;
+        
+        // Bước 2: Loại bỏ duplicate dựa trên title (nếu có cùng title sau khi normalize)
+        const moviesByTitle = new Map<string, Movie>();
+        const uniqueMovies: Movie[] = [];
+        
+        for (const movie of Array.from(moviesById.values())) {
+          if (!movie.title) {
+            uniqueMovies.push(movie);
+            continue;
+          }
+          
+          const normalizedTitle = normalizeTitle(movie.title);
+          const existing = moviesByTitle.get(normalizedTitle);
+          
+          if (!existing) {
+            moviesByTitle.set(normalizedTitle, movie);
+            uniqueMovies.push(movie);
+          } else {
+            // Nếu có duplicate title, ưu tiên ID lớn hơn
+            if (movie.id > existing.id) {
+              const index = uniqueMovies.indexOf(existing);
+              if (index >= 0) {
+                uniqueMovies[index] = movie;
+              }
+              moviesByTitle.set(normalizedTitle, movie);
             }
-            return [];
-        } catch (error: any) {
-            console.error('Search error:', error);
-            throw new Error('Không thể tìm kiếm phim. Vui lòng thử lại.');
+          }
         }
-    },
-
-    // Lấy lịch chiếu của phim
-    getMovieShowtimes: async (movieId: number): Promise<Showtime[]> => {
-        const response = await api.get(`/movies/${movieId}/showtimes`);
-        if (response.data.code === 200) {
-            return response.data.result;
-        }
-        throw new Error(response.data.message || 'Failed to fetch showtimes');
-    },
-
-    // Lấy danh sách rạp
-    getCinemas: async (): Promise<Cinema[]> => {
-        const response = await api.get('/cinemas');
-        if (response.data.code === 200) {
-            return response.data.result;
-        }
-        throw new Error(response.data.message || 'Failed to fetch cinemas');
-    },
-
-    // Lấy lịch chiếu theo rạp
-    getCinemaShowtimes: async (cinemaId: number, date?: string): Promise<Showtime[]> => {
-        const url = date
-            ? `/cinemas/${cinemaId}/showtimes?date=${date}`
-            : `/cinemas/${cinemaId}/showtimes`;
-        const response = await api.get(url);
-        if (response.data.code === 200) {
-            return response.data.result;
-        }
-        throw new Error(response.data.message || 'Failed to fetch cinema showtimes');
-    },
-
-    // Lấy đánh giá phim
-    getMovieReviews: async (movieId: number): Promise<Review[]> => {
-        const response = await api.get(`/movies/${movieId}/reviews`);
-        if (response.data.code === 200) {
-            return response.data.result;
-        }
-        throw new Error(response.data.message || 'Failed to fetch reviews');
-    },
-
-    // Thêm đánh giá
-    addReview: async (movieId: number, rating: number, comment: string): Promise<Review> => {
-        const response = await api.post(`/movies/${movieId}/reviews`, {
-            rating,
-            comment,
-        });
-        if (response.data.code === 200) {
-            return response.data.result;
-        }
+        
+        console.log(`✅ Loaded ${uniqueMovies.length} unique movies from ${beforeCount} total (removed ${beforeCount - uniqueMovies.length} duplicates)`);
+        console.log(`📋 Sample movies:`, uniqueMovies.slice(0, 3).map(m => ({ id: m.id, title: m.title, hasPoster: !!m.posterUrl })));
         
         return uniqueMovies;
       }
@@ -234,24 +146,49 @@ export const movieService = {
       try {
         const response = await api.get(`/movies/search?q=${encodeURIComponent(query)}`);
         if (response.data.code === 200) {
-            return response.data.result;
+          const result = response.data.result;
+          if (Array.isArray(result)) {
+            return result;
+          } else if (result?.content && Array.isArray(result.content)) {
+            return result.content;
+          }
+          return [];
         }
-        throw new Error(response.data.message || 'Failed to add to favourites');
-    },
+      } catch (apiError: any) {
+        // Nếu API không tồn tại (404/400), thực hiện tìm kiếm local
+        if (apiError.response?.status === 404 || apiError.response?.status === 400) {
+          console.log('Search API not available, using local search');
 
-    // Xóa khỏi yêu thích
-    removeFromFavourites: async (movieId: number): Promise<void> => {
-        const response = await api.delete(`/favourites/${movieId}`);
-        if (response.data.code !== 200) {
-            throw new Error(response.data.message || 'Failed to remove from favourites');
-        }
-    },
+          // Nếu đã có danh sách phim, dùng luôn; nếu không thì fetch
+          let allMovies: Movie[] = allMoviesList || [];
 
-    // Lấy danh sách yêu thích
-    getFavourites: async (): Promise<Favourite[]> => {
-        const response = await api.get('/favourites');
-        if (response.data.code === 200) {
-            return response.data.result;
+          if (allMovies.length === 0) {
+            const allMoviesResponse = await api.get(`/movies?page=0&size=100`);
+            if (allMoviesResponse.data.code === 200) {
+              const result = allMoviesResponse.data.result;
+              if (Array.isArray(result)) {
+                allMovies = result;
+              } else if (result?.content && Array.isArray(result.content)) {
+                allMovies = result.content;
+              } else if (result?.result) {
+                if (Array.isArray(result.result)) {
+                  allMovies = result.result;
+                } else if (result.result?.content && Array.isArray(result.result.content)) {
+                  allMovies = result.result.content;
+                }
+              }
+            }
+          }
+
+          // Tìm kiếm local
+          const queryLower = query.toLowerCase().trim();
+          return allMovies.filter((movie: Movie) =>
+            movie.title?.toLowerCase().includes(queryLower) ||
+            movie.genre?.toLowerCase().includes(queryLower) ||
+            movie.director?.toLowerCase().includes(queryLower) ||
+            movie.cast?.toLowerCase().includes(queryLower) ||
+            movie.description?.toLowerCase().includes(queryLower)
+          );
         }
         throw apiError;
       }
@@ -311,6 +248,57 @@ export const movieService = {
       return response.data.result;
     }
     throw new Error(response.data.message || 'Failed to add review');
+  },
+
+  // Lấy top phim hay trong tuần (dựa trên rating và số lượng reviews)
+  getTopMovies: async (limit: number = 10): Promise<Movie[]> => {
+    try {
+      // Lấy tất cả phim đang chiếu
+      const movies = await movieService.getCurrentlyShowingMovies();
+      
+      // Lấy reviews cho từng phim và tính điểm trung bình
+      const moviesWithRatings = await Promise.all(
+        movies.map(async (movie) => {
+          try {
+            const reviews = await movieService.getMovieReviews(movie.id);
+            const approvedReviews = reviews.filter(r => r.isApproved);
+            const avgRating = approvedReviews.length > 0
+              ? approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length
+              : movie.rating || 0;
+            
+            return {
+              ...movie,
+              avgRating,
+              reviewCount: approvedReviews.length,
+            };
+          } catch (error) {
+            return {
+              ...movie,
+              avgRating: movie.rating || 0,
+              reviewCount: 0,
+            };
+          }
+        })
+      );
+      
+      // Sắp xếp theo rating và số lượng reviews
+      moviesWithRatings.sort((a, b) => {
+        // Ưu tiên phim có rating cao và nhiều reviews
+        const scoreA = a.avgRating * 0.7 + Math.min(a.reviewCount / 10, 1) * 0.3;
+        const scoreB = b.avgRating * 0.7 + Math.min(b.reviewCount / 10, 1) * 0.3;
+        return scoreB - scoreA;
+      });
+      
+      return moviesWithRatings.slice(0, limit).map(({ avgRating, reviewCount, ...movie }) => movie);
+    } catch (error) {
+      console.error('Error fetching top movies:', error);
+      // Fallback: lấy phim có rating cao nhất
+      const movies = await movieService.getCurrentlyShowingMovies();
+      return movies
+        .filter(m => m.rating && m.rating > 0)
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, limit);
+    }
   },
 
   // Thêm vào yêu thích

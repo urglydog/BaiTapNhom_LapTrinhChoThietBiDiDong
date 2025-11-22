@@ -7,9 +7,17 @@ export const bookingService = {
     showtimeId: number;
     seatIds: number[];
     promotionCode?: string;
+    paymentMethod?: string;
   }): Promise<Booking> => {
-    const response = await api.post('/bookings', bookingData);
-    if (response.data.code === 200) {
+    // Thêm paymentMethod mặc định nếu không có
+    const requestData = {
+      ...bookingData,
+      paymentMethod: bookingData.paymentMethod || 'CASH',
+    };
+    
+    const response = await api.post('/bookings', requestData);
+    // API có thể trả về code 200 hoặc 201
+    if (response.data.code === 200 || response.data.code === 201) {
       return response.data.result;
     }
     throw new Error(response.data.message || 'Failed to create booking');
