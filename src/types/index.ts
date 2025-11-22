@@ -21,6 +21,33 @@ export interface LoginResponse {
   user: User;
 }
 
+// OTP Types
+export interface SendOtpRequest {
+  email?: string;
+  phone?: string;
+  type: 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD';
+}
+
+export interface VerifyOtpRequest {
+  email?: string;
+  phone?: string;
+  otp: string;
+  type: 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD';
+}
+
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  expiresIn?: number; // thời gian hết hạn OTP (giây)
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
+  token?: string; // token tạm thời nếu verify thành công
+  user?: User; // user info nếu verify cho login/register
+}
+
 // Movie Types
 export interface Movie {
   id: number;
@@ -177,6 +204,17 @@ export interface VerifyOtpResponse {
   message: string;
   token?: string; // token tạm thời nếu verify thành công
   user?: User; // user info nếu verify cho login/register
+}
+
+// Register Request (match với backend)
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE';
 }
 
 // Register Request (match với backend)
