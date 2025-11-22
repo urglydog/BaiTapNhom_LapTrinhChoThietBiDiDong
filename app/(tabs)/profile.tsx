@@ -9,27 +9,57 @@ import {
     View,
     Modal,
     Platform,
+    Switch
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../src/store';
 import { logout } from '../../src/store/authSlice';
+import { useAppDispatch, useAppSelector } from '@/src/hooks/redux';
+import { toggleTheme } from '@/src/store/themeSlice';
+import { setLanguage } from '@/src/store/languageSlice';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
+
+import { MaterialIcons } from '@expo/vector-icons';
+
+const MenuItem = ({ icon, text, onPress }: { icon: any, text: string, onPress: () => void }) => {
+    const { theme } = useAppSelector((state) => state.theme);
+    const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+    const styles = getStyles(currentTheme);
+    return (
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={onPress}
+        >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialIcons name={icon} size={24} color={currentTheme.text} />
+                <Text style={styles.menuText}>{text}</Text>
+            </View>
+            <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+    );
+};
 
 export default function ProfileScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
-    const dispatch = useDispatch<AppDispatch>();
+    const dispatch = useAppDispatch();
     const { user } = useSelector((state: RootState) => state.auth);
+    const { theme } = useAppSelector((state) => state.theme);
+    const { language } = useAppSelector((state) => state.language);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
 
     const handleLogout = () => {
         if (Platform.OS === 'web') {
             setShowLogoutModal(true);
         } else {
             Alert.alert(
-                'Đăng xuất',
-                'Bạn có chắc chắn muốn đăng xuất?', 
+                t('Logout'),
+                t('Are you sure you want to log out?'),
                 [
-                    { text: 'Hủy', style: 'cancel' },
-                    { text: 'Đăng xuất', onPress: () => dispatch(logout()) }
+                    { text: t('Cancel'), style: 'cancel' },
+                    { text: t('Logout'), onPress: () => dispatch(logout()) }
                 ]
             );
         }
@@ -46,9 +76,9 @@ export default function ProfileScreen() {
 
     const getRoleDisplayName = (role: string) => {
         switch (role) {
-            case 'ADMIN': return 'Quản trị viên';
-            case 'STAFF': return 'Nhân viên';
-            case 'CUSTOMER': return 'Khách hàng';
+            case 'ADMIN': return t('Administrator');
+            case 'STAFF': return t('Staff');
+            case 'CUSTOMER': return t('Customer');
             default: return role;
         }
     };
@@ -61,6 +91,7 @@ export default function ProfileScreen() {
             default: return '#666';
         }
     };
+    const styles = getStyles(currentTheme);
 
     if (!user) {
         return (
@@ -69,14 +100,14 @@ export default function ProfileScreen() {
                     <View style={styles.avatarLarge}>
                         <Text style={styles.avatarLargeText}>?</Text>
                     </View>
-                    <Text style={styles.notLoggedInTitle}>Bạn chưa đăng nhập</Text>
-                    <Text style={styles.notLoggedInSubtitle}>Hãy đăng nhập để sử dụng các chức năng cá nhân hóa!</Text>
+                    <Text style={styles.notLoggedInTitle}>{t('You are not logged in')}</Text>
+                    <Text style={styles.notLoggedInSubtitle}>{t('Please log in to use personalized functions!')}</Text>
                     <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/login')}>
-                        <Text style={styles.loginButtonText}>Đăng nhập</Text>
+                        <Text style={styles.loginButtonText}>{t('Login')}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.orText}>hoặc</Text>
+                    <Text style={styles.orText}>{t('or')}</Text>
                     <TouchableOpacity style={styles.registerLink} onPress={() => router.push('/register')}>
-                        <Text style={styles.registerLinkText}>Tạo tài khoản</Text>
+                        <Text style={styles.registerLinkText}>{t('Create an account')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -93,174 +124,191 @@ export default function ProfileScreen() {
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Đăng xuất</Text>
-                        <Text style={styles.modalMessage}>Bạn có chắc chắn muốn đăng xuất?</Text>
+                        <Text style={styles.modalTitle}>{t('Logout')}</Text>
+                        <Text style={styles.modalMessage}>{t('Are you sure you want to log out?')}</Text>
                         <View style={styles.modalButtons}>
                             <TouchableOpacity style={styles.cancelButton} onPress={cancelLogout}>
-                                <Text style={styles.cancelButtonText}>Hủy</Text>
+                                <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.confirmButton} onPress={confirmLogout}>
-                                <Text style={styles.confirmButtonText}>Đăng xuất</Text>
+                                <Text style={styles.confirmButtonText}>{t('Logout')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
             </Modal>
             <ScrollView style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                        {user?.fullName?.charAt(0).toUpperCase() || 'U'}
-                    </Text>
+            <View style={styles.headerContainer}>
+                <View style={styles.header}>
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>
+                            {user?.fullName?.charAt(0).toUpperCase() || 'U'}
+                        </Text>
+                    </View>
+                    <View style={styles.userInfo}>
+                        <Text style={styles.name}>{user?.fullName}</Text>
+                        <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user?.role || '') }]}>
+                            <Text style={styles.roleText}>
+                                {getRoleDisplayName(user?.role || '')}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
-                <Text style={styles.name}>{user?.fullName}</Text>
-                <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user?.role || '') }]}>
-                    <Text style={styles.roleText}>
-                        {getRoleDisplayName(user?.role || '')}
-                    </Text>
-                </View>
+                <TouchableOpacity onPress={() => router.push('/edit-profile')} style={styles.editButton}>
+                    <MaterialIcons name="edit" size={24} color={currentTheme.text} />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
+                <Text style={styles.sectionTitle}>{t('PersonalInformation')}</Text>
                 <View style={styles.infoCard}>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Tên đăng nhập:</Text>
-                        <Text style={styles.infoValue}>{user?.username}</Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Email:</Text>
+                        <Text style={styles.infoLabel}>{t('Email')}:</Text>
                         <Text style={styles.infoValue}>{user?.email}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Số điện thoại:</Text>
+                        <Text style={styles.infoLabel}>{t('PhoneNumber')}:</Text>
                         <Text style={styles.infoValue}>{user?.phone}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Ngày sinh:</Text>
+                        <Text style={styles.infoLabel}>{t('DateOfBirth')}:</Text>
                         <Text style={styles.infoValue}>
-                            {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('vi-VN') : 'N/A'}
+                            {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US') : 'N/A'}
                         </Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Giới tính:</Text>
+                        <Text style={styles.infoLabel}>{t('Gender')}:</Text>
                         <Text style={styles.infoValue}>
-                            {user?.gender === 'MALE' ? 'Nam' : user?.gender === 'FEMALE' ? 'Nữ' : 'N/A'}
+                            {user?.gender === 'MALE' ? t('Male') : user?.gender === 'FEMALE' ? t('Female') : 'N/A'}
                         </Text>
                     </View>
                 </View>
             </View>
 
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Chức năng</Text>
-                <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={() => router.push('/favourites')}
-                >
-                    <Text style={styles.menuText}>Phim yêu thích</Text>
-                    <Text style={styles.menuArrow}>›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={() => router.push('/cinemas')}
-                >
-                    <Text style={styles.menuText}>Rạp chiếu phim</Text>
-                    <Text style={styles.menuArrow}>›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={() => router.push('/promotions')}
-                >
-                    <Text style={styles.menuText}>Khuyến mãi</Text>
-                    <Text style={styles.menuArrow}>›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem}>
-                    <Text style={styles.menuText}>Cài đặt</Text>
-                    <Text style={styles.menuArrow}>›</Text>
-                </TouchableOpacity>
-                {user?.role === 'ADMIN' && (
-                    <TouchableOpacity style={styles.menuItem}>
-                        <Text style={styles.menuText}>Quản lý hệ thống</Text>
-                        <Text style={styles.menuArrow}>›</Text>
-                    </TouchableOpacity>
-                )}
-                {user?.role === 'STAFF' && (
-                    <TouchableOpacity style={styles.menuItem}>
-                        <Text style={styles.menuText}>Quản lý đặt vé</Text>
-                        <Text style={styles.menuArrow}>›</Text>
-                    </TouchableOpacity>
-                )}
-                <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={() => router.push('/change-password')}
-                >
-                    <Text style={styles.menuText}>Đổi mật khẩu</Text>
-                    <Text style={styles.menuArrow}>›</Text>
-                </TouchableOpacity>
+                <Text style={styles.sectionTitle}>{t('Functions')}</Text>
+                <MenuItem icon="favorite" text={t('FavoriteMovies')} onPress={() => router.push('/favourites')} />
+                <MenuItem icon="theaters" text={t('Cinemas')} onPress={() => router.push('/cinemas')} />
+                <MenuItem icon="local-offer" text={t('Promotions')} onPress={() => router.push('/promotions')} />
+                <MenuItem icon="lock" text={t('ChangePassword')} onPress={() => router.push('/change-password')} />
+            </View>
+
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>{t('Settings')}</Text>
+                <View style={styles.menuItem}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialIcons name="brightness-6" size={24} color={currentTheme.text} />
+                        <Text style={styles.menuText}>{t('Theme')}</Text>
+                    </View>
+                    <Switch
+                        value={theme === 'dark'}
+                        onValueChange={() => dispatch(toggleTheme())}
+                    />
+                </View>
+                <View style={styles.menuItem}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialIcons name="language" size={24} color={currentTheme.text} />
+                        <Text style={styles.menuText}>{t('Language')}</Text>
+                    </View>
+                    <View style={styles.languageSelector}>
+                        <TouchableOpacity
+                            style={[styles.languageButton, language === 'vi' && styles.languageButtonSelected]}
+                            onPress={() => dispatch(setLanguage('vi'))}
+                        >
+                            <Text style={styles.languageButtonText}>VIE</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.languageButton, language === 'en' && styles.languageButtonSelected]}
+                            onPress={() => dispatch(setLanguage('en'))}
+                        >
+                            <Text style={styles.languageButtonText}>ENG</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </View>
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText} onPress={handleLogout}>Đăng xuất</Text>
+                <Text style={styles.logoutButtonText} onPress={handleLogout}>{t('Logout')}</Text>
             </TouchableOpacity>
         </ScrollView>
         </>
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.background,
+    },
+    headerContainer: {
+        backgroundColor: theme.card,
+        marginBottom: 1,
+        paddingTop: 30, // Add padding to the top for status bar
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'relative', // To position the edit button
     },
     header: {
-        backgroundColor: 'white',
+        flexDirection: 'row',
         alignItems: 'center',
-        padding: 30,
-        marginBottom: 1,
+        paddingVertical: 15,
+        flex: 1, // Take up available space
     },
     avatar: {
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#007AFF',
+        backgroundColor: theme.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        marginRight: 15,
     },
     avatarText: {
         fontSize: 32,
         fontWeight: 'bold',
         color: 'white',
     },
+    userInfo: {
+        justifyContent: 'center',
+    },
     name: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
+        color: theme.text,
+        marginBottom: 4,
     },
     roleBadge: {
         paddingHorizontal: 16,
         paddingVertical: 6,
         borderRadius: 20,
+        alignSelf: 'flex-start',
     },
     roleText: {
         color: 'white',
         fontSize: 14,
         fontWeight: 'bold',
     },
+    editButton: {
+        padding: 10,
+        position: 'absolute',
+        top: 40, // Adjust this value to position the button correctly
+        right: 10,
+    },
     section: {
-        backgroundColor: 'white',
+        backgroundColor: theme.card,
         marginBottom: 1,
         padding: 20,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
+        color: theme.text,
         marginBottom: 16,
     },
     infoCard: {
-        backgroundColor: '#f9f9f9',
+        backgroundColor: theme.background,
         borderRadius: 8,
         padding: 16,
     },
@@ -271,12 +319,12 @@ const styles = StyleSheet.create({
     },
     infoLabel: {
         fontSize: 14,
-        color: '#666',
+        color: theme.text,
         flex: 1,
     },
     infoValue: {
         fontSize: 14,
-        color: '#333',
+        color: theme.text,
         fontWeight: '500',
         flex: 1,
         textAlign: 'right',
@@ -287,11 +335,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: theme.border,
     },
     menuText: {
         fontSize: 16,
-        color: '#333',
+        color: theme.text,
     },
     menuArrow: {
         fontSize: 20,
@@ -314,10 +362,10 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.background,
     },
     notLoggedInCard: {
-        backgroundColor: 'white',
+        backgroundColor: theme.card,
         borderRadius: 16,
         padding: 32,
         alignItems: 'center',
@@ -346,23 +394,23 @@ const styles = StyleSheet.create({
     notLoggedInTitle: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#22223b',
+        color: theme.text,
         marginBottom: 8,
         textAlign: 'center',
     },
     notLoggedInSubtitle: {
         fontSize: 15,
-        color: '#6c757d',
+        color: theme.text,
         marginBottom: 24,
         textAlign: 'center',
     },
     loginButton: {
-        backgroundColor: '#007AFF',
+        backgroundColor: theme.primary,
         paddingVertical: 14,
         paddingHorizontal: 48,
         borderRadius: 8,
         alignItems: 'center',
-        shadowColor: '#007AFF',
+        shadowColor: theme.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
         shadowRadius: 4,
@@ -378,7 +426,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         marginBottom: 8,
         fontSize: 16,
-        color: '#666',
+        color: theme.text,
         textAlign: 'center',
     },
     registerLink: {
@@ -386,7 +434,7 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     registerLinkText: {
-        color: '#007AFF',
+        color: theme.primary,
         fontSize: 16,
         textDecorationLine: 'underline',
     },
@@ -397,7 +445,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContent: {
-        backgroundColor: 'white',
+        backgroundColor: theme.card,
         borderRadius: 12,
         padding: 24,
         margin: 20,
@@ -412,13 +460,13 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
+        color: theme.text,
         marginBottom: 12,
         textAlign: 'center',
     },
     modalMessage: {
         fontSize: 16,
-        color: '#666',
+        color: theme.text,
         marginBottom: 24,
         textAlign: 'center',
         lineHeight: 22,
@@ -430,7 +478,7 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.background,
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 8,
@@ -438,7 +486,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelButtonText: {
-        color: '#666',
+        color: theme.text,
         fontSize: 16,
         fontWeight: '600',
     },
@@ -455,5 +503,22 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
+    },
+    languageSelector: {
+        flexDirection: 'row',
+    },
+    languageButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: theme.background,
+        marginHorizontal: 4,
+    },
+    languageButtonSelected: {
+        backgroundColor: theme.primary,
+    },
+    languageButtonText: {
+        color: theme.text,
+        fontWeight: 'bold',
     },
 });

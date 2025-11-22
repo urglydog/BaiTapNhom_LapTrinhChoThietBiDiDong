@@ -16,10 +16,17 @@ import { useDispatch, useSelector } from 'react-redux';
 import { authService } from '../src/services/authService';
 import { RootState } from '../src/store';
 import { useRouter } from 'expo-router';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
 
 export default function ChangePasswordScreen() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const router = useRouter();
+  const { theme } = useAppSelector((state) => state.theme);
+  const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+  const styles = getStyles(currentTheme);
 
   const [formData, setFormData] = useState({
     oldPassword: '',
@@ -34,23 +41,23 @@ export default function ChangePasswordScreen() {
     const newErrors: Partial<typeof formData> = {};
 
     if (!formData.oldPassword.trim()) {
-      newErrors.oldPassword = 'Mật khẩu cũ không được để trống';
+      newErrors.oldPassword = t('Old password is required');
     }
 
     if (!formData.newPassword.trim()) {
-      newErrors.newPassword = 'Mật khẩu mới không được để trống';
+      newErrors.newPassword = t('New password is required');
     } else if (formData.newPassword.length < 6) {
-      newErrors.newPassword = 'Mật khẩu mới phải có ít nhất 6 ký tự';
+      newErrors.newPassword = t('New password must be at least 6 characters');
     }
 
     if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Xác nhận mật khẩu không được để trống';
+      newErrors.confirmPassword = t('Confirm new password is required');
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+      newErrors.confirmPassword = t('Confirm new password does not match');
     }
 
     if (formData.oldPassword === formData.newPassword) {
-      newErrors.newPassword = 'Mật khẩu mới phải khác mật khẩu cũ';
+      newErrors.newPassword = t('New password must be different from old password');
     }
 
     setErrors(newErrors);
@@ -66,13 +73,13 @@ export default function ChangePasswordScreen() {
     try {
       await authService.changePassword(formData.oldPassword, formData.newPassword);
       Alert.alert(
-        'Thành công',
-        'Mật khẩu đã được thay đổi thành công!',
+        t('Success'),
+        t('Password has been changed successfully!'),
         [
           {
             text: 'OK',
             onPress: () => {
-              // Reset form và quay về profile
+              // Reset form and go back to profile
               setFormData({
                 oldPassword: '',
                 newPassword: '',
@@ -84,7 +91,7 @@ export default function ChangePasswordScreen() {
         ]
       );
     } catch (error: any) {
-      setErrorMessage(error.message || 'Không thể thay đổi mật khẩu');
+      setErrorMessage(error.message || t('Could not change password'));
     } finally {
       setIsLoading(false);
     }
@@ -103,46 +110,49 @@ export default function ChangePasswordScreen() {
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu cũ</Text>
+            <Text style={styles.label}>{t('Old Password')}</Text>
             <TextInput
               style={[styles.input, errors.oldPassword && styles.inputError]}
-              placeholder="Nhập mật khẩu cũ"
+              placeholder={t('Enter old password')}
               value={formData.oldPassword}
               onChangeText={(text) => {
                 setFormData(prev => ({ ...prev, oldPassword: text }));
                 if (errors.oldPassword) setErrors(prev => ({ ...prev, oldPassword: undefined }));
               }}
               secureTextEntry
+              placeholderTextColor={currentTheme.text}
             />
             {errors.oldPassword && <Text style={styles.errorText}>{errors.oldPassword}</Text>}
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu mới</Text>
+            <Text style={styles.label}>{t('New Password')}</Text>
             <TextInput
               style={[styles.input, errors.newPassword && styles.inputError]}
-              placeholder="Nhập mật khẩu mới"
+              placeholder={t('Enter new password')}
               value={formData.newPassword}
               onChangeText={(text) => {
                 setFormData(prev => ({ ...prev, newPassword: text }));
                 if (errors.newPassword) setErrors(prev => ({ ...prev, newPassword: undefined }));
               }}
               secureTextEntry
+              placeholderTextColor={currentTheme.text}
             />
             {errors.newPassword && <Text style={styles.errorText}>{errors.newPassword}</Text>}
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Xác nhận mật khẩu mới</Text>
+            <Text style={styles.label}>{t('Confirm New Password')}</Text>
             <TextInput
               style={[styles.input, errors.confirmPassword && styles.inputError]}
-              placeholder="Nhập lại mật khẩu mới"
+              placeholder={t('Confirm your new password')}
               value={formData.confirmPassword}
               onChangeText={(text) => {
                 setFormData(prev => ({ ...prev, confirmPassword: text }));
                 if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined }));
               }}
               secureTextEntry
+              placeholderTextColor={currentTheme.text}
             />
             {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
           </View>
@@ -159,9 +169,9 @@ export default function ChangePasswordScreen() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <Text style={styles.buttonText}>Đang xử lý...</Text>
+              <Text style={styles.buttonText}>{t('Processing...')}</Text>
             ) : (
-              <Text style={styles.buttonText}>Đổi mật khẩu</Text>
+              <Text style={styles.buttonText}>{t('Change Password')}</Text>
             )}
           </TouchableOpacity>
 
@@ -169,7 +179,7 @@ export default function ChangePasswordScreen() {
             style={styles.secondaryButton}
             onPress={() => router.back()}
           >
-            <Text style={styles.secondaryButtonText}>Hủy</Text>
+            <Text style={styles.secondaryButtonText}>{t('Cancel')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -180,7 +190,7 @@ export default function ChangePasswordScreen() {
         >
           <View style={styles.loadingOverlay}>
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4f8cff" />
+              <ActivityIndicator size="large" color={currentTheme.primary} />
               <Text style={styles.loadingText}>Đang xử lý...</Text>
             </View>
           </View>
@@ -190,10 +200,10 @@ export default function ChangePasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -207,15 +217,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: theme.text,
   },
   form: {
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
@@ -233,16 +243,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.text,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.background,
+    color: theme.text,
   },
   inputError: {
     borderColor: '#e74c3c',
@@ -253,7 +264,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -273,7 +284,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   secondaryButtonText: {
-    color: '#007AFF',
+    color: theme.primary,
     fontSize: 16,
   },
   errorContainer: {
@@ -300,7 +311,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingContainer: {
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     padding: 24,
     borderRadius: 12,
     alignItems: 'center',
@@ -309,7 +320,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: theme.text,
     fontWeight: '500',
   },
 });

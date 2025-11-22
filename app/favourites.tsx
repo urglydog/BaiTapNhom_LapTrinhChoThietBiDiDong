@@ -14,12 +14,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../src/store';
 import { fetchFavourites, toggleFavourite } from '../src/store/movieSlice';
 import { Favourite, Movie } from '../src/types';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
 
 export default function FavouritesScreen() {
+  const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { favourites, isLoading } = useSelector((state: RootState) => state.movie);
+  const { theme } = useAppSelector((state) => state.theme);
+  const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+  const styles = getStyles(currentTheme);
 
   useEffect(() => {
     dispatch(fetchFavourites());
@@ -73,7 +80,7 @@ export default function FavouritesScreen() {
             <Text style={styles.movieGenre}>{movie.genre}</Text>
           )}
           {movie.duration != null && movie.duration > 0 && (
-            <Text style={styles.movieDuration}>{movie.duration} phút</Text>
+            <Text style={styles.movieDuration}>{movie.duration} {t('minutes')}</Text>
           )}
           <View style={styles.ratingContainer}>
             {movie.rating != null && movie.rating > 0 && (
@@ -96,8 +103,8 @@ export default function FavouritesScreen() {
   if (isLoading && favourites.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Đang tải phim yêu thích...</Text>
+        <ActivityIndicator size="large" color={currentTheme.primary} />
+        <Text style={styles.loadingText}>{t('Loading favorite movies...')}</Text>
       </View>
     );
   }
@@ -105,9 +112,9 @@ export default function FavouritesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Phim Yêu Thích</Text>
+        <Text style={styles.headerTitle}>{t('Favorite Movies')}</Text>
         <Text style={styles.headerSubtitle}>
-          {favourites.length} phim đã lưu
+          {t('{{count}} movies saved', { count: favourites.length })}
         </Text>
       </View>
 
@@ -123,16 +130,16 @@ export default function FavouritesScreen() {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>❤️</Text>
             <Text style={styles.emptyText}>
-              Bạn chưa có phim yêu thích nào
+              {t('You have no favorite movies yet')}
             </Text>
             <Text style={styles.emptySubtext}>
-              Thêm phim vào yêu thích để xem lại sau
+              {t('Add movies to your favorites to see them here')}
             </Text>
             <TouchableOpacity
               style={styles.browseButton}
               onPress={() => router.push('/(tabs)/')}
             >
-              <Text style={styles.browseButtonText}>Khám phá phim</Text>
+              <Text style={styles.browseButtonText}>{t('Discover movies')}</Text>
             </TouchableOpacity>
           </View>
         }
@@ -141,24 +148,24 @@ export default function FavouritesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: theme.text,
   },
   header: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
     padding: 20,
     paddingTop: 50,
   },
@@ -177,7 +184,7 @@ const styles = StyleSheet.create({
   },
   movieCard: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
@@ -208,7 +215,7 @@ const styles = StyleSheet.create({
   movieTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     flex: 1,
     marginRight: 8,
   },
@@ -227,12 +234,12 @@ const styles = StyleSheet.create({
   },
   movieGenre: {
     fontSize: 14,
-    color: '#666',
+    color: theme.text,
     marginTop: 4,
   },
   movieDuration: {
     fontSize: 12,
-    color: '#999',
+    color: theme.text,
     marginTop: 4,
   },
   ratingContainer: {
@@ -248,15 +255,15 @@ const styles = StyleSheet.create({
   },
   ageRating: {
     fontSize: 12,
-    color: '#666',
-    backgroundColor: '#f0f0f0',
+    color: theme.text,
+    backgroundColor: theme.background,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   movieDescription: {
     fontSize: 12,
-    color: '#999',
+    color: theme.text,
     marginTop: 8,
     lineHeight: 16,
   },
@@ -270,22 +277,23 @@ const styles = StyleSheet.create({
   emptyIcon: {
     fontSize: 64,
     marginBottom: 16,
+    color: theme.text,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#666',
+    color: theme.text,
     textAlign: 'center',
     marginBottom: 24,
   },
   browseButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

@@ -15,12 +15,16 @@ import {
 import { useRouter } from 'expo-router';
 import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 const SEARCH_DEBOUNCE_DELAY = 500; // 500ms delay
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const [allMovies, setAllMovies] = useState<Movie[]>([]); // Lưu danh sách phim gốc
   const [movies, setMovies] = useState<Movie[]>([]); // Danh sách phim hiển thị
   const [isLoading, setIsLoading] = useState(true); // Loading ban đầu
@@ -28,6 +32,9 @@ export default function HomeScreen() {
   const [searchText, setSearchText] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { theme } = useAppSelector((state) => state.theme);
+  const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+  const styles = getStyles(currentTheme);
 
   const router = useRouter();
 
@@ -39,6 +46,7 @@ export default function HomeScreen() {
       setMovies(moviesList);
     } catch (error) {
       console.error('Error fetching movies:', error);
+      Alert.alert(t('Error'), t('Could not load movie list'));
     } finally {
       setIsLoading(false);
     }
@@ -148,7 +156,7 @@ export default function HomeScreen() {
         ) : (
           <View style={styles.placeholderImage}>
             <Text style={styles.placeholderText}>📽️</Text>
-            <Text style={styles.placeholderSubtext}>Không có ảnh</Text>
+            <Text style={styles.placeholderSubtext}>{t('No image')}</Text>
           </View>
         )}
         {item.rating != null && item.rating > 0 && (
@@ -167,7 +175,7 @@ export default function HomeScreen() {
           </Text>
         )}
         {item.duration != null && item.duration > 0 && (
-          <Text style={styles.movieDuration}>{item.duration} phút</Text>
+          <Text style={styles.movieDuration}>{item.duration} {t('minutes')}</Text>
         )}
         {item.ageRating && (
           <View style={styles.ageRatingContainer}>
@@ -180,16 +188,16 @@ export default function HomeScreen() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Chào buổi sáng';
-    if (hour < 18) return 'Chào buổi chiều';
-    return 'Chào buổi tối';
+    if (hour < 12) return t('Good morning');
+    if (hour < 18) return t('Good afternoon');
+    return t('Good evening');
   };
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Đang tải danh sách phim...</Text>
+        <ActivityIndicator size="large" color={currentTheme.primary} />
+        <Text style={styles.loadingText}>{t('Loading movie list...')}</Text>
       </View>
     );
   }
@@ -198,9 +206,9 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.greeting}>
-          {getGreeting()}, Chào mừng bạn!
+          {getGreeting()}, {t('Hello, welcome')}
         </Text>
-        <Text style={styles.role}>Khám phá những bộ phim hay</Text>
+        <Text style={styles.role}>{t('Discover great movies')}</Text>
       </View>
 
       <View style={styles.searchContainer}>
@@ -208,7 +216,7 @@ export default function HomeScreen() {
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm phim..."
+            placeholder={t('Search movies')}
             value={searchText}
             onChangeText={handleSearch}
             placeholderTextColor="#999"
@@ -218,7 +226,7 @@ export default function HomeScreen() {
           {isSearching && (
             <ActivityIndicator 
               size="small" 
-              color="#4f8cff" 
+              color={currentTheme.primary}
               style={styles.searchLoading}
             />
           )}
@@ -241,15 +249,15 @@ export default function HomeScreen() {
               <>
                 <Text style={styles.emptyIcon}>🔍</Text>
                 <Text style={styles.emptyText}>
-                  Không tìm thấy phim nào với từ khóa "{searchText}"
+                  {t('No movies found with keyword "{{searchText}}"', { searchText })}
                 </Text>
                 <Text style={styles.emptySubtext}>
-                  Thử tìm kiếm với từ khóa khác
+                  {t('Try searching with another keyword')}
                 </Text>
               </>
             ) : (
               <Text style={styles.emptyText}>
-                Không có phim nào
+                {t('No movies available')}
               </Text>
             )}
           </View>
@@ -259,19 +267,19 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f6fb',
+    backgroundColor: theme.background,
   },
   header: {
-    backgroundColor: '#4f8cff',
+    backgroundColor: theme.primary,
     paddingHorizontal: 20,
     paddingTop: 48,
     paddingBottom: 20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#4f8cff',
+    shadowColor: theme.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -295,11 +303,11 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    shadowColor: '#4f8cff',
+    shadowColor: theme.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
@@ -308,12 +316,12 @@ const styles = StyleSheet.create({
   searchIcon: {
     fontSize: 20,
     marginRight: 8,
-    color: '#4f8cff',
+    color: theme.primary,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#222',
+    color: theme.text,
     backgroundColor: 'transparent',
     paddingVertical: 4,
   },
@@ -329,7 +337,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   movieCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderRadius: 12,
     marginBottom: 16,
     width: CARD_WIDTH,
@@ -359,7 +367,7 @@ const styles = StyleSheet.create({
   placeholderImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#e0e0e0',
+    backgroundColor: theme.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -369,7 +377,7 @@ const styles = StyleSheet.create({
   },
   placeholderSubtext: {
     fontSize: 12,
-    color: '#999',
+    color: theme.text,
   },
   ratingBadge: {
     position: 'absolute',
@@ -391,19 +399,19 @@ const styles = StyleSheet.create({
   movieTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#222',
+    color: theme.text,
     marginBottom: 4,
     minHeight: 40,
   },
   movieGenre: {
     fontSize: 14,
-    color: '#4f8cff',
+    color: theme.primary,
     marginBottom: 2,
     fontWeight: '500',
   },
   movieDuration: {
     fontSize: 13,
-    color: '#888',
+    color: theme.text,
     marginBottom: 8,
   },
   ageRatingContainer: {
@@ -412,7 +420,7 @@ const styles = StyleSheet.create({
   ageRating: {
     fontSize: 12,
     color: '#fff',
-    backgroundColor: '#4f8cff',
+    backgroundColor: theme.primary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -428,28 +436,29 @@ const styles = StyleSheet.create({
   emptyIcon: {
     fontSize: 48,
     marginBottom: 16,
+    color: theme.text
   },
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#666',
+    color: theme.text,
     textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f6fb',
+    backgroundColor: theme.background,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: theme.text,
   },
 });

@@ -9,11 +9,19 @@ import {
 } from 'react-native';
 import { promotionService } from '../src/services/promotionService';
 import { Promotion } from '../src/types';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
 
 export default function PromotionsScreen() {
+  const { t } = useTranslation();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { theme } = useAppSelector((state) => state.theme);
+  const { language } = useAppSelector((state) => state.language);
+  const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+  const styles = getStyles(currentTheme);
 
   useEffect(() => {
     fetchPromotions();
@@ -26,12 +34,12 @@ export default function PromotionsScreen() {
       setPromotions(data);
     } catch (error) {
       console.error('Error fetching promotions:', error);
-      // Nếu không có API, sử dụng dữ liệu mẫu từ data.sql
+      // If there is no API, use sample data from data.sql
       setPromotions([
         {
           id: 1,
-          name: 'Chào mừng khách hàng mới',
-          description: 'Giảm 10% cho đơn hàng đầu tiên',
+          name: t('Welcome new customer'),
+          description: t('10% off for the first order'),
           discountType: 'PERCENTAGE',
           discountValue: 10,
           minAmount: 100000,
@@ -42,8 +50,8 @@ export default function PromotionsScreen() {
         },
         {
           id: 2,
-          name: 'Khách hàng VIP',
-          description: 'Giảm 20% cho khách hàng VIP',
+          name: t('VIP customer'),
+          description: t('20% off for VIP customers'),
           discountType: 'PERCENTAGE',
           discountValue: 20,
           minAmount: 200000,
@@ -54,8 +62,8 @@ export default function PromotionsScreen() {
         },
         {
           id: 3,
-          name: 'Cuối tuần vui vẻ',
-          description: 'Giảm 15% cho suất chiếu cuối tuần',
+          name: t('Happy weekend'),
+          description: t('15% off for weekend shows'),
           discountType: 'PERCENTAGE',
           discountValue: 15,
           minAmount: 150000,
@@ -78,7 +86,7 @@ export default function PromotionsScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -86,11 +94,11 @@ export default function PromotionsScreen() {
   };
 
   const getDiscountText = (promotion: Promotion) => {
-    if (!promotion.discountValue) return 'Giảm giá';
+    if (!promotion.discountValue) return t('Discount');
     if (promotion.discountType === 'PERCENTAGE') {
-      return `Giảm ${promotion.discountValue}%`;
+      return t('{{discountValue}}% off', { discountValue: promotion.discountValue });
     } else {
-      return `Giảm ${promotion.discountValue.toLocaleString()} VNĐ`;
+      return t('{{discountValue}} VNĐ off', { discountValue: promotion.discountValue.toLocaleString() });
     }
   };
 
@@ -107,7 +115,7 @@ export default function PromotionsScreen() {
           </View>
           {isExpired && (
             <View style={styles.expiredBadge}>
-              <Text style={styles.expiredBadgeText}>Hết hạn</Text>
+              <Text style={styles.expiredBadgeText}>{t('Expired')}</Text>
             </View>
           )}
         </View>
@@ -120,22 +128,22 @@ export default function PromotionsScreen() {
         <View style={styles.promotionDetails}>
           {item.minAmount && (
             <Text style={styles.promotionDetail}>
-              Đơn tối thiểu: {item.minAmount.toLocaleString()} VNĐ
+              {t('Min amount')}: {item.minAmount.toLocaleString()} VNĐ
             </Text>
           )}
           {item.maxDiscount && (
             <Text style={styles.promotionDetail}>
-              Giảm tối đa: {item.maxDiscount.toLocaleString()} VNĐ
+              {t('Max discount')}: {item.maxDiscount.toLocaleString()} VNĐ
             </Text>
           )}
           {item.endDate && (
             <Text style={styles.promotionDetail}>
-              Áp dụng đến: {formatDate(item.endDate)}
+              {t('Valid until')}: {formatDate(item.endDate)}
             </Text>
           )}
           {item.usageLimit && (
             <Text style={styles.promotionDetail}>
-              Số lượng: {item.usageLimit} lượt
+              {t('Usage limit')}: {item.usageLimit} {t('uses')}
             </Text>
           )}
         </View>
@@ -146,8 +154,8 @@ export default function PromotionsScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Đang tải khuyến mãi...</Text>
+        <ActivityIndicator size="large" color={currentTheme.primary} />
+        <Text style={styles.loadingText}>{t('Loading promotions...')}</Text>
       </View>
     );
   }
@@ -155,9 +163,9 @@ export default function PromotionsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Khuyến Mãi</Text>
+        <Text style={styles.headerTitle}>{t('Promotions')}</Text>
         <Text style={styles.headerSubtitle}>
-          {promotions.length} khuyến mãi đang áp dụng
+          {t('{{count}} promotions currently active', { count: promotions.length })}
         </Text>
       </View>
 
@@ -173,10 +181,10 @@ export default function PromotionsScreen() {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>🎁</Text>
             <Text style={styles.emptyText}>
-              Hiện không có khuyến mãi nào
+              {t('No promotions currently available')}
             </Text>
             <Text style={styles.emptySubtext}>
-              Vui lòng quay lại sau để xem các ưu đãi mới
+              {t('Please check back later for new offers')}
             </Text>
           </View>
         }
@@ -185,21 +193,21 @@ export default function PromotionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: theme.text,
   },
   header: {
     backgroundColor: '#FF6B6B',
@@ -220,7 +228,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   promotionCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -263,23 +271,23 @@ const styles = StyleSheet.create({
   promotionName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     marginBottom: 8,
   },
   promotionDescription: {
     fontSize: 14,
-    color: '#666',
+    color: theme.text,
     marginBottom: 12,
     lineHeight: 20,
   },
   promotionDetails: {
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: theme.border,
     paddingTop: 12,
   },
   promotionDetail: {
     fontSize: 12,
-    color: '#999',
+    color: theme.text,
     marginBottom: 4,
   },
   emptyContainer: {
@@ -292,17 +300,18 @@ const styles = StyleSheet.create({
   emptyIcon: {
     fontSize: 64,
     marginBottom: 16,
+    color: theme.text,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#666',
+    color: theme.text,
     textAlign: 'center',
   },
 });

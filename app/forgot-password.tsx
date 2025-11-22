@@ -16,13 +16,20 @@ import { AppDispatch, RootState } from '../src/store';
 import { sendOtp, verifyOtp } from '../src/store/otpSlice';
 import { authService } from '../src/services/authService';
 import { useRouter } from 'expo-router';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'success';
 
 export default function ForgotPassword() {
+  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isLoading, error, otpExpiresAt } = useSelector((state: RootState) => state.otp);
+  const { theme } = useAppSelector((state) => state.theme);
+  const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+  const styles = getStyles(currentTheme);
 
   const [step, setStep] = useState<Step>('email');
   const [formData, setFormData] = useState({
@@ -45,28 +52,28 @@ export default function ForgotPassword() {
     switch (currentStep) {
       case 'email':
         if (!formData.email.trim()) {
-          newErrors.email = 'Vui lòng nhập email';
+          newErrors.email = t('Please enter your email');
         } else if (!validateEmail(formData.email)) {
-          newErrors.email = 'Email không hợp lệ';
+          newErrors.email = t('Invalid email');
         }
         break;
       case 'otp':
         if (!formData.otp.trim()) {
-          newErrors.otp = 'Vui lòng nhập mã OTP';
+          newErrors.otp = t('Please enter the OTP code');
         } else if (formData.otp.length !== 6) {
-          newErrors.otp = 'Mã OTP phải có 6 chữ số';
+          newErrors.otp = t('OTP code must be 6 digits');
         }
         break;
       case 'newPassword':
         if (!formData.newPassword.trim()) {
-          newErrors.newPassword = 'Vui lòng nhập mật khẩu mới';
+          newErrors.newPassword = t('Please enter a new password');
         } else if (formData.newPassword.length < 6) {
-          newErrors.newPassword = 'Mật khẩu phải có ít nhất 6 ký tự';
+          newErrors.newPassword = t('Password must be at least 6 characters');
         }
         if (!formData.confirmPassword.trim()) {
-          newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+          newErrors.confirmPassword = t('Please confirm your password');
         } else if (formData.newPassword !== formData.confirmPassword) {
-          newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+          newErrors.confirmPassword = t('Confirm password does not match');
         }
         break;
     }
@@ -85,9 +92,9 @@ export default function ForgotPassword() {
         type: 'RESET_PASSWORD'
       })).unwrap();
       setStep('otp');
-      Alert.alert('Thành công', 'OTP đã được gửi đến email của bạn');
+      Alert.alert(t('Success'), t('OTP has been sent to your email'));
     } catch (error: any) {
-      Alert.alert('Lỗi', error?.message || 'Không thể gửi OTP');
+      Alert.alert(t('Error'), error?.message || t('Could not send OTP'));
     } finally {
       setIsSubmitting(false);
     }
@@ -105,9 +112,9 @@ export default function ForgotPassword() {
       })).unwrap();
 
       setStep('newPassword');
-      Alert.alert('Thành công', 'OTP hợp lệ! Vui lòng nhập mật khẩu mới');
+      Alert.alert(t('Success'), t('OTP is valid! Please enter your new password'));
     } catch (error: any) {
-      Alert.alert('Lỗi', error?.message || 'OTP không hợp lệ');
+      Alert.alert(t('Error'), error?.message || t('Invalid OTP'));
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +128,7 @@ export default function ForgotPassword() {
       await authService.resetPasswordByEmail(formData.email, formData.newPassword);
       setStep('success');
     } catch (error: any) {
-      Alert.alert('Lỗi', error?.message || 'Đặt lại mật khẩu thất bại');
+      Alert.alert(t('Error'), error?.message || t('Failed to reset password'));
     } finally {
       setIsSubmitting(false);
     }
@@ -156,17 +163,17 @@ export default function ForgotPassword() {
         style={styles.backButton}
         onPress={() => router.replace('/login')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={styles.backButtonText}>← {t('Back')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Quên mật khẩu</Text>
-      <Text style={styles.subtitle}>Nhập email của bạn để nhận mã OTP</Text>
+      <Text style={styles.title}>{t('Forgot password?')}</Text>
+      <Text style={styles.subtitle}>{t('Enter your email to receive an OTP code')}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t('Email')}</Text>
         <TextInput
           style={[styles.input, errors.email && styles.inputError]}
-          placeholder="Nhập email của bạn"
+          placeholder={t('Enter your email')}
           value={formData.email}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, email: text }));
@@ -178,6 +185,7 @@ export default function ForgotPassword() {
           }}
           keyboardType="email-address"
           autoCapitalize="none"
+          placeholderTextColor={currentTheme.text}
         />
         {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
       </View>
@@ -187,7 +195,7 @@ export default function ForgotPassword() {
         onPress={handleSendOtp}
         disabled={isLoading || isSubmitting}
       >
-        <Text style={styles.buttonText}>Gửi OTP</Text>
+        <Text style={styles.buttonText}>{t('Send OTP')}</Text>
       </TouchableOpacity>
 
       <View style={styles.linksContainer}>
@@ -196,7 +204,7 @@ export default function ForgotPassword() {
             onPress={() => router.push('/login')}
             style={styles.linkButton}
           >
-            <Text style={styles.linkText}>Đăng nhập</Text>
+            <Text style={styles.linkText}>{t('Login')}</Text>
           </TouchableOpacity>
 
           <Text style={styles.linkSeparator}>|</Text>
@@ -205,7 +213,7 @@ export default function ForgotPassword() {
             onPress={() => router.push('/register')}
             style={styles.linkButton}
           >
-            <Text style={styles.linkText}>Đăng ký</Text>
+            <Text style={styles.linkText}>{t('Register')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -218,17 +226,17 @@ export default function ForgotPassword() {
         style={styles.backButton}
         onPress={() => setStep('email')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={styles.backButtonText}>← {t('Back')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Xác thực OTP</Text>
-      <Text style={styles.subtitle}>Nhập mã OTP đã được gửi đến email của bạn</Text>
+      <Text style={styles.title}>{t('Verify OTP')}</Text>
+      <Text style={styles.subtitle}>{t('Enter the OTP code sent to your email')}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Mã OTP</Text>
+        <Text style={styles.label}>{t('OTP Code')}</Text>
         <TextInput
           style={[styles.input, errors.otp && styles.inputError]}
-          placeholder="Nhập 6 chữ số OTP"
+          placeholder={t('Enter 6-digit OTP')}
           value={formData.otp}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, otp: text }));
@@ -240,6 +248,7 @@ export default function ForgotPassword() {
           }}
           keyboardType="numeric"
           maxLength={6}
+          placeholderTextColor={currentTheme.text}
         />
         {errors.otp && <Text style={styles.errorText}>{errors.otp}</Text>}
       </View>
@@ -247,7 +256,7 @@ export default function ForgotPassword() {
       {otpExpiresAt && (
         <View style={styles.countdownContainer}>
           <Text style={styles.countdownText}>
-            OTP hết hạn sau: {getOtpCountdown()}
+            {t('OTP expires in: ')}{getOtpCountdown()}
           </Text>
         </View>
       )}
@@ -257,7 +266,7 @@ export default function ForgotPassword() {
         onPress={handleVerifyOtp}
         disabled={isLoading || isSubmitting}
       >
-        <Text style={styles.buttonText}>Xác thực OTP</Text>
+        <Text style={styles.buttonText}>{t('Verify OTP')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -266,7 +275,7 @@ export default function ForgotPassword() {
         disabled={isLoading || isSubmitting}
       >
         <Text style={[styles.resendText, (isLoading || isSubmitting) && styles.resendTextDisabled]}>
-          Gửi lại OTP
+          {t('Resend OTP')}
         </Text>
       </TouchableOpacity>
     </View>
@@ -278,17 +287,17 @@ export default function ForgotPassword() {
         style={styles.backButton}
         onPress={() => setStep('otp')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={styles.backButtonText}>← {t('Back')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Đặt mật khẩu mới</Text>
-      <Text style={styles.subtitle}>Nhập mật khẩu mới cho tài khoản của bạn</Text>
+      <Text style={styles.title}>{t('Set new password')}</Text>
+      <Text style={styles.subtitle}>{t('Enter a new password for your account')}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Mật khẩu mới</Text>
+        <Text style={styles.label}>{t('New Password')}</Text>
         <TextInput
           style={[styles.input, errors.newPassword && styles.inputError]}
-          placeholder="Nhập mật khẩu mới"
+          placeholder={t('Enter new password')}
           value={formData.newPassword}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, newPassword: text }));
@@ -299,15 +308,16 @@ export default function ForgotPassword() {
             });
           }}
           secureTextEntry
+          placeholderTextColor={currentTheme.text}
         />
         {errors.newPassword && <Text style={styles.errorText}>{errors.newPassword}</Text>}
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Xác nhận mật khẩu</Text>
+        <Text style={styles.label}>{t('Confirm New Password')}</Text>
         <TextInput
           style={[styles.input, errors.confirmPassword && styles.inputError]}
-          placeholder="Nhập lại mật khẩu mới"
+          placeholder={t('Confirm your new password')}
           value={formData.confirmPassword}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, confirmPassword: text }));
@@ -318,6 +328,7 @@ export default function ForgotPassword() {
             });
           }}
           secureTextEntry
+          placeholderTextColor={currentTheme.text}
         />
         {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
       </View>
@@ -327,7 +338,7 @@ export default function ForgotPassword() {
         onPress={handleResetPassword}
         disabled={isLoading || isSubmitting}
       >
-        <Text style={styles.buttonText}>Đặt lại mật khẩu</Text>
+        <Text style={styles.buttonText}>{t('Reset Password')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -338,12 +349,12 @@ export default function ForgotPassword() {
         <Text style={styles.successIcon}>✓</Text>
       </View>
 
-      <Text style={styles.title}>Thành công!</Text>
-      <Text style={styles.subtitle}>Mật khẩu của bạn đã được đặt lại thành công</Text>
+      <Text style={styles.title}>{t('Success!')}</Text>
+      <Text style={styles.subtitle}>{t('Your password has been reset successfully')}</Text>
 
       <View style={styles.successMessage}>
         <Text style={styles.successText}>
-          Bạn có thể sử dụng mật khẩu mới để đăng nhập vào tài khoản của mình.
+          {t('You can use your new password to log in to your account.')}
         </Text>
       </View>
 
@@ -353,7 +364,7 @@ export default function ForgotPassword() {
           router.replace('/login');
         }}
       >
-        <Text style={styles.successButtonText}>Quay lại đăng nhập</Text>
+        <Text style={styles.successButtonText}>{t('Back to Login')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -378,7 +389,7 @@ export default function ForgotPassword() {
 
       {(isLoading || isSubmitting) && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={currentTheme.primary} />
           <Text style={styles.loadingText}>Đang xử lý...</Text>
         </View>
       )}
@@ -386,10 +397,10 @@ export default function ForgotPassword() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -397,7 +408,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   stepContainer: {
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
@@ -409,13 +420,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: theme.text,
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -425,16 +436,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: theme.text,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.background,
+    color: theme.text,
   },
   inputError: {
     borderColor: '#FF6B6B',
@@ -445,7 +457,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -465,7 +477,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   resendText: {
-    color: '#007AFF',
+    color: theme.primary,
     fontSize: 16,
     fontWeight: '500',
   },
@@ -477,7 +489,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   countdownText: {
-    color: '#666',
+    color: theme.text,
     fontSize: 14,
   },
   errorContainer: {
@@ -498,7 +510,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   successMessage: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: theme.background,
     padding: 16,
     borderRadius: 8,
     marginBottom: 24,
@@ -506,7 +518,7 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
   },
   successText: {
-    color: '#2E7D32',
+    color: theme.text,
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
@@ -529,14 +541,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(245, 245, 245, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: theme.text,
   },
   linksContainer: {
     marginTop: 24,
@@ -547,7 +559,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkSeparator: {
-    color: '#666',
+    color: theme.text,
     fontSize: 16,
     marginHorizontal: 8,
   },
@@ -555,7 +567,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   linkText: {
-    color: '#007AFF',
+    color: theme.primary,
     fontSize: 16,
     textDecorationLine: 'underline',
   },
@@ -565,7 +577,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backButtonText: {
-    color: '#007AFF',
+    color: theme.primary,
     fontSize: 16,
     fontWeight: '500',
   },

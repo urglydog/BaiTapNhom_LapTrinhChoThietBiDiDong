@@ -13,8 +13,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../src/store';
 import { createBooking } from '../src/store/bookingSlice';
 import { Showtime, Seat } from '../src/types';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
 
 export default function BookingScreen() {
+  const { t } = useTranslation();
   const { showtimeId } = useLocalSearchParams();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -23,6 +27,9 @@ export default function BookingScreen() {
   const showtime = useSelector((state: RootState) =>
     state.movie.showtimes.find(s => s.id === Number(showtimeId))
   );
+  const { theme } = useAppSelector((state) => state.theme);
+  const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+  const styles = getStyles(currentTheme);
 
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
   const [promotionCode, setPromotionCode] = useState('');
@@ -44,12 +51,12 @@ export default function BookingScreen() {
 
   const handleBookTicket = async () => {
     if (selectedSeats.length === 0) {
-      Alert.alert('Lỗi', 'Vui lòng chọn ghế');
+      Alert.alert(t('Error'), t('Please select a seat'));
       return;
     }
 
     if (!showtime) {
-      Alert.alert('Lỗi', 'Không tìm thấy thông tin suất chiếu');
+      Alert.alert(t('Error'), t('Showtime information not found'));
       return;
     }
 
@@ -60,18 +67,18 @@ export default function BookingScreen() {
         promotionCode: promotionCode || undefined,
       })).unwrap();
 
-      Alert.alert('Thành công', 'Đặt vé thành công!', [
+      Alert.alert(t('Success'), t('Booking successful!'), [
         { text: 'OK', onPress: () => router.back() }
       ]);
     } catch (error) {
-      Alert.alert('Lỗi', error as string);
+      Alert.alert(t('Error'), error as string);
     }
   };
 
   if (!showtime) {
     return (
       <View style={styles.container}>
-        <Text>Không tìm thấy thông tin suất chiếu</Text>
+        <Text style={styles.errorText}>{t('Showtime information not found')}</Text>
       </View>
     );
   }
@@ -89,7 +96,7 @@ export default function BookingScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Đặt vé</Text>
+        <Text style={styles.title}>{t('Book ticket')}</Text>
         {showtime.movie?.title && (
           <Text style={styles.movieTitle}>{showtime.movie.title}</Text>
         )}
@@ -101,7 +108,7 @@ export default function BookingScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Chọn ghế</Text>
+        <Text style={styles.sectionTitle}>{t('Select seats')}</Text>
         <View style={styles.seatMap}>
           {seats.map((seat) => (
             <TouchableOpacity
@@ -120,43 +127,44 @@ export default function BookingScreen() {
         <View style={styles.legend}>
           <View style={styles.legendItem}>
             <View style={[styles.legendSeat, styles.normalSeat]} />
-            <Text>Ghế thường</Text>
+            <Text style={styles.legendText}>{t('Normal seat')}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendSeat, styles.vipSeat]} />
-            <Text>Ghế VIP</Text>
+            <Text style={styles.legendText}>{t('VIP seat')}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendSeat, styles.selectedSeat]} />
-            <Text>Đã chọn</Text>
+            <Text style={styles.legendText}>{t('Selected')}</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Mã giảm giá (tùy chọn)</Text>
+        <Text style={styles.sectionTitle}>{t('Promotion code (optional)')}</Text>
         <TextInput
           style={styles.promotionInput}
           value={promotionCode}
           onChangeText={setPromotionCode}
-          placeholder="Nhập mã giảm giá"
+          placeholder={t('Enter promotion code')}
+          placeholderTextColor={currentTheme.text}
         />
       </View>
 
       <View style={styles.summary}>
-        <Text style={styles.summaryTitle}>Tóm tắt đơn hàng</Text>
+        <Text style={styles.summaryTitle}>{t('Order summary')}</Text>
         <View style={styles.summaryRow}>
-          <Text>Số ghế đã chọn:</Text>
-          <Text>{selectedSeats.length}</Text>
+          <Text style={styles.summaryText}>{t('Number of selected seats')}:</Text>
+          <Text style={styles.summaryText}>{selectedSeats.length}</Text>
         </View>
         <View style={styles.summaryRow}>
-          <Text>Giá mỗi vé:</Text>
+          <Text style={styles.summaryText}>{t('Price per ticket')}:</Text>
           {showtime.price != null && (
-            <Text>{showtime.price.toLocaleString()} VNĐ</Text>
+            <Text style={styles.summaryText}>{showtime.price.toLocaleString()} VNĐ</Text>
           )}
         </View>
         <View style={styles.summaryRow}>
-          <Text>Tổng cộng:</Text>
+          <Text style={styles.summaryText}>{t('Total')}:</Text>
           <Text style={styles.totalAmount}>
             {totalAmount.toLocaleString()} VNĐ
           </Text>
@@ -169,47 +177,47 @@ export default function BookingScreen() {
         disabled={selectedSeats.length === 0}
       >
         <Text style={styles.bookButtonText}>
-          Đặt vé ({totalAmount.toLocaleString()} VNĐ)
+          {t('Book ticket')} ({totalAmount.toLocaleString()} VNĐ)
         </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   header: {
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     padding: 20,
     marginBottom: 1,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     marginBottom: 8,
   },
   movieTitle: {
     fontSize: 18,
-    color: '#666',
+    color: theme.text,
     marginBottom: 4,
   },
   showtime: {
     fontSize: 16,
-    color: '#007AFF',
+    color: theme.primary,
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     padding: 20,
     marginBottom: 1,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     marginBottom: 16,
   },
   seatMap: {
@@ -223,15 +231,15 @@ const styles = StyleSheet.create({
     height: 40,
     margin: 4,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.border,
   },
   selectedSeat: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
   },
   vipSeat: {
     backgroundColor: '#FFD700',
@@ -240,7 +248,7 @@ const styles = StyleSheet.create({
   seatText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
   },
   legend: {
     flexDirection: 'row',
@@ -257,17 +265,20 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   normalSeat: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.background,
+  },
+  legendText: {
+    color: theme.text,
   },
   summary: {
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     padding: 20,
     marginBottom: 1,
   },
   summaryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     marginBottom: 16,
   },
   summaryRow: {
@@ -275,20 +286,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
+  summaryText: {
+    color: theme.text,
+  },
   totalAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: theme.primary,
   },
   promotionInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    color: theme.text,
   },
   bookButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.primary,
     margin: 20,
     padding: 16,
     borderRadius: 8,
@@ -302,4 +317,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  errorText: {
+      color: theme.text
+  }
 });

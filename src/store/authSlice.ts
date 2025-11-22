@@ -43,19 +43,6 @@ export const logout = createAsyncThunk(
   }
 );
 
-// update
-
-
-
-
-// /update
-
-
-
-
-
-// commit
-
 export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {

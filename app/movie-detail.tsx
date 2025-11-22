@@ -14,14 +14,22 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { movieService } from '../src/services/movieService';
 import { Movie } from '../src/types';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 export default function MovieDetailScreen() {
+    const { t } = useTranslation();
     const { movieId } = useLocalSearchParams();
     const router = useRouter();
     const [movie, setMovie] = useState<Movie | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { theme } = useAppSelector((state) => state.theme);
+    const { language } = useAppSelector((state) => state.language);
+    const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+    const styles = getStyles(currentTheme);
 
     useEffect(() => {
         const loadMovie = async () => {
@@ -32,7 +40,7 @@ export default function MovieDetailScreen() {
                 setMovie(movieData);
             } catch (error: any) {
                 console.error('Error loading movie:', error);
-                Alert.alert('Lỗi', 'Không thể tải thông tin phim', [
+                Alert.alert(t('Error'), t('Could not load movie information'), [
                     { text: 'OK', onPress: () => router.back() },
                 ]);
             } finally {
@@ -47,18 +55,18 @@ export default function MovieDetailScreen() {
         if (movie?.trailerUrl) {
             Linking.openURL(movie.trailerUrl).catch((err) => {
                 console.error('Error opening trailer:', err);
-                Alert.alert('Lỗi', 'Không thể mở trailer. Vui lòng kiểm tra URL.');
+                Alert.alert(t('Error'), t('Could not open trailer. Please check the URL.'));
             });
         } else {
-            Alert.alert('Thông báo', 'Phim này chưa có trailer');
+            Alert.alert(t('Notification'), t('This movie does not have a trailer yet'));
         }
     };
 
     if (isLoading) {
         return (
             <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.loadingText}>Đang tải thông tin phim...</Text>
+                <ActivityIndicator size="large" color={currentTheme.primary} />
+                <Text style={styles.loadingText}>{t('Loading movie information...')}</Text>
             </View>
         );
     }
@@ -66,9 +74,9 @@ export default function MovieDetailScreen() {
     if (!movie) {
         return (
             <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>Không tìm thấy phim</Text>
+                <Text style={styles.errorText}>{t('Movie not found')}</Text>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Text style={styles.backButtonText}>Quay lại</Text>
+                    <Text style={styles.backButtonText}>{t('Back')}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -87,7 +95,7 @@ export default function MovieDetailScreen() {
                 ) : (
                     <View style={styles.placeholderPoster}>
                         <Text style={styles.placeholderText}>📽️</Text>
-                        <Text style={styles.placeholderSubtext}>Không có ảnh</Text>
+                        <Text style={styles.placeholderSubtext}>{t('No image')}</Text>
                     </View>
                 )}
                 <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
@@ -102,7 +110,7 @@ export default function MovieDetailScreen() {
                     <Text style={styles.title}>{movie.title}</Text>
                     {movie.trailerUrl && (
                         <TouchableOpacity style={styles.trailerButton} onPress={handleWatchTrailer}>
-                            <Text style={styles.trailerButtonText}>▶ Xem Trailer</Text>
+                            <Text style={styles.trailerButtonText}>▶ {t('Watch Trailer')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -116,7 +124,7 @@ export default function MovieDetailScreen() {
                     )}
                     {movie.duration != null && movie.duration > 0 && (
                         <View style={styles.infoBadge}>
-                            <Text style={styles.infoBadgeText}>⏱️ {movie.duration} phút</Text>
+                            <Text style={styles.infoBadgeText}>⏱️ {movie.duration} {t('minutes')}</Text>
                         </View>
                     )}
                     {movie.ageRating && (
@@ -128,56 +136,56 @@ export default function MovieDetailScreen() {
 
                 {/* Description */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Mô tả</Text>
-                    <Text style={styles.description}>{movie.description || 'Chưa có mô tả'}</Text>
+                    <Text style={styles.sectionTitle}>{t('Description')}</Text>
+                    <Text style={styles.description}>{movie.description || t('No description')}</Text>
                 </View>
 
                 {/* Details */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
+                    <Text style={styles.sectionTitle}>{t('Details')}</Text>
                     {movie.genre && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Thể loại:</Text>
+                            <Text style={styles.detailLabel}>{t('Genre')}:</Text>
                             <Text style={styles.detailValue}>{movie.genre}</Text>
                         </View>
                     )}
                     {movie.director && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Đạo diễn:</Text>
+                            <Text style={styles.detailLabel}>{t('Director')}:</Text>
                             <Text style={styles.detailValue}>{movie.director}</Text>
                         </View>
                     )}
                     {movie.cast && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Diễn viên:</Text>
+                            <Text style={styles.detailLabel}>{t('Cast')}:</Text>
                             <Text style={styles.detailValue}>{movie.cast}</Text>
                         </View>
                     )}
                     {movie.language && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Ngôn ngữ:</Text>
+                            <Text style={styles.detailLabel}>{t('Language')}:</Text>
                             <Text style={styles.detailValue}>{movie.language}</Text>
                         </View>
                     )}
                     {movie.subtitle && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Phụ đề:</Text>
+                            <Text style={styles.detailLabel}>{t('Subtitle')}:</Text>
                             <Text style={styles.detailValue}>{movie.subtitle}</Text>
                         </View>
                     )}
                     {movie.releaseDate && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Ngày khởi chiếu:</Text>
+                            <Text style={styles.detailLabel}>{t('Release Date')}:</Text>
                             <Text style={styles.detailValue}>
-                                {new Date(movie.releaseDate).toLocaleDateString('vi-VN')}
+                                {new Date(movie.releaseDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}
                             </Text>
                         </View>
                     )}
                     {movie.endDate && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Ngày kết thúc:</Text>
+                            <Text style={styles.detailLabel}>{t('End Date')}:</Text>
                             <Text style={styles.detailValue}>
-                                {new Date(movie.endDate).toLocaleDateString('vi-VN')}
+                                {new Date(movie.endDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}
                             </Text>
                         </View>
                     )}
@@ -187,29 +195,29 @@ export default function MovieDetailScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.background,
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.background,
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
+        color: theme.text,
     },
     errorText: {
         fontSize: 18,
-        color: '#999',
+        color: theme.text,
         marginBottom: 16,
     },
     backButton: {
-        backgroundColor: '#007AFF',
+        backgroundColor: theme.primary,
         paddingHorizontal: 24,
         paddingVertical: 12,
         borderRadius: 8,
@@ -231,7 +239,7 @@ const styles = StyleSheet.create({
     placeholderPoster: {
         width: '100%',
         height: '100%',
-        backgroundColor: '#e0e0e0',
+        backgroundColor: theme.border,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -241,7 +249,7 @@ const styles = StyleSheet.create({
     },
     placeholderSubtext: {
         fontSize: 16,
-        color: '#999',
+        color: theme.text,
     },
     backIcon: {
         position: 'absolute',
@@ -260,7 +268,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     content: {
-        backgroundColor: '#fff',
+        backgroundColor: theme.card,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         marginTop: -24,
@@ -272,7 +280,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#333',
+        color: theme.text,
         marginBottom: 12,
     },
     trailerButton: {
@@ -294,14 +302,14 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     infoBadge: {
-        backgroundColor: '#f0f0f0',
+        backgroundColor: theme.background,
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
     },
     infoBadgeText: {
         fontSize: 14,
-        color: '#333',
+        color: theme.text,
         fontWeight: '500',
     },
     section: {
@@ -310,12 +318,12 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
+        color: theme.text,
         marginBottom: 12,
     },
     description: {
         fontSize: 16,
-        color: '#666',
+        color: theme.text,
         lineHeight: 24,
     },
     detailRow: {
@@ -325,13 +333,13 @@ const styles = StyleSheet.create({
     },
     detailLabel: {
         fontSize: 16,
-        color: '#666',
+        color: theme.text,
         fontWeight: '500',
         width: 120,
     },
     detailValue: {
         fontSize: 16,
-        color: '#333',
+        color: theme.text,
         flex: 1,
     },
 });

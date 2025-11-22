@@ -15,8 +15,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../src/store';
 import { clearError, login } from '../src/store/authSlice';
 import { useRouter } from 'expo-router';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
+    const { t } = useTranslation();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -24,10 +28,13 @@ export default function LoginScreen() {
     const dispatch = useDispatch<AppDispatch>();
     const { error } = useSelector((state: RootState) => state.auth);
     const router = useRouter();
+    const { theme } = useAppSelector((state) => state.theme);
+    const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+    const styles = getStyles(currentTheme);
 
     const handleLogin = async () => {
         if (!username.trim() || !password.trim()) {
-            Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
+            Alert.alert(t('Error'), t('Please fill in all fields'));
             return;
         }
 
@@ -36,7 +43,7 @@ export default function LoginScreen() {
             const result = await dispatch(login({ username, password })).unwrap();
 
             if(result) {
-                Alert.alert('Thành công', 'Đăng nhập thành công');
+                Alert.alert(t('Success'), t('Login successful'));
                 
                 router.replace('/(tabs)');
             }
@@ -45,7 +52,7 @@ export default function LoginScreen() {
                 router.replace('/(tabs)/profile');
             }
         } catch (error) {
-            Alert.alert('Đăng nhập thất bại', error as string);
+            Alert.alert(t('Login failed'), error as string);
         } finally {
             setIsLoading(false);
         }
@@ -65,8 +72,8 @@ export default function LoginScreen() {
         >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Movie Ticket Booking</Text>
-                    <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
+                    <Text style={styles.title}>{t('Movie Ticket Booking')}</Text>
+                    <Text style={styles.subtitle}>{t('Login to continue')}</Text>
                 </View>
 
                 <View style={styles.form}>
@@ -74,33 +81,35 @@ export default function LoginScreen() {
                         style={styles.backButton}
                         onPress={() => router.replace('/(tabs)')}
                     >
-                        <Text style={styles.backButtonText}>← Quay lại</Text>
+                        <Text style={styles.backButtonText}>← {t('Back')}</Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.formTitle}>Đăng nhập</Text>
+                    <Text style={styles.formTitle}>{t('Login')}</Text>
 
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Tên đăng nhập</Text>
+                        <Text style={styles.label}>{t('Username')}</Text>
                         <TextInput
                             style={styles.input}
                             value={username}
                             onChangeText={setUsername}
-                            placeholder="Nhập tên đăng nhập"
+                            placeholder={t('Enter username')}
                             autoCapitalize="none"
                             autoCorrect={false}
+                            placeholderTextColor={currentTheme.text}
                         />
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Mật khẩu</Text>
+                        <Text style={styles.label}>{t('Password')}</Text>
                         <TextInput
                             style={styles.input}
                             value={password}
                             onChangeText={setPassword}
-                            placeholder="Nhập mật khẩu"
+                            placeholder={t('Enter password')}
                             secureTextEntry
                             autoCapitalize="none"
                             autoCorrect={false}
+                            placeholderTextColor={currentTheme.text}
                         />
                     </View>
 
@@ -110,26 +119,27 @@ export default function LoginScreen() {
                         disabled={isLoading}
                     >
                         <Text style={styles.loginButtonText}>
-                            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                            {isLoading ? t('Logging in...') : t('Login')}
                         </Text>
                     </TouchableOpacity>
 
                     <Text
-                        style={{ marginTop: 20, textAlign: 'center' }}
-                    >Bạn chưa có tài khoản 
-                        <TouchableOpacity 
+                        style={{ marginTop: 20, textAlign: 'center', color: currentTheme.text }}
+                    >
+                        {t('Don\'t have an account? ')}
+                        <TouchableOpacity
                             onPress={() => router.push('/register')}
                         >
-                                <Text style={{color: '#007AFF'}}> Đăng ký ngay</Text>
+                            <Text style={{ color: currentTheme.primary }}>{t('Register now')}</Text>
                         </TouchableOpacity>
                     </Text>
 
-                    <TouchableOpacity 
-                            onPress={() => router.push('/forgot-password')}
-                            style={{ marginTop: 10, alignSelf: 'center' }}
-                        >
-                                <Text style={{color: '#007AFF'}}> Quên mật khẩu?</Text>
-                        </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => router.push('/forgot-password')}
+                        style={{ marginTop: 10, alignSelf: 'center' }}
+                    >
+                        <Text style={{ color: currentTheme.primary }}>{t('Forgot password?')}</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.footer}>
@@ -145,10 +155,10 @@ export default function LoginScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.background,
     },
     scrollContainer: {
         flexGrow: 1,
@@ -162,15 +172,15 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#333',
+        color: theme.text,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#666',
+        color: theme.text,
     },
     form: {
-        backgroundColor: 'white',
+        backgroundColor: theme.card,
         borderRadius: 12,
         padding: 24,
         shadowColor: '#000',
@@ -188,19 +198,20 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
+        color: theme.text,
         marginBottom: 8,
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: theme.border,
         borderRadius: 8,
         padding: 12,
         fontSize: 16,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: theme.background,
+        color: theme.text,
     },
     loginButton: {
-        backgroundColor: '#007AFF',
+        backgroundColor: theme.primary,
         borderRadius: 8,
         padding: 16,
         alignItems: 'center',
@@ -220,12 +231,12 @@ const styles = StyleSheet.create({
     },
     footerText: {
         fontSize: 14,
-        color: '#666',
+        color: theme.text,
         marginBottom: 8,
     },
     demoText: {
         fontSize: 12,
-        color: '#999',
+        color: theme.text,
         marginBottom: 4,
     },
     backButton: {
@@ -234,14 +245,14 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     backButtonText: {
-        color: '#007AFF',
+        color: theme.primary,
         fontSize: 16,
         fontWeight: '500',
     },
     formTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
+        color: theme.text,
         textAlign: 'center',
         marginBottom: 24,
     },

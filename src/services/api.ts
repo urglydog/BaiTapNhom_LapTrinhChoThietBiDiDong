@@ -9,14 +9,14 @@ import { storage } from "../utils/storage";
 // - Linux: Mở Terminal chạy "ip addr show", tìm inet addr trong eth0/wlan0
 // Ví dụ: "http://192.168.1.10:8080/api"
 const API_BASE_URL =
-  __DEV__
-    ? "http://192.168.1.15:8080/api" // ⚠️ THAY IP NÀY BẰNG IP THỰC CỦA MÁY TÍNH BẠN
-    : "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api"; // URL production
+    // "http://192.168.1.15:8080/api" // ⚠️ THAY IP NÀY BẰNG IP THỰC CỦA MÁY TÍNH BẠN
+     "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api"; // URL production
+     
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // Tăng timeout lên 30s vì Render.com free tier có thể mất thời gian để wake up
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 

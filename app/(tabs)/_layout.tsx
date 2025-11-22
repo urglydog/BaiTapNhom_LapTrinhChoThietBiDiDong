@@ -1,37 +1,42 @@
-import { setUser } from '@/src/store/authSlice';
 import { Tabs, useFocusEffect } from 'expo-router';
 import { Text } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useAppSelector } from '@/src/hooks/redux';
+import { darkTheme, lightTheme } from '@/src/themes';
+import { useTranslation } from 'react-i18next';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function TabLayout() {
+    const { t } = useTranslation();
+    const { theme } = useAppSelector((state) => state.theme);
+    const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: 'white',
+                    backgroundColor: currentTheme.card,
                     borderTopWidth: 1,
-                    borderTopColor: '#e0e0e0',
+                    borderTopColor: currentTheme.border,
                 },
-                tabBarActiveTintColor: '#007AFF',
-                tabBarInactiveTintColor: '#666',
+                tabBarActiveTintColor: currentTheme.primary,
+                tabBarInactiveTintColor: currentTheme.text,
             }}
         >
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'Trang chủ',
+                    title: t('Home'),
                     tabBarIcon: ({ color }) => (
-                        <Text style={{ fontSize: 20, color }}>🏠</Text>
+                        <MaterialIcons name="home" size={24} color={color} />
                     ),
                 }}
             />
             <Tabs.Screen
                 name="profile"
                 options={{
-                    title: 'Cá nhân',
+                    title: t('Profile'),
                     tabBarIcon: ({ color }) => (
-                        <Text style={{ fontSize: 20, color }}>👤</Text>
+                        <MaterialIcons name="person" size={24} color={color} />
                     ),
                 }}
             />
