@@ -240,7 +240,13 @@ export default function MovieDetailScreen() {
                 {/* Buy Ticket Button */}
                 <TouchableOpacity
                     style={styles.buyTicketButton}
-                    onPress={() => router.push(`/showtime-selection?movieId=${movie.id}`)}
+                    onPress={() => router.push({
+                        pathname: '/cinema-selection',
+                        params: {
+                            movieId: movie.id.toString(),
+                            movieTitle: movie.title,
+                        }
+                    })}
                 >
                     <Text style={styles.buyTicketButtonText}>Mua vé</Text>
                 </TouchableOpacity>

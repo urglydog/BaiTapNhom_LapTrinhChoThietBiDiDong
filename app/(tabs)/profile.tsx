@@ -21,14 +21,16 @@ export default function ProfileScreen() {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const handleLogout = () => {
-        Alert.alert(
-            'Đăng xuất',
-            'Bạn có chắc chắn muốn đăng xuất?',
-            [
-                { text: 'Hủy', style: 'cancel' },
-                { text: 'Đăng xuất', onPress: () => dispatch(logout()) }
-            ]
-        );
+        setShowLogoutModal(true);
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutModal(false);
+    };
+
+    const confirmLogout = () => {
+        setShowLogoutModal(false);
+        dispatch(logout());
     };
 
     const getRoleDisplayName = (role: string) => {

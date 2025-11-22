@@ -23,12 +23,18 @@ export const createBooking = createAsyncThunk(
     showtimeId: number;
     seatIds: number[];
     promotionCode?: string;
+    paymentMethod?: string;
   }, { rejectWithValue }) => {
     try {
       const booking = await bookingService.createBooking(bookingData);
       return booking;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create booking');
+      console.error('Booking error details:', error);
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          error?.toString() || 
+                          'Failed to create booking';
+      return rejectWithValue(errorMessage);
     }
   }
 );

@@ -26,13 +26,14 @@ interface ShowtimesByDate {
 }
 
 export default function ShowtimeSelectionScreen() {
-    const { movieId } = useLocalSearchParams();
+    const { movieId, cinemaId, cinemaName } = useLocalSearchParams();
     const router = useRouter();
     const [movie, setMovie] = useState<Movie | null>(null);
     const [showtimesByDate, setShowtimesByDate] = useState<ShowtimesByDate>({});
     const [selectedDate, setSelectedDate] = useState<string>('');
     const [availableDates, setAvailableDates] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadMovieAndShowtimes();
@@ -48,21 +49,46 @@ export default function ShowtimeSelectionScreen() {
             setMovie(movieData);
 
             // Get all showtimes for this movie
-            const allShowtimes = await showtimeService.getShowtimesByMovie(Number(movieId));
+            let allShowtimes = await showtimeService.getShowtimesByMovie(Number(movieId));
             
-            // Generate dates for next 7 days
-            const dates: string[] = [];
-            const today = new Date();
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() + i);
-                dates.push(date.toISOString().split('T')[0]);
+            // Nếu có cinemaId, filter theo rạp đã chọn
+            if (cinemaId) {
+                const cinemaShowtimes = await showtimeService.getShowtimesByMovieAndCinema(
+                    Number(movieId),
+                    Number(cinemaId)
+                );
+                allShowtimes = cinemaShowtimes;
             }
+            
+            // Extract unique dates from showtimes (lấy tất cả các ngày có showtime)
+            const uniqueDates = Array.from(
+                new Set(
+                    allShowtimes
+                        .map(st => st.showDate)
+                        .filter(date => date != null)
+                        .sort() // Sort dates
+                )
+            ) as string[];
+            
+            // Nếu không có showtime nào, tạo 7 ngày từ hôm nay
+            let dates: string[] = [];
+            if (uniqueDates.length > 0) {
+                dates = uniqueDates;
+            } else {
+                const today = new Date();
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() + i);
+                    dates.push(date.toISOString().split('T')[0]);
+                }
+            }
+            
             setAvailableDates(dates);
-            setSelectedDate(dates[0]);
-
-            // Load showtimes for the first date
-            await loadShowtimesForDate(dates[0]);
+            if (dates.length > 0) {
+                setSelectedDate(dates[0]);
+                // Load showtimes for the first date
+                await loadShowtimesForDate(dates[0]);
+            }
         } catch (error: any) {
             console.error('Error loading data:', error);
             Alert.alert('Lỗi', 'Không thể tải thông tin phim', [
@@ -76,12 +102,27 @@ export default function ShowtimeSelectionScreen() {
     const loadShowtimesForDate = async (date: string) => {
         if (!movieId) return;
         
+        // Nếu đã có dữ liệu cho ngày này, không load lại
+        if (showtimesByDate[date]) {
+            return;
+        }
+        
         try {
+            setLoadingDates(prev => new Set(prev).add(date));
             console.log('🔄 Loading showtimes for date:', date);
-            const showtimes = await showtimeService.getShowtimesByMovieAndDate(
+            
+            let showtimes = await showtimeService.getShowtimesByMovieAndDate(
                 Number(movieId),
                 date
             );
+            
+            // Nếu có cinemaId, filter theo rạp đã chọn
+            if (cinemaId) {
+                showtimes = showtimes.filter(st => {
+                    // Kiểm tra xem showtime này thuộc rạp đã chọn không
+                    return st.cinema?.id === Number(cinemaId);
+                });
+            }
 
             console.log('📦 Received showtimes:', showtimes.length);
 
@@ -111,7 +152,20 @@ export default function ShowtimeSelectionScreen() {
             }));
         } catch (error: any) {
             console.error('❌ Error loading showtimes for date:', error);
-            Alert.alert('Lỗi', error.message || 'Không thể tải lịch chiếu cho ngày này');
+            Alert.alert(
+                'Lỗi', 
+                error.message || 'Không thể tải lịch chiếu cho ngày này',
+                [
+                    { text: 'Thử lại', onPress: () => loadShowtimesForDate(date) },
+                    { text: 'OK', style: 'cancel' }
+                ]
+            );
+        } finally {
+            setLoadingDates(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(date);
+                return newSet;
+            });
         }
     };
 
@@ -239,9 +293,16 @@ export default function ShowtimeSelectionScreen() {
                 <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
                     <Text style={styles.backIconText}>←</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                    {movie.title}
-                </Text>
+                <View style={styles.headerInfo}>
+                    <Text style={styles.headerTitle} numberOfLines={1}>
+                        {movie.title}
+                    </Text>
+                    {cinemaName && (
+                        <Text style={styles.headerCinema} numberOfLines={1}>
+                            🎭 {cinemaName}
+                        </Text>
+                    )}
+                </View>
             </View>
 
             {/* Date Selector */}
@@ -279,7 +340,12 @@ export default function ShowtimeSelectionScreen() {
 
             {/* Showtimes by Cinema */}
             <ScrollView style={styles.showtimesList} showsVerticalScrollIndicator={false}>
-                {selectedDate && showtimesByDate[selectedDate] ? (
+                {loadingDates.has(selectedDate) ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#E91E63" />
+                        <Text style={styles.loadingText}>Đang tải lịch chiếu...</Text>
+                    </View>
+                ) : selectedDate && showtimesByDate[selectedDate] ? (
                     Object.values(showtimesByDate[selectedDate]).map((cinemaData: any) => (
                         <View key={cinemaData.cinema.id} style={styles.cinemaSection}>
                             <View style={styles.cinemaHeader}>
@@ -292,20 +358,24 @@ export default function ShowtimeSelectionScreen() {
                             <View style={styles.showtimesGrid}>
                                 <Text style={styles.format2D}>2D Phụ đề</Text>
                                 <View style={styles.timeButtonsContainer}>
-                                    {cinemaData.showtimes.map((showtime: ShowtimeWithCinema) => (
-                                        <TouchableOpacity
-                                            key={showtime.id}
-                                            style={styles.timeButton}
-                                            onPress={() => handleShowtimeSelect(showtime)}
-                                        >
-                                            <Text style={styles.timeText}>
-                                                {formatTime(showtime.startTime)}
-                                            </Text>
-                                            <Text style={styles.endTimeText}>
-                                                ~{formatTime(showtime.endTime)}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
+                                    {cinemaData.showtimes.length > 0 ? (
+                                        cinemaData.showtimes.map((showtime: ShowtimeWithCinema) => (
+                                            <TouchableOpacity
+                                                key={showtime.id}
+                                                style={styles.timeButton}
+                                                onPress={() => handleShowtimeSelect(showtime)}
+                                            >
+                                                <Text style={styles.timeText}>
+                                                    {formatTime(showtime.startTime)}
+                                                </Text>
+                                                <Text style={styles.endTimeText}>
+                                                    ~{formatTime(showtime.endTime)}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))
+                                    ) : (
+                                        <Text style={styles.emptyText}>Chưa có suất chiếu</Text>
+                                    )}
                                 </View>
                             </View>
                         </View>
@@ -313,6 +383,12 @@ export default function ShowtimeSelectionScreen() {
                 ) : (
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>Chưa có lịch chiếu cho ngày này</Text>
+                        <TouchableOpacity 
+                            style={styles.retryButton}
+                            onPress={() => selectedDate && loadShowtimesForDate(selectedDate)}
+                        >
+                            <Text style={styles.retryButtonText}>Thử lại</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
             </ScrollView>
@@ -376,11 +452,24 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
     },
+    headerInfo: {
+        flex: 1,
+    },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         color: '#333',
-        flex: 1,
+    },
+    headerSubtitle: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 4,
+    },
+    headerCinema: {
+        fontSize: 13,
+        color: '#E91E63',
+        marginTop: 2,
+        fontWeight: '600',
     },
     dateSelector: {
         backgroundColor: '#fff',
@@ -486,5 +575,28 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#999',
         textAlign: 'center',
+        marginBottom: 16,
+    },
+    loadingContainer: {
+        padding: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: '#666',
+    },
+    retryButton: {
+        backgroundColor: '#E91E63',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+        marginTop: 8,
+    },
+    retryButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

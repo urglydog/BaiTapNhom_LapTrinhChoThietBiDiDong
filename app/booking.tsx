@@ -7,18 +7,20 @@ import {
   StyleSheet,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../src/store';
 import { createBooking } from '../src/store/bookingSlice';
-import { Showtime, Seat } from '../src/types';
+import { Showtime, Seat, Promotion } from '../src/types';
+import { promotionService } from '../src/services/promotionService';
 
 export default function BookingScreen() {
-  const { 
-    showtimeId, 
-    seatIds, 
-    seatNumbers, 
+  const {
+    showtimeId,
+    seatIds,
+    seatNumbers,
     totalAmount: totalAmountParam,
     movieTitle,
     cinemaName,
@@ -36,8 +38,12 @@ export default function BookingScreen() {
 
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
   const [promotionCode, setPromotionCode] = useState('');
+  const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [finalAmount, setFinalAmount] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
 
   useEffect(() => {
     // Parse seatIds từ params
@@ -49,7 +55,7 @@ export default function BookingScreen() {
         console.error('Error parsing seatIds:', e);
       }
     }
-    
+
     // Set total amount từ params hoặc tính toán
     if (totalAmountParam) {
       setTotalAmount(Number(totalAmountParam));
@@ -57,6 +63,74 @@ export default function BookingScreen() {
       setTotalAmount((showtime.price || 0) * selectedSeats.length);
     }
   }, [seatIds, totalAmountParam, showtime]);
+
+  // Tính toán lại khi totalAmount hoặc promotion thay đổi
+  useEffect(() => {
+    if (appliedPromotion && totalAmount > 0) {
+      let discount = 0;
+      if (appliedPromotion.discountType === 'PERCENTAGE') {
+        discount = (totalAmount * appliedPromotion.discountValue) / 100;
+        if (appliedPromotion.maxDiscount) {
+          discount = Math.min(discount, appliedPromotion.maxDiscount);
+        }
+      } else {
+        discount = appliedPromotion.discountValue;
+      }
+
+      // Kiểm tra minAmount
+      if (appliedPromotion.minAmount && totalAmount < appliedPromotion.minAmount) {
+        setDiscountAmount(0);
+        setFinalAmount(totalAmount);
+      } else {
+        setDiscountAmount(discount);
+        setFinalAmount(Math.max(0, totalAmount - discount));
+      }
+    } else {
+      setDiscountAmount(0);
+      setFinalAmount(totalAmount);
+    }
+  }, [totalAmount, appliedPromotion]);
+
+  // Validate và apply promotion code
+  const handleApplyPromotion = async () => {
+    if (!promotionCode.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập mã giảm giá');
+      return;
+    }
+
+    setIsValidatingPromo(true);
+    try {
+      const promotions = await promotionService.getAvailablePromotions();
+      const promotion = promotions.find(p =>
+        p.code?.toUpperCase() === promotionCode.trim().toUpperCase()
+      );
+
+      if (!promotion) {
+        Alert.alert('Lỗi', 'Mã giảm giá không hợp lệ hoặc đã hết hạn');
+        setAppliedPromotion(null);
+        return;
+      }
+
+      // Kiểm tra minAmount
+      if (promotion.minAmount && totalAmount < promotion.minAmount) {
+        Alert.alert(
+          'Lỗi',
+          `Đơn hàng tối thiểu ${promotion.minAmount.toLocaleString()} VNĐ để áp dụng mã này`
+        );
+        setAppliedPromotion(null);
+        return;
+      }
+
+      setAppliedPromotion(promotion);
+      Alert.alert('Thành công', `Đã áp dụng mã giảm giá: ${promotion.name}`);
+    } catch (error: any) {
+      console.error('Error validating promotion:', error);
+      Alert.alert('Lỗi', 'Không thể kiểm tra mã giảm giá. Vui lòng thử lại.');
+      setAppliedPromotion(null);
+    } finally {
+      setIsValidatingPromo(false);
+    }
+  };
 
   const handleBookTicket = async () => {
     if (selectedSeats.length === 0) {
@@ -79,17 +153,20 @@ export default function BookingScreen() {
 
     setIsLoading(true);
     try {
-      await dispatch(createBooking({
+      const result = await dispatch(createBooking({
         showtimeId: Number(showtimeId),
         seatIds: selectedSeats,
-        promotionCode: promotionCode || undefined,
+        promotionCode: appliedPromotion?.code || undefined,
       })).unwrap();
 
+      console.log('Booking result:', result);
       Alert.alert('Thành công', 'Đặt vé thành công!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)') }
       ]);
     } catch (error: any) {
-      Alert.alert('Lỗi', error?.message || error || 'Đặt vé thất bại');
+      console.error('Booking error:', error);
+      const errorMessage = error?.message || error?.payload || error || 'Đặt vé thất bại';
+      Alert.alert('Lỗi', String(errorMessage));
     } finally {
       setIsLoading(false);
     }
@@ -145,12 +222,40 @@ export default function BookingScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Mã giảm giá (tùy chọn)</Text>
-        <TextInput
-          style={styles.promotionInput}
-          value={promotionCode}
-          onChangeText={setPromotionCode}
-          placeholder="Nhập mã giảm giá"
-        />
+        <View style={styles.promotionContainer}>
+          <TextInput
+            style={styles.promotionInput}
+            value={promotionCode}
+            onChangeText={setPromotionCode}
+            placeholder="Nhập mã giảm giá"
+            editable={!isValidatingPromo}
+          />
+          <TouchableOpacity
+            style={[styles.applyButton, isValidatingPromo && styles.disabledButton]}
+            onPress={handleApplyPromotion}
+            disabled={isValidatingPromo || !promotionCode.trim()}
+          >
+            {isValidatingPromo ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.applyButtonText}>Áp dụng</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+        {appliedPromotion && (
+          <View style={styles.promotionInfo}>
+            <Text style={styles.promotionName}>✓ {appliedPromotion.name}</Text>
+            <Text style={styles.promotionDesc}>{appliedPromotion.description}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setAppliedPromotion(null);
+                setPromotionCode('');
+              }}
+            >
+              <Text style={styles.removePromoText}>Xóa mã</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <View style={styles.summary}>
@@ -173,10 +278,20 @@ export default function BookingScreen() {
             <Text>-- VNĐ</Text>
           )}
         </View>
+        {discountAmount > 0 && (
+          <>
+            <View style={styles.summaryRow}>
+              <Text>Giảm giá:</Text>
+              <Text style={styles.discountAmount}>
+                -{discountAmount.toLocaleString()} VNĐ
+              </Text>
+            </View>
+          </>
+        )}
         <View style={styles.summaryRow}>
-          <Text>Tổng cộng:</Text>
+          <Text style={styles.finalLabel}>Tổng cộng:</Text>
           <Text style={styles.totalAmount}>
-            {totalAmount.toLocaleString()} VNĐ
+            {finalAmount.toLocaleString()} VNĐ
           </Text>
         </View>
       </View>
@@ -190,7 +305,7 @@ export default function BookingScreen() {
           <Text style={styles.bookButtonText}>Đang xử lý...</Text>
         ) : (
           <Text style={styles.bookButtonText}>
-            Đặt vé ({totalAmount.toLocaleString()} VNĐ)
+            Đặt vé ({finalAmount.toLocaleString()} VNĐ)
           </Text>
         )}
       </TouchableOpacity>
@@ -326,12 +441,61 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#007AFF',
   },
+  promotionContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   promotionInput: {
+    flex: 1,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+  },
+  applyButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  promotionInfo: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 8,
+  },
+  promotionName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2e7d32',
+    marginBottom: 4,
+  },
+  promotionDesc: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  removePromoText: {
+    fontSize: 14,
+    color: '#d32f2f',
+    fontWeight: '600',
+  },
+  discountAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#d32f2f',
+  },
+  finalLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   bookButton: {
     backgroundColor: '#007AFF',
