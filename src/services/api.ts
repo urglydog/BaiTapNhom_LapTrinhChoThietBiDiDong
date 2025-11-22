@@ -57,6 +57,9 @@ api.interceptors.response.use(
       await storage.removeItem("authToken");
       await storage.removeItem("user");
     }
+    
+    return Promise.reject(error);
+  }
 );
 
 export default api;
