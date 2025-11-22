@@ -274,6 +274,57 @@ export const movieService = {
     throw new Error(response.data.message || 'Failed to add review');
   },
 
+  // Lấy top phim hay trong tuần (dựa trên rating và số lượng reviews)
+  getTopMovies: async (limit: number = 10): Promise<Movie[]> => {
+    try {
+      // Lấy tất cả phim đang chiếu
+      const movies = await movieService.getCurrentlyShowingMovies();
+      
+      // Lấy reviews cho từng phim và tính điểm trung bình
+      const moviesWithRatings = await Promise.all(
+        movies.map(async (movie) => {
+          try {
+            const reviews = await movieService.getMovieReviews(movie.id);
+            const approvedReviews = reviews.filter(r => r.isApproved);
+            const avgRating = approvedReviews.length > 0
+              ? approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length
+              : movie.rating || 0;
+            
+            return {
+              ...movie,
+              avgRating,
+              reviewCount: approvedReviews.length,
+            };
+          } catch (error) {
+            return {
+              ...movie,
+              avgRating: movie.rating || 0,
+              reviewCount: 0,
+            };
+          }
+        })
+      );
+      
+      // Sắp xếp theo rating và số lượng reviews
+      moviesWithRatings.sort((a, b) => {
+        // Ưu tiên phim có rating cao và nhiều reviews
+        const scoreA = a.avgRating * 0.7 + Math.min(a.reviewCount / 10, 1) * 0.3;
+        const scoreB = b.avgRating * 0.7 + Math.min(b.reviewCount / 10, 1) * 0.3;
+        return scoreB - scoreA;
+      });
+      
+      return moviesWithRatings.slice(0, limit).map(({ avgRating, reviewCount, ...movie }) => movie);
+    } catch (error) {
+      console.error('Error fetching top movies:', error);
+      // Fallback: lấy phim có rating cao nhất
+      const movies = await movieService.getCurrentlyShowingMovies();
+      return movies
+        .filter(m => m.rating && m.rating > 0)
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, limit);
+    }
+  },
+
   // Thêm vào yêu thích
   addToFavourites: async (movieId: number): Promise<Favourite> => {
     try {

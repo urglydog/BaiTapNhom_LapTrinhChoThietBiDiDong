@@ -88,12 +88,100 @@ export const showtimeService = {
             const response = await api.get<ApiResponse<Showtime[]>>(
                 `/showtimes/movie/${movieId}`
             );
-            return response.data.result;
+            const showtimes = response.data.result || [];
+            
+            // Vì cinemaHall có @JsonBackReference, cần map lại để có cinemaHallId
+            // Thử lấy từ cinemaHall.id hoặc fetch từng showtime detail
+            const showtimesWithHallId = await Promise.all(
+                showtimes.map(async (st: any) => {
+                    // Nếu đã có cinemaHallId, giữ nguyên
+                    if (st.cinemaHallId) {
+                        return st;
+                    }
+                    
+                    // Nếu có cinemaHall object, lấy id từ đó
+                    if (st.cinemaHall && st.cinemaHall.id) {
+                        return {
+                            ...st,
+                            cinemaHallId: st.cinemaHall.id,
+                        };
+                    }
+                    
+                    // Nếu không có, thử fetch detail
+                    try {
+                        const detailResponse = await api.get(`/showtimes/${st.id}`);
+                        const detail = detailResponse.data.result;
+                        if (detail.cinemaHall && detail.cinemaHall.id) {
+                            return {
+                                ...st,
+                                cinemaHallId: detail.cinemaHall.id,
+                            };
+                        }
+                    } catch (e) {
+                        // Ignore error
+                    }
+                    
+                    return st;
+                })
+            );
+            
+            return showtimesWithHallId;
         } catch (error: any) {
             console.error('Error fetching showtimes:', error);
             throw new Error(
                 error.response?.data?.message || 'Không thể tải lịch chiếu'
             );
+        }
+    },
+
+    // Lấy lịch chiếu theo phim và rạp
+    getShowtimesByMovieAndCinema: async (
+        movieId: number,
+        cinemaId: number
+    ): Promise<ShowtimeWithCinema[]> => {
+        try {
+            // Lấy tất cả showtimes của phim
+            const allShowtimes = await showtimeService.getShowtimesByMovie(movieId);
+            
+            // Fetch cinemas để map
+            const cinemasResponse = await api.get<ApiResponse<any[]>>('/cinemas');
+            const allCinemas = cinemasResponse.data.result;
+            
+            // Lấy cinema halls của rạp này
+            const cinema = allCinemas.find(c => c.id === cinemaId);
+            if (!cinema) {
+                return [];
+            }
+            
+            // Lấy danh sách hall IDs của rạp này
+            let hallIds: number[] = [];
+            if ((cinema as any).halls && Array.isArray((cinema as any).halls)) {
+                hallIds = (cinema as any).halls.map((h: any) => h.id);
+            } else {
+                // Fallback: lấy từ API cinema halls
+                try {
+                    const hallsResponse = await api.get<ApiResponse<any[]>>(
+                        `/cinemas/${cinemaId}/halls`
+                    );
+                    hallIds = hallsResponse.data.result.map((h: any) => h.id);
+                } catch (e) {
+                    console.log('Could not fetch halls for cinema');
+                }
+            }
+            
+            // Filter showtimes có cinemaHallId trong danh sách halls của rạp
+            const filteredShowtimes = allShowtimes.filter(st => 
+                hallIds.includes(st.cinemaHallId)
+            );
+            
+            // Map với cinema info
+            return filteredShowtimes.map(st => ({
+                ...st,
+                cinema: cinema,
+            }));
+        } catch (error: any) {
+            console.error('Error fetching showtimes by movie and cinema:', error);
+            return [];
         }
     },
 

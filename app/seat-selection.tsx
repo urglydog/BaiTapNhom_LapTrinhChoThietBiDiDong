@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,24 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Dimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { showtimeService } from "../src/services/showtimeService";
 import { SeatWithStatus, Showtime } from "../src/types";
+import { GestureHandlerRootView, PinchGestureHandler, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  runOnJS,
+} from "react-native-reanimated";
+import { Gesture } from "react-native-gesture-handler";
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 export default function SeatSelectionScreen() {
   const router = useRouter();
@@ -28,6 +41,8 @@ export default function SeatSelectionScreen() {
   const [seats, setSeats] = useState<SeatWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
+  const scale = useSharedValue(1);
+  const [scaleDisplay, setScaleDisplay] = useState(1);
   const [showtime, setShowtime] = useState<Showtime | null>(null);
   const [movieTitle, setMovieTitle] = useState<string>(movieTitleParam as string || '');
   const [cinemaName, setCinemaName] = useState<string>(cinemaNameParam as string || '');
@@ -47,13 +62,13 @@ export default function SeatSelectionScreen() {
     try {
       setLoading(true);
       console.log("🪑 Loading showtime and seats:", showtimeId);
-      
+
       // Load showtime details nếu thiếu thông tin
       if (!movieTitleParam || !cinemaNameParam || !hallNameParam) {
         try {
           const showtimeData = await showtimeService.getShowtimeById(Number(showtimeId));
           setShowtime(showtimeData);
-          
+
           if (!movieTitleParam && showtimeData.movie) {
             setMovieTitle(showtimeData.movie.title);
           }
@@ -86,10 +101,10 @@ export default function SeatSelectionScreen() {
           console.error('Error loading showtime:', error);
         }
       }
-      
+
       // Fetch all seats for this showtime with status
       const seatsData = await showtimeService.getSeatsWithStatus(Number(showtimeId));
-      
+
       console.log("📊 Total seats loaded:", seatsData.length);
       console.log("🔍 First seat structure:", seatsData[0]);
       console.log("🔍 Seat row info:", {
@@ -97,22 +112,22 @@ export default function SeatSelectionScreen() {
         seatNumber: seatsData[0]?.seatNumber,
         price: seatsData[0]?.price,
       });
-      
+
       // Add isSelected property to each seat
       const seatsWithSelection = seatsData.map((seat: SeatWithStatus) => ({
         ...seat,
         isSelected: false
       }));
-      
+
       setSeats(seatsWithSelection);
-      
+
       // Count seat status
       const availableCount = seatsData.filter((s: SeatWithStatus) => !s.isBooked).length;
       const bookedCount = seatsData.filter((s: SeatWithStatus) => s.isBooked).length;
-      
+
       console.log("✅ Available seats:", availableCount);
       console.log("❌ Booked seats:", bookedCount);
-      
+
     } catch (error: any) {
       console.error("❌ Error loading seats:", error);
       Alert.alert("Lỗi", error.message || "Không thể tải danh sách ghế");
@@ -159,8 +174,32 @@ export default function SeatSelectionScreen() {
   const calculateTotal = () => {
     return selectedSeats.reduce((total, seatId) => {
       const seat = seats.find((s) => s.id === seatId);
-      // Ưu tiên lấy giá từ seat.price, nếu không có thì dùng price từ showtime
-      const seatPrice = seat?.price || Number(price) || 0;
+      if (!seat) return total;
+
+      // Ưu tiên lấy giá từ seat.basePrice (từ API)
+      let seatPrice = seat.basePrice;
+
+      // Nếu basePrice không có hoặc = 0, dùng giá mặc định theo loại ghế (giống backend)
+      if (!seatPrice || seatPrice === 0) {
+        switch (seat.seatType) {
+          case 'VIP':
+            seatPrice = 150000;
+            break;
+          case 'COUPLE':
+            seatPrice = 200000;
+            break;
+          case 'NORMAL':
+          default:
+            seatPrice = 100000;
+            break;
+        }
+      }
+
+      // Nếu vẫn không có giá, fallback về price từ showtime params
+      if (!seatPrice || seatPrice === 0) {
+        seatPrice = Number(price) || 0;
+      }
+
       return total + seatPrice;
     }, 0);
   };
@@ -172,7 +211,7 @@ export default function SeatSelectionScreen() {
     }
 
     const selectedSeatsData = seats.filter((s) => selectedSeats.includes(s.id));
-    
+
     console.log("🎟️ Booking seats:", selectedSeatsData);
 
     router.push({
@@ -194,7 +233,7 @@ export default function SeatSelectionScreen() {
   // Group seats by row (A, B, C...)
   const groupSeatsByRow = () => {
     const grouped: { [key: string]: SeatWithStatus[] } = {};
-    
+
     seats.forEach((seat) => {
       const row = seat.seatRow; // Sử dụng seatRow (A, B, C...) thay vì rowNumber
       if (!row) return;
@@ -218,6 +257,75 @@ export default function SeatSelectionScreen() {
 
   const groupedSeats = groupSeatsByRow();
   const sortedRows = Object.keys(groupedSeats).sort(); // A, B, C... sẽ tự động sort đúng
+
+  // Tính toán kích thước ghế và container để fit vào màn hình
+  const baseSeatLayout = useMemo(() => {
+    if (sortedRows.length === 0) return { seatSize: 32, containerWidth: SCREEN_WIDTH - 60, containerHeight: 400, maxSeatsPerRow: 0, numRows: 0 };
+
+    // Tìm số ghế nhiều nhất trong một hàng
+    const maxSeatsPerRow = Math.max(...sortedRows.map(row => groupedSeats[row].length));
+    const numRows = sortedRows.length;
+
+    // Tính toán kích thước để fit vào màn hình (trừ header, screen, legend, summary)
+    const availableWidth = SCREEN_WIDTH - 60; // Trừ padding và row label
+    const availableHeight = SCREEN_HEIGHT - 300; // Trừ header, screen, legend, summary
+
+    // Tính kích thước ghế dựa trên số ghế và chiều rộng màn hình
+    const baseSeatWidth = Math.min(
+      Math.floor((availableWidth - (maxSeatsPerRow - 1) * 6) / maxSeatsPerRow), // Trừ gap giữa các ghế
+      40 // Max size
+    );
+
+    // Tính chiều cao container dựa trên số hàng
+    const rowHeight = baseSeatWidth + 12; // Seat height + margin bottom
+    const containerHeight = Math.max(numRows * rowHeight, availableHeight);
+    const containerWidth = Math.max(maxSeatsPerRow * (baseSeatWidth + 6), availableWidth);
+
+    return {
+      seatSize: Math.max(baseSeatWidth, 28), // Min size 28
+      containerWidth,
+      containerHeight,
+      rowHeight,
+      maxSeatsPerRow,
+      numRows,
+    };
+  }, [sortedRows, groupedSeats]);
+
+  // Update scale display
+  const updateScaleDisplay = (newScale: number) => {
+    setScaleDisplay(Math.round(newScale * 100));
+  };
+
+  // Handle pinch gesture for zoom - sử dụng Gesture API mới
+  const startScale = useSharedValue(1);
+
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      startScale.value = scale.value;
+    })
+    .onUpdate((event) => {
+      const newScale = Math.max(0.8, Math.min(startScale.value * event.scale, 2.0));
+      scale.value = newScale;
+      runOnJS(updateScaleDisplay)(newScale);
+    })
+    .onEnd(() => {
+      // Snap to bounds
+      if (scale.value < 1) {
+        scale.value = withTiming(1);
+        runOnJS(updateScaleDisplay)(1);
+      } else if (scale.value > 1.5) {
+        scale.value = withTiming(1.5);
+        runOnJS(updateScaleDisplay)(1.5);
+      } else {
+        runOnJS(updateScaleDisplay)(scale.value);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
 
   const formatDate = (dateStr: string | undefined | string[]) => {
     if (!dateStr) return "--/--";
@@ -273,48 +381,105 @@ export default function SeatSelectionScreen() {
         <Text style={styles.screenText}>MÀN HÌNH</Text>
       </View>
 
-      {/* Seats Grid */}
-      <ScrollView style={styles.seatsScrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.seatsContainer}>
-          {sortedRows.map((row) => (
-            <View key={row} style={styles.seatRow}>
-              <Text style={styles.rowLabel}>{row}</Text>
-              <View style={styles.rowSeats}>
-                {groupedSeats[row].map((seat: SeatWithStatus) => {
-                  const isCouple = seat.seatType === "COUPLE";
-                  return (
-                    <TouchableOpacity
-                      key={seat.id}
-                      style={[
-                        styles.seat,
-                        isCouple && styles.coupleSeat,
-                        { backgroundColor: getSeatColor(seat) },
-                      ]}
-                      onPress={() => handleSeatPress(seat)}
-                      disabled={seat.isBooked}
-                    >
-                      {seat.isBooked ? (
-                        <View style={styles.bookedSeatContent}>
-                          <Ionicons name="person" size={16} color="#fff" />
-                        </View>
-                      ) : (
-                        <Text
+      {/* Zoom Controls */}
+      <View style={styles.zoomControls}>
+        <TouchableOpacity
+          style={styles.zoomButton}
+          onPress={() => {
+            scale.value = withTiming(Math.max(0.8, scale.value - 0.2));
+          }}
+        >
+          <Ionicons name="remove-outline" size={20} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.zoomText}>
+          {scaleDisplay}%
+        </Text>
+        <TouchableOpacity
+          style={styles.zoomButton}
+          onPress={() => {
+            const newScale = Math.min(2.0, scale.value + 0.2);
+            scale.value = withTiming(newScale);
+            setScaleDisplay(Math.round(newScale * 100));
+          }}
+        >
+          <Ionicons name="add-outline" size={20} color="#333" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.zoomButton}
+          onPress={() => {
+            scale.value = withTiming(1);
+            setScaleDisplay(100);
+          }}
+        >
+          <Ionicons name="refresh-outline" size={20} color="#333" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Seats Grid - Scrollable cả hai chiều với zoom */}
+      <GestureHandlerRootView style={styles.seatsScrollView}>
+        <GestureDetector gesture={pinchGesture}>
+          <Animated.View style={[styles.seatsWrapper, animatedStyle]}>
+            <ScrollView
+              style={styles.seatsScrollView}
+              showsVerticalScrollIndicator={true}
+              showsHorizontalScrollIndicator={true}
+              contentContainerStyle={[
+                styles.seatsContainer,
+                {
+                  width: Math.max(baseSeatLayout.containerWidth, SCREEN_WIDTH - 32),
+                  minHeight: baseSeatLayout.containerHeight,
+                }
+              ]}
+            >
+              {sortedRows.map((row) => (
+                <View key={row} style={styles.seatRow}>
+                  <Text style={styles.rowLabel}>{row}</Text>
+                  <View style={styles.rowSeats}>
+                    {groupedSeats[row].map((seat: SeatWithStatus) => {
+                      const isCouple = seat.seatType === "COUPLE";
+                      const seatSize = isCouple ? baseSeatLayout.seatSize * 2.1 : baseSeatLayout.seatSize;
+                      return (
+                        <TouchableOpacity
+                          key={seat.id}
                           style={[
-                            styles.seatText,
-                            isCouple && styles.coupleSeatText,
+                            styles.seat,
+                            {
+                              width: seatSize,
+                              height: baseSeatLayout.seatSize,
+                              backgroundColor: getSeatColor(seat),
+                            },
+                            isCouple && styles.coupleSeat,
                           ]}
+                          onPress={() => handleSeatPress(seat)}
+                          disabled={seat.isBooked}
                         >
-                          {seat.seatNumber}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+                          {seat.isBooked ? (
+                            <View style={styles.bookedSeatContent}>
+                              <Ionicons name="person" size={baseSeatLayout.seatSize * 0.5} color="#fff" />
+                            </View>
+                          ) : (
+                            <Text
+                              style={[
+                                styles.seatText,
+                                {
+                                  fontSize: Math.max(baseSeatLayout.seatSize * 0.35, 10),
+                                },
+                                isCouple && styles.coupleSeatText,
+                              ]}
+                            >
+                              {seat.seatNumber}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        </GestureDetector>
+      </GestureHandlerRootView>
 
       {/* Legend */}
       <View style={styles.legend}>
@@ -430,13 +595,18 @@ const styles = StyleSheet.create({
   seatsScrollView: {
     flex: 1,
   },
+  seatsWrapper: {
+    flex: 1,
+  },
   seatsContainer: {
     padding: 16,
+    alignItems: 'flex-start',
   },
   seatRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 8,
+    minHeight: 40,
   },
   rowLabel: {
     width: 30,
@@ -444,31 +614,32 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#666",
     textAlign: "center",
+    marginRight: 8,
   },
   rowSeats: {
-    flex: 1,
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 6,
+    justifyContent: "flex-start",
+    flexWrap: "nowrap",
+    gap: 4,
+    alignItems: "center",
   },
   seat: {
-    width: 32,
-    height: 32,
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
+    minWidth: 28,
+    minHeight: 28,
   },
   coupleSeat: {
-    width: 68,
-    borderRadius: 4,
+    // Width được set động trong component
   },
   seatText: {
-    fontSize: 11,
     fontWeight: "600",
     color: "#333",
+    textAlign: "center",
   },
   coupleSeatText: {
-    fontSize: 10,
+    fontSize: 9,
   },
   bookedSeatContent: {
     justifyContent: "center",
@@ -545,5 +716,33 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  zoomControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: "#f5f5f5",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    gap: 12,
+  },
+  zoomButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  zoomText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    minWidth: 50,
+    textAlign: "center",
   },
 });
