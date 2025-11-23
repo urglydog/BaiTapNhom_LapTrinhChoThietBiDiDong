@@ -21,6 +21,10 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { Gesture } from "react-native-gesture-handler";
+import { useSelector } from "react-redux";
+import { RootState } from "../src/store";
+import { useTranslation } from "../src/localization";
+import { lightTheme, darkTheme } from "../src/themes";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -37,6 +41,10 @@ export default function SeatSelectionScreen() {
     showTime: showTimeParam,
     price: priceParam,
   } = useLocalSearchParams();
+
+  const { theme } = useSelector((state: RootState) => state.theme);
+  const t = useTranslation();
+  const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
   const [seats, setSeats] = useState<SeatWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,10 +87,10 @@ export default function SeatSelectionScreen() {
               const hallInfo = await cinemaService.getCinemaHallById(showtimeData.cinemaHallId);
               // Note: CinemaHall có thể không có cinema info trực tiếp
               // Cần load cinema riêng nếu cần, tạm thời dùng fallback
-              setCinemaName('Rạp chiếu');
+              setCinemaName(t('Cinema'));
             } catch (e) {
               console.error('Error loading cinema hall:', e);
-              setCinemaName('Rạp chiếu');
+              setCinemaName(t('Cinema'));
             }
           }
           if (!hallNameParam && showtimeData.cinemaHall) {
@@ -130,7 +138,7 @@ export default function SeatSelectionScreen() {
 
     } catch (error: any) {
       console.error("❌ Error loading seats:", error);
-      Alert.alert("Lỗi", error.message || "Không thể tải danh sách ghế");
+      Alert.alert(t("Lỗi"), error.message || t("Không thể tải danh sách ghế"));
     } finally {
       setLoading(false);
     }
@@ -139,7 +147,7 @@ export default function SeatSelectionScreen() {
   const handleSeatPress = (seat: SeatWithStatus) => {
     // Can't select booked seats
     if (seat.isBooked) {
-      Alert.alert("Thông báo", "Ghế này đã được đặt");
+      Alert.alert(t("Thông báo"), t("Ghế này đã được đặt"));
       return;
     }
 
@@ -164,11 +172,11 @@ export default function SeatSelectionScreen() {
   };
 
   const getSeatColor = (seat: SeatWithStatus) => {
-    if (seat.isSelected) return "#E91E63"; // Pink - Selected
-    if (seat.isBooked) return "#000000"; // Black - Booked (với avatar)
+    if (seat.isSelected) return currentTheme.accent; // Pink - Selected
+    if (seat.isBooked) return currentTheme.subtext; // Black - Booked (với avatar)
     if (seat.seatType === "VIP") return "#FFB3BA"; // Light pink/coral - VIP
     if (seat.seatType === "COUPLE") return "#FFB3BA"; // Same as VIP
-    return "#E6D5F5"; // Light purple - Normal
+    return currentTheme.background; // Light purple - Normal
   };
 
   const calculateTotal = () => {
@@ -206,7 +214,7 @@ export default function SeatSelectionScreen() {
 
   const handleConfirmBooking = () => {
     if (selectedSeats.length === 0) {
-      Alert.alert("Thông báo", "Vui lòng chọn ít nhất một ghế");
+      Alert.alert(t("Thông báo"), t("Vui lòng chọn ít nhất một ghế"));
       return;
     }
 
@@ -348,70 +356,70 @@ export default function SeatSelectionScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#E91E63" />
-        <Text style={styles.loadingText}>Đang tải sơ đồ ghế...</Text>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: currentTheme.background }]}>
+        <ActivityIndicator size="large" color={currentTheme.accent} />
+        <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải sơ đồ ghế...')}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: currentTheme.card }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: currentTheme.card, borderBottomColor: currentTheme.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={currentTheme.text} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>{movieTitle || 'Chọn ghế'}</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: currentTheme.text }]}>{movieTitle || t('Chọn ghế')}</Text>
+          <Text style={[styles.headerSubtitle, { color: currentTheme.subtext }]}>
             {cinemaName} • {hallName}
           </Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerSubtitle, { color: currentTheme.subtext }]}>
             {formatDate(showDate)} • {formatTime(showTime)}
           </Text>
         </View>
       </View>
 
       {/* Screen */}
-      <View style={styles.screenContainer}>
+      <View style={[styles.screenContainer, { backgroundColor: currentTheme.card, borderBottomColor: currentTheme.background }]}>
         <View style={styles.screenWrapper}>
-          <View style={styles.screen} />
+          <View style={[styles.screen, { backgroundColor: currentTheme.accent }]} />
         </View>
-        <Text style={styles.screenText}>MÀN HÌNH</Text>
+        <Text style={[styles.screenText, { color: currentTheme.subtext }]}>{t('MÀN HÌNH')}</Text>
       </View>
 
       {/* Zoom Controls */}
-      <View style={styles.zoomControls}>
+      <View style={[styles.zoomControls, { backgroundColor: currentTheme.background, borderBottomColor: currentTheme.card }]}>
         <TouchableOpacity
-          style={styles.zoomButton}
+          style={[styles.zoomButton, { backgroundColor: currentTheme.card, borderColor: currentTheme.subtext }]}
           onPress={() => {
             scale.value = withTiming(Math.max(0.8, scale.value - 0.2));
           }}
         >
-          <Ionicons name="remove-outline" size={20} color="#333" />
+          <Ionicons name="remove-outline" size={20} color={currentTheme.text} />
         </TouchableOpacity>
-        <Text style={styles.zoomText}>
+        <Text style={[styles.zoomText, { color: currentTheme.text }]}>
           {scaleDisplay}%
         </Text>
         <TouchableOpacity
-          style={styles.zoomButton}
+          style={[styles.zoomButton, { backgroundColor: currentTheme.card, borderColor: currentTheme.subtext }]}
           onPress={() => {
             const newScale = Math.min(2.0, scale.value + 0.2);
             scale.value = withTiming(newScale);
             setScaleDisplay(Math.round(newScale * 100));
           }}
         >
-          <Ionicons name="add-outline" size={20} color="#333" />
+          <Ionicons name="add-outline" size={20} color={currentTheme.text} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.zoomButton}
+          style={[styles.zoomButton, { backgroundColor: currentTheme.card, borderColor: currentTheme.subtext }]}
           onPress={() => {
             scale.value = withTiming(1);
             setScaleDisplay(100);
           }}
         >
-          <Ionicons name="refresh-outline" size={20} color="#333" />
+          <Ionicons name="refresh-outline" size={20} color={currentTheme.text} />
         </TouchableOpacity>
       </View>
 
@@ -433,7 +441,7 @@ export default function SeatSelectionScreen() {
             >
               {sortedRows.map((row) => (
                 <View key={row} style={styles.seatRow}>
-                  <Text style={styles.rowLabel}>{row}</Text>
+                  <Text style={[styles.rowLabel, { color: currentTheme.subtext }]}>{row}</Text>
                   <View style={styles.rowSeats}>
                     {groupedSeats[row].map((seat: SeatWithStatus) => {
                       const isCouple = seat.seatType === "COUPLE";
@@ -455,7 +463,7 @@ export default function SeatSelectionScreen() {
                         >
                           {seat.isBooked ? (
                             <View style={styles.bookedSeatContent}>
-                              <Ionicons name="person" size={baseSeatLayout.seatSize * 0.5} color="#fff" />
+                              <Ionicons name="person" size={baseSeatLayout.seatSize * 0.5} color={currentTheme.card} />
                             </View>
                           ) : (
                             <Text
@@ -463,6 +471,7 @@ export default function SeatSelectionScreen() {
                                 styles.seatText,
                                 {
                                   fontSize: Math.max(baseSeatLayout.seatSize * 0.35, 10),
+                                  color: seat.isSelected ? currentTheme.card : currentTheme.text,
                                 },
                                 isCouple && styles.coupleSeatText,
                               ]}
@@ -482,48 +491,49 @@ export default function SeatSelectionScreen() {
       </GestureHandlerRootView>
 
       {/* Legend */}
-      <View style={styles.legend}>
+      <View style={[styles.legend, { backgroundColor: currentTheme.background, borderTopColor: currentTheme.card }]}>
         <View style={styles.legendItem}>
           <View style={styles.bookedLegendBox}>
             <Ionicons name="person" size={12} color="#fff" />
           </View>
-          <Text style={styles.legendText}>Đã đặt</Text>
+          <Text style={[styles.legendText, { color: currentTheme.subtext }]}>{t('Đã đặt')}</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendBox, { backgroundColor: "#E91E63" }]} />
-          <Text style={styles.legendText}>Ghế bạn chọn</Text>
+          <View style={[styles.legendBox, { backgroundColor: currentTheme.accent }]} />
+          <Text style={[styles.legendText, { color: currentTheme.subtext }]}>{t('Ghế bạn chọn')}</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendBox, { backgroundColor: "#E6D5F5" }]} />
-          <Text style={styles.legendText}>Ghế thường</Text>
+          <View style={[styles.legendBox, { backgroundColor: currentTheme.background }]} />
+          <Text style={[styles.legendText, { color: currentTheme.subtext }]}>{t('Ghế thường')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendBox, { backgroundColor: "#FFB3BA" }]} />
-          <Text style={styles.legendText}>Ghế VIP</Text>
+          <Text style={[styles.legendText, { color: currentTheme.subtext }]}>{t('Ghế VIP')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendBox, { backgroundColor: "#D3D3D3" }]} />
-          <Text style={styles.legendText}>Ghế couple</Text>
+          <Text style={[styles.legendText, { color: currentTheme.subtext }]}>{t('Ghế couple')}</Text>
         </View>
       </View>
 
       {/* Summary */}
-      <View style={styles.summary}>
+      <View style={[styles.summary, { backgroundColor: currentTheme.card, borderTopColor: currentTheme.background }]}>
         <View style={styles.summaryInfo}>
-          <Text style={styles.summaryLabel}>Tạm tính</Text>
-          <Text style={styles.summaryValue}>
-            {selectedSeats.length} ghế • {calculateTotal().toLocaleString("vi-VN")}đ
+          <Text style={[styles.summaryLabel, { color: currentTheme.subtext }]}>{t('Tạm tính')}</Text>
+          <Text style={[styles.summaryValue, { color: currentTheme.text }]}>
+            {selectedSeats.length} {t('ghế')} • {calculateTotal().toLocaleString(t("vi-VN"))}đ
           </Text>
         </View>
         <TouchableOpacity
           style={[
             styles.confirmButton,
+            { backgroundColor: currentTheme.accent },
             selectedSeats.length === 0 && styles.confirmButtonDisabled,
           ]}
           onPress={handleConfirmBooking}
           disabled={selectedSeats.length === 0}
         >
-          <Text style={styles.confirmButtonText}>Tiếp tục</Text>
+          <Text style={styles.confirmButtonText}>{t('Tiếp tục')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -533,7 +543,6 @@ export default function SeatSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   centerContent: {
     justifyContent: "center",
@@ -542,14 +551,12 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#666",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
     paddingTop: 50,
   },
   backButton: {
@@ -561,19 +568,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#666",
     marginTop: 4,
   },
   screenContainer: {
     alignItems: "center",
     paddingVertical: 20,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   screenWrapper: {
     width: "90%",
@@ -583,12 +586,10 @@ const styles = StyleSheet.create({
   screen: {
     width: "100%",
     height: 6,
-    backgroundColor: "#E91E63",
     borderRadius: 100,
   },
   screenText: {
     fontSize: 13,
-    color: "#999",
     letterSpacing: 4,
     fontWeight: "500",
   },
@@ -612,7 +613,6 @@ const styles = StyleSheet.create({
     width: 30,
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
     textAlign: "center",
     marginRight: 8,
   },
@@ -635,7 +635,6 @@ const styles = StyleSheet.create({
   },
   seatText: {
     fontWeight: "600",
-    color: "#333",
     textAlign: "center",
   },
   coupleSeatText: {
@@ -652,8 +651,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
-    backgroundColor: "#fafafa",
     gap: 12,
   },
   legendItem: {
@@ -671,21 +668,17 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 3,
     marginRight: 6,
-    backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
   },
   legendText: {
     fontSize: 10,
-    color: "#666",
   },
   summary: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderTopColor: "#eee",
     gap: 12,
   },
   summaryInfo: {
@@ -693,16 +686,13 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 4,
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
   },
   confirmButton: {
-    backgroundColor: "#E91E63",
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 8,
@@ -723,25 +713,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: "#f5f5f5",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
     gap: 12,
   },
   zoomButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ddd",
   },
   zoomText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
     minWidth: 50,
     textAlign: "center",
   },

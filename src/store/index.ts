@@ -8,12 +8,14 @@ import authReducer from './authSlice';
 import movieReducer from './movieSlice';
 import bookingReducer from './bookingSlice';
 import otpReducer from './otpSlice';
+import themeReducer from './themeSlice';
+import languageReducer from './languageSlice';
 
 // Chỉ sử dụng persist cho mobile, không dùng cho web
 const persistConfig = {
   key: 'root',
   storage: storage,
-  whitelist: ['auth'], // Chỉ persist auth state
+  whitelist: ['auth', 'theme', 'language'], // Chỉ persist auth, theme, and language state
 };
 
 const rootReducer = combineReducers({
@@ -21,12 +23,12 @@ const rootReducer = combineReducers({
   movie: movieReducer,
   booking: bookingReducer,
   otp: otpReducer,
+  theme: themeReducer,
+  language: languageReducer,
 });
 
 // Chỉ persist cho mobile, web dùng reducer thường
-const persistedReducer = Platform.OS === 'web' 
-  ? rootReducer 
-  : persistReducer(persistConfig, rootReducer);
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
   reducer: persistedReducer,
@@ -38,9 +40,7 @@ export const store = configureStore({
     }),
 });
 
-export const persistor = Platform.OS === 'web' 
-  ? null 
-  : persistStore(store);
+export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

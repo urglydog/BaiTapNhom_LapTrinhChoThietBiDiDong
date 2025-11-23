@@ -13,6 +13,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { movieService } from '../src/services/movieService';
 import { showtimeService } from '../src/services/showtimeService';
 import { Movie, ShowtimeWithCinema } from '../src/types';
+import { useSelector } from 'react-redux';
+import { RootState } from '../src/store';
+import { useTranslation } from '../src/localization';
+import { lightTheme, darkTheme } from '../src/themes';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +38,9 @@ export default function ShowtimeSelectionScreen() {
     const [availableDates, setAvailableDates] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
     useEffect(() => {
         loadMovieAndShowtimes();
@@ -91,7 +98,7 @@ export default function ShowtimeSelectionScreen() {
             }
         } catch (error: any) {
             console.error('Error loading data:', error);
-            Alert.alert('Lỗi', 'Không thể tải thông tin phim', [
+            Alert.alert(t('Lỗi'), t('Không thể tải thông tin phim'), [
                 { text: 'OK', onPress: () => router.back() },
             ]);
         } finally {
@@ -153,10 +160,10 @@ export default function ShowtimeSelectionScreen() {
         } catch (error: any) {
             console.error('❌ Error loading showtimes for date:', error);
             Alert.alert(
-                'Lỗi', 
-                error.message || 'Không thể tải lịch chiếu cho ngày này',
+                t('Lỗi'), 
+                error.message || t('Không thể tải lịch chiếu cho ngày này'),
                 [
-                    { text: 'Thử lại', onPress: () => loadShowtimesForDate(date) },
+                    { text: t('Thử lại'), onPress: () => loadShowtimesForDate(date) },
                     { text: 'OK', style: 'cancel' }
                 ]
             );
@@ -182,7 +189,7 @@ export default function ShowtimeSelectionScreen() {
             const showtimeDetails = await showtimeService.getShowtimeById(showtime.id);
             
             // Load cinema hall nếu cần để lấy thông tin cinema
-            let finalCinemaName = showtime.cinema?.name || 'Rạp chiếu';
+            let finalCinemaName = showtime.cinema?.name || t('Cinema');
             let finalHallName = showtime.cinemaHall?.hallName || showtimeDetails.cinemaHall?.hallName || 'Phòng chiếu';
             
             // Nếu chưa có cinema name, thử load từ cinema hall
@@ -223,7 +230,7 @@ export default function ShowtimeSelectionScreen() {
                 params: {
                     showtimeId: showtime.id.toString(),
                     movieTitle: movie?.title || 'Phim',
-                    cinemaName: showtime.cinema?.name || 'Rạp chiếu',
+                    cinemaName: showtime.cinema?.name || t('Cinema'),
                     hallName: showtime.cinemaHall?.hallName || 'Phòng chiếu',
                     showDate: showtime.showDate,
                     showTime: showtime.startTime,
@@ -243,11 +250,11 @@ export default function ShowtimeSelectionScreen() {
         const diffTime = targetDate.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 0) return 'H.nay';
-        if (diffDays === 1) return 'Thứ ' + (date.getDay() === 0 ? 'CN' : date.getDay() + 1);
+        if (diffDays === 0) return t('H.nay');
+        if (diffDays === 1) return t('Thứ {day}', { day: date.getDay() === 0 ? 'CN' : date.getDay() + 1 });
         
         const dayNames = ['CN', '2', '3', '4', '5', '6', '7'];
-        return 'Thứ ' + dayNames[date.getDay()];
+        return t('Thứ {day}', { day: dayNames[date.getDay()] });
     };
 
     const formatDateFull = (dateString: string) => {
@@ -268,37 +275,37 @@ export default function ShowtimeSelectionScreen() {
 
     if (isLoading) {
         return (
-            <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#E91E63" />
-                <Text style={styles.loadingText}>Đang tải lịch chiếu...</Text>
+            <View style={[styles.centerContainer, { backgroundColor: currentTheme.background }]}>
+                <ActivityIndicator size="large" color={currentTheme.accent} />
+                <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải lịch chiếu...')}</Text>
             </View>
         );
     }
 
     if (!movie) {
         return (
-            <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>Không tìm thấy phim</Text>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Text style={styles.backButtonText}>Quay lại</Text>
+            <View style={[styles.centerContainer, { backgroundColor: currentTheme.background }]}>
+                <Text style={[styles.errorText, { color: currentTheme.subtext }]}>{t('Không tìm thấy phim')}</Text>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: currentTheme.accent }]} onPress={() => router.back()}>
+                    <Text style={styles.backButtonText}>{t('Quay lại')}</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
-                    <Text style={styles.backIconText}>←</Text>
+            <View style={[styles.header, { backgroundColor: currentTheme.card, borderBottomColor: currentTheme.background }]}>
+                <TouchableOpacity style={[styles.backIcon, { backgroundColor: currentTheme.background }]} onPress={() => router.back()}>
+                    <Text style={[styles.backIconText, { color: currentTheme.text }]}>←</Text>
                 </TouchableOpacity>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.headerTitle} numberOfLines={1}>
+                    <Text style={[styles.headerTitle, { color: currentTheme.text }]} numberOfLines={1}>
                         {movie.title}
                     </Text>
                     {cinemaName && (
-                        <Text style={styles.headerCinema} numberOfLines={1}>
+                        <Text style={[styles.headerCinema, { color: currentTheme.accent }]} numberOfLines={1}>
                             🎭 {cinemaName}
                         </Text>
                     )}
@@ -306,20 +313,22 @@ export default function ShowtimeSelectionScreen() {
             </View>
 
             {/* Date Selector */}
-            <View style={styles.dateSelector}>
+            <View style={[styles.dateSelector, { backgroundColor: currentTheme.card, borderBottomColor: currentTheme.background }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {availableDates.map((date) => (
                         <TouchableOpacity
                             key={date}
                             style={[
                                 styles.dateButton,
-                                selectedDate === date && styles.dateButtonSelected,
+                                { backgroundColor: currentTheme.background },
+                                selectedDate === date && [styles.dateButtonSelected, { backgroundColor: currentTheme.accent }],
                             ]}
                             onPress={() => handleDateSelect(date)}
                         >
                             <Text
                                 style={[
                                     styles.dateFull,
+                                    { color: currentTheme.text },
                                     selectedDate === date && styles.dateTextSelected,
                                 ]}
                             >
@@ -328,6 +337,7 @@ export default function ShowtimeSelectionScreen() {
                             <Text
                                 style={[
                                     styles.dateDay,
+                                    { color: currentTheme.subtext },
                                     selectedDate === date && styles.dateTextSelected,
                                 ]}
                             >
@@ -342,39 +352,39 @@ export default function ShowtimeSelectionScreen() {
             <ScrollView style={styles.showtimesList} showsVerticalScrollIndicator={false}>
                 {loadingDates.has(selectedDate) ? (
                     <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color="#E91E63" />
-                        <Text style={styles.loadingText}>Đang tải lịch chiếu...</Text>
+                        <ActivityIndicator size="large" color={currentTheme.accent} />
+                        <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải lịch chiếu...')}</Text>
                     </View>
                 ) : selectedDate && showtimesByDate[selectedDate] ? (
                     Object.values(showtimesByDate[selectedDate]).map((cinemaData: any) => (
-                        <View key={cinemaData.cinema.id} style={styles.cinemaSection}>
-                            <View style={styles.cinemaHeader}>
-                                <Text style={styles.cinemaName}>{cinemaData.cinema.name}</Text>
-                                <Text style={styles.cinemaAddress}>
+                        <View key={cinemaData.cinema.id} style={[styles.cinemaSection, { backgroundColor: currentTheme.card }]}>
+                            <View style={[styles.cinemaHeader, { borderBottomColor: currentTheme.background }]}>
+                                <Text style={[styles.cinemaName, { color: currentTheme.text }]}>{cinemaData.cinema.name}</Text>
+                                <Text style={[styles.cinemaAddress, { color: currentTheme.subtext }]}>
                                     {cinemaData.cinema.address}
                                 </Text>
                             </View>
 
                             <View style={styles.showtimesGrid}>
-                                <Text style={styles.format2D}>2D Phụ đề</Text>
+                                <Text style={[styles.format2D, { color: currentTheme.accent }]}>2D Phụ đề</Text>
                                 <View style={styles.timeButtonsContainer}>
                                     {cinemaData.showtimes.length > 0 ? (
                                         cinemaData.showtimes.map((showtime: ShowtimeWithCinema) => (
                                             <TouchableOpacity
                                                 key={showtime.id}
-                                                style={styles.timeButton}
+                                                style={[styles.timeButton, { borderColor: currentTheme.accent, backgroundColor: currentTheme.card }]}
                                                 onPress={() => handleShowtimeSelect(showtime)}
                                             >
-                                                <Text style={styles.timeText}>
+                                                <Text style={[styles.timeText, { color: currentTheme.accent }]}>
                                                     {formatTime(showtime.startTime)}
                                                 </Text>
-                                                <Text style={styles.endTimeText}>
+                                                <Text style={[styles.endTimeText, { color: currentTheme.subtext }]}>
                                                     ~{formatTime(showtime.endTime)}
                                                 </Text>
                                             </TouchableOpacity>
                                         ))
                                     ) : (
-                                        <Text style={styles.emptyText}>Chưa có suất chiếu</Text>
+                                        <Text style={[styles.emptyText, { color: currentTheme.subtext }]}>{t('Chưa có suất chiếu')}</Text>
                                     )}
                                 </View>
                             </View>
@@ -382,12 +392,12 @@ export default function ShowtimeSelectionScreen() {
                     ))
                 ) : (
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>Chưa có lịch chiếu cho ngày này</Text>
+                        <Text style={[styles.emptyText, { color: currentTheme.subtext }]}>{t('Chưa có lịch chiếu cho ngày này')}</Text>
                         <TouchableOpacity 
-                            style={styles.retryButton}
+                            style={[styles.retryButton, { backgroundColor: currentTheme.accent }]}
                             onPress={() => selectedDate && loadShowtimesForDate(selectedDate)}
                         >
-                            <Text style={styles.retryButtonText}>Thử lại</Text>
+                            <Text style={styles.retryButtonText}>{t('Thử lại')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -399,26 +409,21 @@ export default function ShowtimeSelectionScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
     },
     errorText: {
         fontSize: 18,
-        color: '#999',
         marginBottom: 16,
     },
     backButton: {
-        backgroundColor: '#E91E63',
         paddingHorizontal: 24,
         paddingVertical: 12,
         borderRadius: 8,
@@ -434,15 +439,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 50,
         paddingBottom: 16,
-        backgroundColor: '#fff',
         borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
     },
     backIcon: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#f0f0f0',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -450,7 +452,6 @@ const styles = StyleSheet.create({
     backIconText: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
     },
     headerInfo: {
         flex: 1,
@@ -458,46 +459,36 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
     },
     headerSubtitle: {
         fontSize: 14,
-        color: '#666',
         marginTop: 4,
     },
     headerCinema: {
         fontSize: 13,
-        color: '#E91E63',
         marginTop: 2,
         fontWeight: '600',
     },
     dateSelector: {
-        backgroundColor: '#fff',
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
     },
     dateButton: {
         paddingHorizontal: 20,
         paddingVertical: 12,
         marginHorizontal: 6,
         borderRadius: 12,
-        backgroundColor: '#f5f5f5',
         alignItems: 'center',
         minWidth: 70,
     },
-    dateButtonSelected: {
-        backgroundColor: '#E91E63',
-    },
+    dateButtonSelected: {},
     dateFull: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 4,
     },
     dateDay: {
         fontSize: 14,
-        color: '#666',
     },
     dateTextSelected: {
         color: '#fff',
@@ -506,7 +497,6 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     cinemaSection: {
-        backgroundColor: '#fff',
         marginVertical: 8,
         marginHorizontal: 16,
         borderRadius: 12,
@@ -521,17 +511,14 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
     },
     cinemaName: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 4,
     },
     cinemaAddress: {
         fontSize: 14,
-        color: '#666',
     },
     showtimesGrid: {
         marginTop: 8,
@@ -539,7 +526,6 @@ const styles = StyleSheet.create({
     format2D: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#E91E63',
         marginBottom: 12,
     },
     timeButtonsContainer: {
@@ -552,19 +538,15 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#E91E63',
-        backgroundColor: '#fff',
         minWidth: 90,
         alignItems: 'center',
     },
     timeText: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#E91E63',
     },
     endTimeText: {
         fontSize: 12,
-        color: '#999',
         marginTop: 2,
     },
     emptyContainer: {
@@ -573,7 +555,6 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 16,
-        color: '#999',
         textAlign: 'center',
         marginBottom: 16,
     },
@@ -582,13 +563,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-        color: '#666',
-    },
     retryButton: {
-        backgroundColor: '#E91E63',
         paddingHorizontal: 24,
         paddingVertical: 12,
         borderRadius: 8,

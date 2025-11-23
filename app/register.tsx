@@ -18,6 +18,8 @@ import { RootState, AppDispatch } from '../src/store';
 import { sendOtp, verifyOtp } from '../src/store/otpSlice';
 import { RegisterRequest } from '../src/types';
 import { useRouter } from 'expo-router';
+import { useTranslation } from '../src/localization';
+import { lightTheme, darkTheme } from '../src/themes';
 
 type RegisterStep = 'email' | 'otp' | 'details';
 
@@ -38,6 +40,9 @@ export default function RegisterScreen() {
   const { isLoading, error, otpSent, otpVerified, otpExpiresAt } = useSelector(
     (state: RootState) => state.otp
   );
+  const { theme } = useSelector((state: RootState) => state.theme);
+  const t = useTranslation();
+  const currentTheme = theme === 'light' ? lightTheme : darkTheme;
   const router = useRouter();
 
   const isPageLoading = isLoading;
@@ -72,61 +77,61 @@ export default function RegisterScreen() {
     switch (currentStep) {
       case 'email':
         if (!formData.email.trim()) {
-          newErrors.email = 'Email không được để trống';
+          newErrors.email = t('Email không được để trống');
         } else if (!validateEmail(formData.email)) {
-          newErrors.email = 'Email không hợp lệ';
+          newErrors.email = t('Email không hợp lệ');
         }
         break;
 
       case 'otp':
         if (!formData.otp.trim()) {
-          newErrors.otp = 'OTP không được để trống';
+          newErrors.otp = t('OTP không được để trống');
         } else if (formData.otp.length !== 6) {
-          newErrors.otp = 'OTP phải có 6 chữ số';
+          newErrors.otp = t('OTP phải có 6 chữ số');
         }
         break;
 
       case 'details':
         if (!formData.fullName.trim()) {
-          newErrors.fullName = 'Họ tên không được để trống';
+          newErrors.fullName = t('Họ tên không được để trống');
         }
         if (!formData.phone.trim()) {
-          newErrors.phone = 'Số điện thoại không được để trống';
+          newErrors.phone = t('Số điện thoại không được để trống');
         } else if (!validatePhone(formData.phone)) {
-          newErrors.phone = 'Số điện thoại không hợp lệ (10-11 chữ số)';
+          newErrors.phone = t('Số điện thoại không hợp lệ (10-11 chữ số)');
         }
         if (!formData.username.trim()) {
-          newErrors.username = 'Tên đăng nhập không được để trống';
+          newErrors.username = t('Tên đăng nhập không được để trống');
         } else if (formData.username.length < 3) {
-          newErrors.username = 'Tên đăng nhập phải có ít nhất 3 ký tự';
+          newErrors.username = t('Tên đăng nhập phải có ít nhất 3 ký tự');
         }
         if (!formData.password.trim()) {
-          newErrors.password = 'Mật khẩu không được để trống';
+          newErrors.password = t('Mật khẩu không được để trống');
         } else if (formData.password.length < 6) {
-          newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+          newErrors.password = t('Mật khẩu phải có ít nhất 6 ký tự');
         }
         if (!formData.confirmPassword.trim()) {
-          newErrors.confirmPassword = 'Xác nhận mật khẩu không được để trống';
+          newErrors.confirmPassword = t('Xác nhận mật khẩu không được để trống');
         } else if (formData.password !== formData.confirmPassword) {
-          newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+          newErrors.confirmPassword = t('Mật khẩu xác nhận không khớp');
         }
         if (!formData.dateOfBirth.trim()) {
-          newErrors.dateOfBirth = 'Ngày sinh không được để trống';
+          newErrors.dateOfBirth = t('Ngày sinh không được để trống');
         } else {
           // Validate date format
           const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
           if (!dateRegex.test(formData.dateOfBirth)) {
-            newErrors.dateOfBirth = 'Định dạng ngày sinh phải là YYYY-MM-DD';
+            newErrors.dateOfBirth = t('Định dạng ngày sinh phải là YYYY-MM-DD');
           } else {
             const [year, month, day] = formData.dateOfBirth.split('-').map(Number);
             if (year < 1900 || year > 2010) {
-              newErrors.dateOfBirth = 'Năm sinh phải từ 1900 đến 2010';
+              newErrors.dateOfBirth = t('Năm sinh phải từ 1900 đến 2010');
             } else if (month < 1 || month > 12) {
-              newErrors.dateOfBirth = 'Tháng phải từ 01 đến 12';
+              newErrors.dateOfBirth = t('Tháng phải từ 01 đến 12');
             } else {
               const daysInMonth = new Date(year, month, 0).getDate();
               if (day < 1 || day > daysInMonth) {
-                newErrors.dateOfBirth = `Ngày phải từ 01 đến ${daysInMonth} cho tháng ${month}`;
+                newErrors.dateOfBirth = t('Ngày phải từ 01 đến {daysInMonth} cho tháng {month}', { daysInMonth, month });
               }
             }
           }
@@ -147,9 +152,9 @@ export default function RegisterScreen() {
         type: 'REGISTER'
       })).unwrap();
       setStep('otp');
-      Alert.alert('Thành công', 'OTP đã được gửi đến email của bạn');
+      Alert.alert(t('Thành công'), t('OTP đã được gửi đến email của bạn'));
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể gửi OTP');
+      Alert.alert(t('Lỗi'), error.message || t('Không thể gửi OTP'));
     }
   };
 
@@ -165,9 +170,9 @@ export default function RegisterScreen() {
       })).unwrap();
 
       setStep('details');
-      Alert.alert('Thành công', 'OTP hợp lệ! Vui lòng nhập thông tin tài khoản');
+      Alert.alert(t('Thành công'), t('OTP hợp lệ! Vui lòng nhập thông tin tài khoản'));
     } catch (error: any) {
-      Alert.alert('Lỗi', error || 'OTP không hợp lệ');
+      Alert.alert(t('Lỗi'), error || t('OTP không hợp lệ'));
     }
   };
 
@@ -186,13 +191,13 @@ export default function RegisterScreen() {
       };
 
       await authService.register(userData);
-      Alert.alert('Thành công', 'Đăng ký tài khoản thành công!', [
+      Alert.alert(t('Thành công'), t('Đăng ký tài khoản thành công!'), [
         { text: 'OK', onPress: () => {
           router.replace('/login');
         }}
       ]);
     } catch (error: any) {
-      Alert.alert('Lỗi', error || 'Đăng ký thất bại');
+      Alert.alert(t('Lỗi'), error || t('Đăng ký thất bại'));
     }
   };
 
@@ -204,9 +209,9 @@ export default function RegisterScreen() {
         email: formData.email,
         type: 'REGISTER'
       })).unwrap();
-      Alert.alert('Thành công', 'OTP mới đã được gửi');
+      Alert.alert(t('Thành công'), t('OTP mới đã được gửi'));
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể gửi OTP');
+      Alert.alert(t('Lỗi'), error.message || t('Không thể gửi OTP'));
     }
   };
 
@@ -224,16 +229,16 @@ export default function RegisterScreen() {
         style={styles.backButton}
         onPress={() => router.replace('/login' as any)}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.formTitle}>Đăng ký</Text>
+      <Text style={[styles.formTitle, { color: currentTheme.text }]}>{t('Đăng ký')}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Email')}</Text>
         <TextInput
-          style={[styles.input, errors.email && styles.inputError]}
-          placeholder="Nhập email của bạn"
+          style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.email && styles.inputError]}
+          placeholder={t('Nhập email của bạn')}
           value={formData.email}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, email: text }));
@@ -246,14 +251,14 @@ export default function RegisterScreen() {
       </View>
 
       <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: currentTheme.primary }, isLoading && styles.buttonDisabled]}
         onPress={handleSendOtp}
         disabled={isLoading}
       >
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Gửi OTP</Text>
+          <Text style={styles.buttonText}>{t('Gửi OTP')}</Text>
         )}
       </TouchableOpacity>
     </>
@@ -265,14 +270,14 @@ export default function RegisterScreen() {
         style={styles.backButton}
         onPress={() => setStep('email')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
       </TouchableOpacity>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Mã OTP</Text>
+        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mã OTP')}</Text>
         <TextInput
-          style={[styles.input, errors.otp && styles.inputError]}
-          placeholder="Nhập 6 chữ số OTP"
+          style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.otp && styles.inputError]}
+          placeholder={t('Nhập 6 chữ số OTP')}
           value={formData.otp}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, otp: text.replace(/[^0-9]/g, '') }));
@@ -286,19 +291,19 @@ export default function RegisterScreen() {
 
       {otpExpiresAt && (
         <Text style={styles.countdownText}>
-          OTP hết hạn sau: {getOtpCountdown()}
+          {t('OTP hết hạn sau:')} {getOtpCountdown()}
         </Text>
       )}
 
       <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: currentTheme.primary }, isLoading && styles.buttonDisabled]}
         onPress={handleVerifyOtp}
         disabled={isLoading}
       >
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Xác thực OTP</Text>
+          <Text style={styles.buttonText}>{t('Xác thực OTP')}</Text>
         )}
       </TouchableOpacity>
 
@@ -307,7 +312,7 @@ export default function RegisterScreen() {
         onPress={handleResendOtp}
         disabled={isLoading}
       >
-        <Text style={styles.secondaryButtonText}>Gửi lại OTP</Text>
+        <Text style={[styles.secondaryButtonText, { color: currentTheme.primary }]}>{t('Gửi lại OTP')}</Text>
       </TouchableOpacity>
     </>
   );
@@ -318,15 +323,15 @@ export default function RegisterScreen() {
         style={styles.backButton}
         onPress={() => setStep('otp')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
       </TouchableOpacity>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Họ và tên</Text>
+          <Text style={[styles.label, { color: currentTheme.text }]}>{t('Họ và tên')}</Text>
           <TextInput
-            style={[styles.input, errors.fullName && styles.inputError]}
-            placeholder="Nhập họ và tên"
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.fullName && styles.inputError]}
+            placeholder={t('Nhập họ và tên')}
             value={formData.fullName}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, fullName: text }));
@@ -337,28 +342,28 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Giới tính</Text>
+          <Text style={[styles.label, { color: currentTheme.text }]}>{t('Giới tính')}</Text>
           <View style={styles.genderContainer}>
             <TouchableOpacity
-              style={[styles.genderButton, formData.gender === 'MALE' && styles.genderButtonActive]}
+              style={[styles.genderButton, { backgroundColor: currentTheme.background }, formData.gender === 'MALE' && styles.genderButtonActive]}
               onPress={() => setFormData(prev => ({ ...prev, gender: 'MALE' }))}
             >
-              <Text style={[styles.genderText, formData.gender === 'MALE' && styles.genderTextActive]}>Nam</Text>
+              <Text style={[styles.genderText, { color: currentTheme.subtext }, formData.gender === 'MALE' && styles.genderTextActive]}>{t('Nam')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.genderButton, formData.gender === 'FEMALE' && styles.genderButtonActive]}
+              style={[styles.genderButton, { backgroundColor: currentTheme.background }, formData.gender === 'FEMALE' && styles.genderButtonActive]}
               onPress={() => setFormData(prev => ({ ...prev, gender: 'FEMALE' }))}
             >
-              <Text style={[styles.genderText, formData.gender === 'FEMALE' && styles.genderTextActive]}>Nữ</Text>
+              <Text style={[styles.genderText, { color: currentTheme.subtext }, formData.gender === 'FEMALE' && styles.genderTextActive]}>{t('Nữ')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Số điện thoại</Text>
+          <Text style={[styles.label, { color: currentTheme.text }]}>{t('Số điện thoại')}</Text>
           <TextInput
-            style={[styles.input, errors.phone && styles.inputError]}
-            placeholder="Nhập số điện thoại"
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.phone && styles.inputError]}
+            placeholder={t('Nhập số điện thoại')}
             value={formData.phone}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, phone: text.replace(/[^0-9]/g, '') }));
@@ -371,10 +376,10 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Tên đăng nhập</Text>
+          <Text style={[styles.label, { color: currentTheme.text }]}>{t('Tên đăng nhập')}</Text>
           <TextInput
-            style={[styles.input, errors.username && styles.inputError]}
-            placeholder="Nhập tên đăng nhập"
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.username && styles.inputError]}
+            placeholder={t('Nhập tên đăng nhập')}
             value={formData.username}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, username: text }));
@@ -386,10 +391,10 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Mật khẩu</Text>
+          <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mật khẩu')}</Text>
           <TextInput
-            style={[styles.input, errors.password && styles.inputError]}
-            placeholder="Nhập mật khẩu"
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.password && styles.inputError]}
+            placeholder={t('Nhập mật khẩu')}
             value={formData.password}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, password: text }));
@@ -401,10 +406,10 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Xác nhận mật khẩu</Text>
+          <Text style={[styles.label, { color: currentTheme.text }]}>{t('Xác nhận mật khẩu')}</Text>
           <TextInput
-            style={[styles.input, errors.confirmPassword && styles.inputError]}
-            placeholder="Nhập lại mật khẩu"
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.confirmPassword && styles.inputError]}
+            placeholder={t('Nhập lại mật khẩu')}
             value={formData.confirmPassword}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, confirmPassword: text }));
@@ -416,10 +421,10 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Ngày sinh</Text>
+          <Text style={[styles.label, { color: currentTheme.text }]}>{t('Ngày sinh')}</Text>
           <TextInput
-            style={[styles.input, errors.dateOfBirth && styles.inputError]}
-            placeholder="YYYY-MM-DD (ví dụ: 1990-01-15)"
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.dateOfBirth && styles.inputError]}
+            placeholder={t('YYYY-MM-DD (ví dụ: 1990-01-15)')}
             value={formData.dateOfBirth}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, dateOfBirth: text }));
@@ -429,21 +434,21 @@ export default function RegisterScreen() {
             maxLength={10}
             autoCapitalize="none"
           />
-          <Text style={styles.dateHint}>
-            Định dạng: YYYY-MM-DD (ví dụ: 1990-01-15)
+          <Text style={[styles.dateHint, { color: currentTheme.subtext }]}>
+            {t('Định dạng: YYYY-MM-DD (ví dụ: 1990-01-15)')}
           </Text>
           {errors.dateOfBirth && <Text style={styles.errorText}>{errors.dateOfBirth}</Text>}
         </View>
 
         <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
+          style={[styles.button, { backgroundColor: currentTheme.primary }, isLoading && styles.buttonDisabled]}
           onPress={handleRegister}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Đăng ký</Text>
+            <Text style={styles.buttonText}>{t('Đăng ký')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -452,16 +457,16 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: currentTheme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Movie Ticket Booking</Text>
-          <Text style={styles.subtitle}>Đăng ký tài khoản mới</Text>
+          <Text style={[styles.title, { color: currentTheme.text }]}>Movie Ticket Booking</Text>
+          <Text style={[styles.subtitle, { color: currentTheme.subtext }]}>{t('Đăng ký tài khoản mới')}</Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: currentTheme.card }]}>
           {step === 'email' && renderEmailStep()}
           {step === 'otp' && renderOtpStep()}
           {step === 'details' && renderDetailsStep()}
@@ -472,18 +477,18 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Đã có tài khoản?
+          <Text style={[styles.footerText, { color: currentTheme.subtext }]}>
+            {t('Đã có tài khoản?')}
             <TouchableOpacity onPress={() => router.replace('/login' as any)}>
-              <Text style={styles.linkText}> Đăng nhập</Text>
+              <Text style={[styles.linkText, { color: currentTheme.primary }]}> {t('Đăng nhập')}</Text>
             </TouchableOpacity>
           </Text>
         </View>
       </ScrollView>
       {isPageLoading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Đang xử lý...</Text>
+          <ActivityIndicator size="large" color={currentTheme.primary} />
+          <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang xử lý...')}</Text>
         </View>
       )}
     </KeyboardAvoidingView>
@@ -493,7 +498,6 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -507,15 +511,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
   },
   form: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
@@ -533,7 +534,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
@@ -542,7 +542,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
   },
   inputError: {
     borderColor: '#e74c3c',
@@ -553,7 +552,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   button: {
-    backgroundColor: '#007AFF',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -573,7 +571,6 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   secondaryButtonText: {
-    color: '#007AFF',
     fontSize: 16,
   },
   countdownText: {
@@ -600,7 +597,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginHorizontal: 5,
-    backgroundColor: '#f9f9f9',
   },
   genderButtonActive: {
     backgroundColor: '#007AFF',
@@ -608,7 +604,6 @@ const styles = StyleSheet.create({
   },
   genderText: {
     fontSize: 16,
-    color: '#666',
   },
   genderTextActive: {
     color: '#fff',
@@ -619,15 +614,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#666',
   },
   linkText: {
-    color: '#007AFF',
     fontSize: 14,
   },
   dateHint: {
     fontSize: 12,
-    color: '#666',
     marginTop: 4,
     fontStyle: 'italic',
   },
@@ -644,7 +636,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -652,14 +643,12 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backButtonText: {
-    color: '#007AFF',
     fontSize: 16,
     fontWeight: '500',
   },
   formTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
     textAlign: 'center',
     marginBottom: 24,
   },
