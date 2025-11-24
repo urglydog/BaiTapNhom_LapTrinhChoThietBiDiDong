@@ -190,8 +190,17 @@ const movieSlice = createSlice({
         state.showtimes = action.payload;
       })
       // Fetch cinemas
+      .addCase(fetchCinemas.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(fetchCinemas.fulfilled, (state, action) => {
+        state.isLoading = false;
         state.cinemas = action.payload;
+      })
+      .addCase(fetchCinemas.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
       })
       // Fetch reviews
       .addCase(fetchReviews.fulfilled, (state, action) => {

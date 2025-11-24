@@ -12,14 +12,13 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { useRouter, Link } from 'expo-router';
-import { movieService } from '../../src/services/movieService';
-import { Movie } from '../../src/types';
+import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../src/store';
+import { movieService } from '../../src/services/movieService';
+import { Movie } from '../../src/types';
 import { useTranslation } from '../../src/localization';
 import { lightTheme, darkTheme } from '../../src/themes';
-import ChatbotFloatingButton from '../../components/ChatbotFloatingButton'; // Import the new component
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -186,8 +185,8 @@ export default function HomeScreen() {
           <Text style={[styles.movieDuration, { color: currentTheme.subtext }]}>{item.duration} {t('phút')}</Text>
         )}
         {item.ageRating && (
-          <View style={styles.ageRatingContainer}>
-            <Text style={[styles.ageRating, { backgroundColor: currentTheme.primary }]}>{item.ageRating}</Text>
+          <View style={[styles.ageRatingContainer, { backgroundColor: currentTheme.card }]}>
+            <Text style={[styles.ageRating, { color: currentTheme.text }]}>{item.ageRating}</Text>
           </View>
         )}
       </View>
@@ -205,7 +204,7 @@ export default function HomeScreen() {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: currentTheme.background }]}>
         <ActivityIndicator size="large" color={currentTheme.primary} />
-        <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải danh sách phim...')}</Text>
+        <Text style={[styles.loadingText, { color: currentTheme.text }]}>{t('Đang tải danh sách phim...')}</Text>
       </View>
     );
   }
@@ -214,39 +213,39 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
       <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
         <View style={styles.headerContent}>
-          <Text style={styles.greeting}>
+          <Text style={[styles.greeting, { color: '#fff' }]}>
             {getGreeting()}, {t('Chào mừng bạn!')} 👋
           </Text>
-          <Text style={styles.role}>{t('Khám phá những bộ phim hay')}</Text>
+          <Text style={[styles.role, { color: 'rgba(255,255,255,0.9)' }]}>{t('Khám phá những bộ phim hay')}</Text>
         </View>
         <View style={styles.quickActions}>
           <TouchableOpacity
-            style={styles.quickActionButton}
+            style={[styles.quickActionButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => router.push('/(tabs)/movies')}
           >
             <Text style={styles.quickActionIcon}>🎬</Text>
-            <Text style={styles.quickActionText}>{t('Phim')}</Text>
+            <Text style={[styles.quickActionText, { color: '#fff' }]}>{t('Phim')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickActionButton}
+            style={[styles.quickActionButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => router.push('/(tabs)/cinemas')}
           >
             <Text style={styles.quickActionIcon}>🎭</Text>
-            <Text style={styles.quickActionText}>{t('Rạp')}</Text>
+            <Text style={[styles.quickActionText, { color: '#fff' }]}>{t('Rạp')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickActionButton}
+            style={[styles.quickActionButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => router.push('/(tabs)/promotions')}
           >
             <Text style={styles.quickActionIcon}>🎁</Text>
-            <Text style={styles.quickActionText}>{t('KM')}</Text>
+            <Text style={[styles.quickActionText, { color: '#fff' }]}>{t('KM')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.searchContainer}>
-        <View style={[styles.searchBox, { backgroundColor: currentTheme.card }]}>
-          <Text style={[styles.searchIcon, { color: currentTheme.primary }]}>🔍</Text>
+      <View style={[styles.searchContainer, { backgroundColor: currentTheme.card }]}>
+        <View style={[styles.searchBox, { backgroundColor: currentTheme.background, borderColor: currentTheme.border }]}>
+          <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={[styles.searchInput, { color: currentTheme.text }]}
             placeholder={t('Tìm kiếm phim...')}
@@ -278,12 +277,12 @@ export default function HomeScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
+            <View style={[styles.emptyContainer, { backgroundColor: currentTheme.background }]}>
               {searchText.trim() ? (
                 <>
                   <Text style={styles.emptyIcon}>🔍</Text>
                   <Text style={[styles.emptyText, { color: currentTheme.text }]}>
-                    {t('Không tìm thấy phim nào với từ khóa "{searchText}"', { searchText })}
+                    {t('Không tìm thấy phim nào với từ khóa')} "{searchText}"
                   </Text>
                   <Text style={[styles.emptySubtext, { color: currentTheme.subtext }]}>
                     {t('Thử tìm kiếm với từ khóa khác')}

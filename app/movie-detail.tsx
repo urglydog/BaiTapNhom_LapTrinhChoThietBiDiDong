@@ -34,9 +34,12 @@ export default function MovieDetailScreen() {
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
     const [movie, setMovie] = useState<Movie | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     // Kiểm tra xem phim đã được thêm vào yêu thích chưa
-    const isFavourite = movie ? favourites.some(fav => fav.movieId === movie.id) : false;
+    // Kiểm tra cả movieId và movie.id để đảm bảo hoạt động đúng
+    const isFavourite = movie ? favourites.some(fav =>
+        (fav.movieId === movie.id) || (fav.movie?.id === movie.id)
+    ) : false;
 
     useEffect(() => {
         const loadMovie = async () => {
@@ -57,7 +60,7 @@ export default function MovieDetailScreen() {
 
         loadMovie();
     }, [movieId, router]);
-    
+
     // Load favourites khi vào màn hình và khi movie thay đổi
     useFocusEffect(
         React.useCallback(() => {
@@ -66,7 +69,7 @@ export default function MovieDetailScreen() {
             }
         }, [user, dispatch, movieId])
     );
-    
+
     const handleToggleFavourite = async () => {
         if (!movie) return;
         if (!user) {
@@ -81,7 +84,7 @@ export default function MovieDetailScreen() {
             if (toggleFavourite.fulfilled.match(result)) {
                 // Refresh favourites sau khi toggle để đảm bảo sync với server
                 await dispatch(fetchFavourites());
-                
+
                 // Hiển thị thông báo thành công
                 if (result.payload.action === 'add') {
                     Alert.alert(t('Thành công'), t('Đã lưu phim vào yêu thích'));
@@ -150,8 +153,8 @@ export default function MovieDetailScreen() {
                 <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
                     <Text style={styles.backIconText}>←</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.favouriteButton, isFavourite && styles.favouriteButtonActive]} 
+                <TouchableOpacity
+                    style={[styles.favouriteButton, isFavourite && styles.favouriteButtonActive]}
                     onPress={handleToggleFavourite}
                     activeOpacity={0.8}
                 >

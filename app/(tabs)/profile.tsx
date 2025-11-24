@@ -138,140 +138,140 @@ export default function ProfileScreen() {
                 </View>
             </Modal>
             <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
-            <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
-                <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                        {user?.fullName?.charAt(0).toUpperCase() || 'U'}
-                    </Text>
-                </View>
-                <Text style={[styles.name, { color: currentTheme.text }]}>{user?.fullName}</Text>
-                <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user?.role || '') }]}>
-                    <Text style={styles.roleText}>
-                        {getRoleDisplayName(user?.role || '')}
-                    </Text>
-                </View>
-            </View>
-
-            <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
-                <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Thông tin cá nhân')}</Text>
-                <View style={[styles.infoCard, { backgroundColor: currentTheme.background }]}>
-                    <View style={styles.infoRow}>
-                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Tên đăng nhập:')}</Text>
-                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.username}</Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Email:')}</Text>
-                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.email}</Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Số điện thoại:')}</Text>
-                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.phone}</Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Ngày sinh:')}</Text>
-                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>
-                            {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString(t('vi-VN')) : t('N/A')}
+                <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>
+                            {user?.fullName?.charAt(0).toUpperCase() || 'U'}
                         </Text>
                     </View>
-                    <View style={styles.infoRow}>
-                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Giới tính:')}</Text>
-                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>
-                            {t(user?.gender === 'MALE' ? 'Nam' : user?.gender === 'FEMALE' ? 'Nữ' : 'N/A')}
+                    <Text style={[styles.name, { color: currentTheme.text }]}>{user?.fullName}</Text>
+                    <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user?.role || '') }]}>
+                        <Text style={styles.roleText}>
+                            {getRoleDisplayName(user?.role || '')}
                         </Text>
                     </View>
                 </View>
-            </View>
 
-            <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
-                <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Chức năng')}</Text>
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => router.push('/(tabs)/favourites')}
-                >
-                    <View style={styles.menuItemLeft}>
-                        <Text style={styles.menuIcon}>❤️</Text>
-                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Phim yêu thích')}</Text>
+                <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
+                    <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Thông tin cá nhân')}</Text>
+                    <View style={[styles.infoCard, { backgroundColor: currentTheme.background }]}>
+                        <View style={styles.infoRow}>
+                            <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Tên đăng nhập:')}</Text>
+                            <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.username}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Email:')}</Text>
+                            <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.email}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Số điện thoại:')}</Text>
+                            <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.phone}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Ngày sinh:')}</Text>
+                            <Text style={[styles.infoValue, { color: currentTheme.text }]}>
+                                {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString(t('vi-VN')) : t('N/A')}
+                            </Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Giới tính:')}</Text>
+                            <Text style={[styles.infoValue, { color: currentTheme.text }]}>
+                                {t(user?.gender === 'MALE' ? 'Nam' : user?.gender === 'FEMALE' ? 'Nữ' : 'N/A')}
+                            </Text>
+                        </View>
                     </View>
-                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => router.push('/booking-history')}
-                >
-                    <View style={styles.menuItemLeft}>
-                        <Text style={styles.menuIcon}>🎫</Text>
-                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Lịch sử đặt vé')}</Text>
-                    </View>
-                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => router.push('/watched-movies')}
-                >
-                    <View style={styles.menuItemLeft}>
-                        <Text style={styles.menuIcon}>🎬</Text>
-                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Phim đã xem')}</Text>
-                    </View>
-                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => router.push('/(tabs)/cinemas')}
-                >
-                    <View style={styles.menuItemLeft}>
-                        <Text style={styles.menuIcon}>🎭</Text>
-                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Cinema')}</Text>
-                    </View>
-                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => router.push('/(tabs)/promotions')}
-                >
-                    <View style={styles.menuItemLeft}>
-                        <Text style={styles.menuIcon}>🎁</Text>
-                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Khuyến mãi')}</Text>
-                    </View>
-                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={() => setShowSettingsModal(true)}>
-                    <View style={styles.menuItemLeft}>
-                        <Text style={styles.menuIcon}>⚙️</Text>
-                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Cài đặt')}</Text>
-                    </View>
-                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
-                </TouchableOpacity>
-                {user?.role === 'ADMIN' && (
-                    <TouchableOpacity style={styles.menuItem}>
+                </View>
+
+                <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
+                    <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Chức năng')}</Text>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(tabs)/favourites')}
+                    >
                         <View style={styles.menuItemLeft}>
-                            <Text style={styles.menuIcon}>👑</Text>
-                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Quản lý hệ thống')}</Text>
+                            <Text style={styles.menuIcon}>❤️</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Phim yêu thích')}</Text>
                         </View>
                         <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                     </TouchableOpacity>
-                )}
-                {user?.role === 'STAFF' && (
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/booking-history')}
+                    >
                         <View style={styles.menuItemLeft}>
                             <Text style={styles.menuIcon}>🎫</Text>
-                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Quản lý đặt vé')}</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Lịch sử đặt vé')}</Text>
                         </View>
                         <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                     </TouchableOpacity>
-                )}
-                <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={() => router.push('/change-password')}
-                >
-                    <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Đổi mật khẩu')}</Text>
-                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/watched-movies')}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>🎬</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Phim đã xem')}</Text>
+                        </View>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(tabs)/cinemas')}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>🎭</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Cinema')}</Text>
+                        </View>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(tabs)/promotions')}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>🎁</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Khuyến mãi')}</Text>
+                        </View>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => setShowSettingsModal(true)}>
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>⚙️</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Cài đặt')}</Text>
+                        </View>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                    </TouchableOpacity>
+                    {user?.role === 'ADMIN' && (
+                        <TouchableOpacity style={styles.menuItem}>
+                            <View style={styles.menuItemLeft}>
+                                <Text style={styles.menuIcon}>👑</Text>
+                                <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Quản lý hệ thống')}</Text>
+                            </View>
+                            <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                        </TouchableOpacity>
+                    )}
+                    {user?.role === 'STAFF' && (
+                        <TouchableOpacity style={styles.menuItem}>
+                            <View style={styles.menuItemLeft}>
+                                <Text style={styles.menuIcon}>🎫</Text>
+                                <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Quản lý đặt vé')}</Text>
+                            </View>
+                            <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/change-password')}
+                    >
+                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Đổi mật khẩu')}</Text>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                    </TouchableOpacity>
+                </View>
 
-            <TouchableOpacity style={[styles.logoutButton, { backgroundColor: currentTheme.accent }]} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText} onPress={handleLogout}>{t('Đăng xuất')}</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                <TouchableOpacity style={[styles.logoutButton, { backgroundColor: currentTheme.accent }]} onPress={handleLogout}>
+                    <Text style={styles.logoutButtonText} onPress={handleLogout}>{t('Đăng xuất')}</Text>
+                </TouchableOpacity>
+            </ScrollView>
         </>
     );
 }

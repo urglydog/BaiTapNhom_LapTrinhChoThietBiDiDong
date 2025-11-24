@@ -9,7 +9,7 @@ import {
     ActivityIndicator,
     RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../src/store';
 import { fetchFavourites, toggleFavourite } from '../../src/store/movieSlice';
@@ -25,6 +25,13 @@ export default function FavouritesTabScreen() {
     const { theme } = useSelector((state: RootState) => state.theme);
     const t = useTranslation();
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
+
+    // Refresh khi màn hình được focus
+    useFocusEffect(
+        React.useCallback(() => {
+            dispatch(fetchFavourites());
+        }, [dispatch])
+    );
 
     useEffect(() => {
         dispatch(fetchFavourites());
@@ -42,10 +49,40 @@ export default function FavouritesTabScreen() {
 
     const handleRemoveFavourite = async (movieId: number) => {
         await dispatch(toggleFavourite(movieId));
+        // Refresh sau khi xóa
+        await dispatch(fetchFavourites());
     };
 
     const renderMovie = ({ item }: { item: Favourite }) => {
         const movie = item.movie;
+        // Nếu không có movie object, có thể cần load từ movieId
+        if (!movie && !item.movieId) {
+            console.warn('Favourite item missing movie:', item);
+            return null;
+        }
+
+        // Nếu không có movie object nhưng có movieId, hiển thị placeholder
+        if (!movie && item.movieId) {
+            return (
+                <TouchableOpacity
+                    style={styles.movieCard}
+                    onPress={() => router.push(`/movie-detail?movieId=${item.movieId}`)}
+                    activeOpacity={0.8}
+                >
+                    <View style={styles.movieImageContainer}>
+                        <View style={[styles.moviePoster, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}>
+                            <Text style={{ fontSize: 24 }}>🎬</Text>
+                        </View>
+                    </View>
+                    <View style={styles.movieInfo}>
+                        <Text style={styles.movieTitle} numberOfLines={2}>
+                            {t('Đang tải...')}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            );
+        }
+
         if (!movie) return null;
 
         return (
@@ -63,7 +100,7 @@ export default function FavouritesTabScreen() {
                         resizeMode="cover"
                     />
                     <TouchableOpacity
-                        style={[styles.removeButton, { backgroundColor: currentTheme.accent }]}
+                        style={[styles.removeButton, { backgroundColor: currentTheme.error }]}
                         onPress={() => handleRemoveFavourite(movie.id)}
                     >
                         <Text style={styles.removeButtonText}>✕</Text>
@@ -76,7 +113,7 @@ export default function FavouritesTabScreen() {
                         </Text>
                     </View>
                     {movie.genre && (
-                        <Text style={[styles.movieGenre, { color: currentTheme.primary }]} numberOfLines={1}>
+                        <Text style={[styles.movieGenre, { color: currentTheme.subtext }]} numberOfLines={1}>
                             {movie.genre}
                         </Text>
                     )}
@@ -89,7 +126,7 @@ export default function FavouritesTabScreen() {
                         )}
                         {movie.ageRating && (
                             <View style={[styles.ageRatingBadge, { backgroundColor: currentTheme.primary }]}>
-                                <Text style={styles.ageRating}>{movie.ageRating}</Text>
+                                <Text style={[styles.ageRating, { color: '#fff' }]}>{movie.ageRating}</Text>
                             </View>
                         )}
                     </View>
@@ -105,9 +142,9 @@ export default function FavouritesTabScreen() {
 
     if (isLoading && favourites.length === 0) {
         return (
-            <View style={[styles.loadingContainer, { backgroundColor: currentTheme.background }]}>
-                <ActivityIndicator size="large" color={currentTheme.primary} />
-                <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải phim yêu thích...')}</Text>
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#4f8cff" />
+                <Text style={styles.loadingText}>{t('Đang tải phim yêu thích...')}</Text>
             </View>
         );
     }
@@ -115,8 +152,8 @@ export default function FavouritesTabScreen() {
     return (
         <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
             <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
-                <Text style={styles.headerTitle}>{t('Phim Yêu Thích')}</Text>
-                <Text style={styles.headerSubtitle}>
+                <Text style={[styles.headerTitle, { color: '#fff' }]}>{t('Phim Yêu Thích')}</Text>
+                <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.9)' }]}>
                     {favourites.length} {t('phim đã lưu')}
                 </Text>
             </View>
@@ -130,7 +167,7 @@ export default function FavouritesTabScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
+                    <View style={[styles.emptyContainer, { backgroundColor: currentTheme.background }]}>
                         <Text style={styles.emptyIcon}>❤️</Text>
                         <Text style={[styles.emptyText, { color: currentTheme.text }]}>
                             {t('Bạn chưa có phim yêu thích nào')}

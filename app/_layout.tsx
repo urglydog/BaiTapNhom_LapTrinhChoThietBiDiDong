@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { Provider, useDispatch, useSelector } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor, RootState } from '../src/store';
-import { loadStoredAuth }  from '../src/store/authSlice';
-import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
-
-import { ThemeProvider } from 'styled-components/native';
+import { loadStoredAuth } from '../src/store/authSlice';
+import { useAppDispatch } from '../src/hooks/redux';
+import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../src/themes';
 
 export default function RootLayout() {
@@ -54,6 +53,9 @@ function AppNavigator() {
       <Stack.Screen name="register" />
       <Stack.Screen name="change-password" />
       <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="seat-selection" />
+      <Stack.Screen name="cinema-selection" />
+      <Stack.Screen name="showtime-selection" />
     </Stack>
   );
 }
