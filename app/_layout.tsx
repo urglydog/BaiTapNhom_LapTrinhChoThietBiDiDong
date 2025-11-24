@@ -56,6 +56,8 @@ function AppNavigator() {
       <Stack.Screen name="seat-selection" />
       <Stack.Screen name="cinema-selection" />
       <Stack.Screen name="showtime-selection" />
+      <Stack.Screen name="ticket-detail" />
+      <Stack.Screen name="qr-scanner" />
     </Stack>
   );
 }

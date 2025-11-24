@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  TextInput,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,6 +17,7 @@ import { Showtime, Seat, Promotion } from '../src/types';
 import { promotionService } from '../src/services/promotionService';
 import { useTranslation } from '../src/localization';
 import { lightTheme, darkTheme } from '../src/themes';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function BookingScreen() {
   const {
@@ -42,13 +43,14 @@ export default function BookingScreen() {
   const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
-  const [promotionCode, setPromotionCode] = useState('');
   const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
+  const [availablePromotions, setAvailablePromotions] = useState<Promotion[]>([]);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [finalAmount, setFinalAmount] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+  const [isLoadingPromotions, setIsLoadingPromotions] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'CREDIT_CARD'>('VNPAY');
 
   useEffect(() => {
     // Parse seatIds từ params
@@ -68,6 +70,50 @@ export default function BookingScreen() {
       setTotalAmount((showtime.price || 0) * selectedSeats.length);
     }
   }, [seatIds, totalAmountParam, showtime]);
+
+  // Load available promotions
+  useEffect(() => {
+    const loadPromotions = async () => {
+      setIsLoadingPromotions(true);
+      try {
+        const promotions = await promotionService.getAvailablePromotions();
+        // Filter promotions that can be applied (check minAmount)
+        const applicablePromotions = promotions.filter(promo => {
+          if (promo.minAmount && totalAmount > 0) {
+            return totalAmount >= promo.minAmount;
+          }
+          return true;
+        });
+        
+        // Sort by discount value (descending)
+        applicablePromotions.sort((a, b) => {
+          const discountA = a.discountType === 'PERCENTAGE' 
+            ? (totalAmount * a.discountValue / 100) 
+            : a.discountValue;
+          const discountB = b.discountType === 'PERCENTAGE' 
+            ? (totalAmount * b.discountValue / 100) 
+            : b.discountValue;
+          
+          // Apply max discount if exists
+          const finalDiscountA = a.maxDiscount ? Math.min(discountA, a.maxDiscount) : discountA;
+          const finalDiscountB = b.maxDiscount ? Math.min(discountB, b.maxDiscount) : discountB;
+          
+          return finalDiscountB - finalDiscountA;
+        });
+        
+        setAvailablePromotions(applicablePromotions);
+      } catch (error) {
+        console.error('Error loading promotions:', error);
+        setAvailablePromotions([]);
+      } finally {
+        setIsLoadingPromotions(false);
+      }
+    };
+
+    if (totalAmount > 0) {
+      loadPromotions();
+    }
+  }, [totalAmount]);
 
   // Tính toán lại khi totalAmount hoặc promotion thay đổi
   useEffect(() => {
@@ -96,45 +142,37 @@ export default function BookingScreen() {
     }
   }, [totalAmount, appliedPromotion]);
 
-  // Validate và apply promotion code
-  const handleApplyPromotion = async () => {
-    if (!promotionCode.trim()) {
-      Alert.alert(t('Lỗi'), t('Vui lòng nhập mã giảm giá'));
+  // Apply promotion
+  const handleSelectPromotion = (promotion: Promotion) => {
+    // Kiểm tra minAmount
+    if (promotion.minAmount && totalAmount < promotion.minAmount) {
+      Alert.alert(
+        t('Lỗi'),
+        t('Đơn hàng tối thiểu {minAmount} VNĐ để áp dụng mã này', { minAmount: promotion.minAmount.toLocaleString() })
+      );
       return;
     }
 
-    setIsValidatingPromo(true);
-    try {
-      const promotions = await promotionService.getAvailablePromotions();
-      const promotion = promotions.find(p =>
-        p.code?.toUpperCase() === promotionCode.trim().toUpperCase()
-      );
+    setAppliedPromotion(promotion);
+  };
 
-      if (!promotion) {
-        Alert.alert(t('Lỗi'), t('Mã giảm giá không hợp lệ hoặc đã hết hạn'));
-        setAppliedPromotion(null);
-        return;
-      }
-
-      // Kiểm tra minAmount
-      if (promotion.minAmount && totalAmount < promotion.minAmount) {
-        Alert.alert(
-          t('Lỗi'),
-          t('Đơn hàng tối thiểu {minAmount} VNĐ để áp dụng mã này', { minAmount: promotion.minAmount.toLocaleString() })
-        );
-        setAppliedPromotion(null);
-        return;
-      }
-
-      setAppliedPromotion(promotion);
-      Alert.alert(t('Thành công'), t('Đã áp dụng mã giảm giá: {name}', { name: promotion.name }));
-    } catch (error: any) {
-      console.error('Error validating promotion:', error);
-      Alert.alert(t('Lỗi'), t('Không thể kiểm tra mã giảm giá. Vui lòng thử lại.'));
-      setAppliedPromotion(null);
-    } finally {
-      setIsValidatingPromo(false);
+  // Calculate discount for a promotion
+  const calculatePromotionDiscount = (promotion: Promotion): number => {
+    if (!totalAmount || totalAmount < (promotion.minAmount || 0)) {
+      return 0;
     }
+
+    let discount = 0;
+    if (promotion.discountType === 'PERCENTAGE') {
+      discount = (totalAmount * promotion.discountValue) / 100;
+      if (promotion.maxDiscount) {
+        discount = Math.min(discount, promotion.maxDiscount);
+      }
+    } else {
+      discount = promotion.discountValue;
+    }
+
+    return Math.min(discount, totalAmount);
   };
 
   const handleBookTicket = async () => {
@@ -156,25 +194,53 @@ export default function BookingScreen() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const result = await dispatch(createBooking({
-        showtimeId: Number(showtimeId),
-        seatIds: selectedSeats,
-        promotionCode: appliedPromotion?.code || undefined,
-      })).unwrap();
-
-      console.log('Booking result:', result);
-      Alert.alert(t('Thành công'), t('Đặt vé thành công!'), [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') }
-      ]);
-    } catch (error: any) {
-      console.error('Booking error:', error);
-      const errorMessage = error?.message || error?.payload || error || t('Đặt vé thất bại');
-      Alert.alert(t('Lỗi'), String(errorMessage));
-    } finally {
-      setIsLoading(false);
+    if (!selectedPaymentMethod) {
+      Alert.alert(t('Lỗi'), t('Vui lòng chọn phương thức thanh toán'));
+      return;
     }
+
+    // Xác nhận trước khi thanh toán
+    Alert.alert(
+      t('Xác nhận thanh toán'),
+      t('Bạn có chắc chắn muốn thanh toán {amount} VNĐ bằng phương thức {method}?', {
+        amount: finalAmount.toLocaleString(),
+        method: selectedPaymentMethod === 'CASH' ? t('Tiền mặt') :
+                selectedPaymentMethod === 'BANK_TRANSFER' ? t('Chuyển khoản') :
+                selectedPaymentMethod === 'VNPAY' ? 'VNPay' :
+                selectedPaymentMethod === 'CREDIT_CARD' ? t('Thẻ tín dụng') : selectedPaymentMethod
+      }),
+      [
+        {
+          text: t('Hủy'),
+          style: 'cancel',
+        },
+        {
+          text: t('Xác nhận'),
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              const result = await dispatch(createBooking({
+                showtimeId: Number(showtimeId),
+                seatIds: selectedSeats,
+                promotionCode: appliedPromotion?.code || undefined,
+                paymentMethod: selectedPaymentMethod,
+              })).unwrap();
+
+              console.log('Booking result:', result);
+              Alert.alert(t('Thành công'), t('Đặt vé thành công!'), [
+                { text: 'OK', onPress: () => router.replace('/(tabs)') }
+              ]);
+            } catch (error: any) {
+              console.error('Booking error:', error);
+              const errorMessage = error?.message || error?.payload || error || t('Đặt vé thất bại');
+              Alert.alert(t('Lỗi'), String(errorMessage));
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (!showtimeId) {
@@ -231,40 +297,161 @@ export default function BookingScreen() {
       </View>
 
       <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
-        <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Mã giảm giá (tùy chọn)')}</Text>
-        <View style={styles.promotionContainer}>
-          <TextInput
-            style={[styles.promotionInput, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.subtext }]}
-            value={promotionCode}
-            onChangeText={setPromotionCode}
-            placeholder={t('Nhập mã giảm giá')}
-            editable={!isValidatingPromo}
-          />
+        <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Phương thức thanh toán')}</Text>
+        <View style={styles.paymentMethodsContainer}>
           <TouchableOpacity
-            style={[styles.applyButton, { backgroundColor: currentTheme.primary }, isValidatingPromo && styles.disabledButton]}
-            onPress={handleApplyPromotion}
-            disabled={isValidatingPromo || !promotionCode.trim()}
+            style={[
+              styles.paymentMethodCard,
+              { 
+                backgroundColor: selectedPaymentMethod === 'VNPAY' ? currentTheme.primary + '20' : currentTheme.background,
+                borderColor: selectedPaymentMethod === 'VNPAY' ? currentTheme.primary : currentTheme.subtext + '40',
+              }
+            ]}
+            onPress={() => setSelectedPaymentMethod('VNPAY')}
           >
-            {isValidatingPromo ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.applyButtonText}>{t('Áp dụng')}</Text>
+            <Ionicons 
+              name="card" 
+              size={24} 
+              color={selectedPaymentMethod === 'VNPAY' ? currentTheme.primary : currentTheme.subtext} 
+            />
+            <Text style={[
+              styles.paymentMethodText, 
+              { color: selectedPaymentMethod === 'VNPAY' ? currentTheme.primary : currentTheme.text }
+            ]}>
+              VNPay
+            </Text>
+            {selectedPaymentMethod === 'VNPAY' && (
+              <Ionicons name="checkmark-circle" size={20} color={currentTheme.primary} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.paymentMethodCard,
+              { 
+                backgroundColor: selectedPaymentMethod === 'CASH' ? currentTheme.primary + '20' : currentTheme.background,
+                borderColor: selectedPaymentMethod === 'CASH' ? currentTheme.primary : currentTheme.subtext + '40',
+              }
+            ]}
+            onPress={() => setSelectedPaymentMethod('CASH')}
+          >
+            <Ionicons 
+              name="cash" 
+              size={24} 
+              color={selectedPaymentMethod === 'CASH' ? currentTheme.primary : currentTheme.subtext} 
+            />
+            <Text style={[
+              styles.paymentMethodText, 
+              { color: selectedPaymentMethod === 'CASH' ? currentTheme.primary : currentTheme.text }
+            ]}>
+              {t('Tiền mặt')}
+            </Text>
+            {selectedPaymentMethod === 'CASH' && (
+              <Ionicons name="checkmark-circle" size={20} color={currentTheme.primary} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.paymentMethodCard,
+              { 
+                backgroundColor: selectedPaymentMethod === 'BANK_TRANSFER' ? currentTheme.primary + '20' : currentTheme.background,
+                borderColor: selectedPaymentMethod === 'BANK_TRANSFER' ? currentTheme.primary : currentTheme.subtext + '40',
+              }
+            ]}
+            onPress={() => setSelectedPaymentMethod('BANK_TRANSFER')}
+          >
+            <Ionicons 
+              name="business" 
+              size={24} 
+              color={selectedPaymentMethod === 'BANK_TRANSFER' ? currentTheme.primary : currentTheme.subtext} 
+            />
+            <Text style={[
+              styles.paymentMethodText, 
+              { color: selectedPaymentMethod === 'BANK_TRANSFER' ? currentTheme.primary : currentTheme.text }
+            ]}>
+              {t('Chuyển khoản')}
+            </Text>
+            {selectedPaymentMethod === 'BANK_TRANSFER' && (
+              <Ionicons name="checkmark-circle" size={20} color={currentTheme.primary} />
             )}
           </TouchableOpacity>
         </View>
+      </View>
+
+      <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
+        <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Khuyến mãi có thể áp dụng')}</Text>
+        {isLoadingPromotions ? (
+          <ActivityIndicator size="small" color={currentTheme.primary} style={{ marginVertical: 20 }} />
+        ) : availablePromotions.length === 0 ? (
+          <Text style={[styles.noPromotionsText, { color: currentTheme.subtext }]}>
+            {t('Không có khuyến mãi nào khả dụng')}
+          </Text>
+        ) : (
+          <FlatList
+            data={availablePromotions}
+            keyExtractor={(item) => item.id.toString()}
+            scrollEnabled={false}
+            renderItem={({ item }) => {
+              const discount = calculatePromotionDiscount(item);
+              const isSelected = appliedPromotion?.id === item.id;
+              
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.promotionCard,
+                    { 
+                      backgroundColor: isSelected ? currentTheme.primary + '20' : currentTheme.background,
+                      borderColor: isSelected ? currentTheme.primary : currentTheme.subtext + '40',
+                    }
+                  ]}
+                  onPress={() => handleSelectPromotion(item)}
+                >
+                  <View style={styles.promotionCardContent}>
+                    <View style={styles.promotionCardHeader}>
+                      <Text style={[
+                        styles.promotionCardName, 
+                        { color: isSelected ? currentTheme.primary : currentTheme.text }
+                      ]}>
+                        {item.name}
+                      </Text>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={20} color={currentTheme.primary} />
+                      )}
+                    </View>
+                    <Text style={[styles.promotionCardDesc, { color: currentTheme.subtext }]}>
+                      {item.description}
+                    </Text>
+                    <View style={styles.promotionCardFooter}>
+                      <Text style={[styles.promotionDiscount, { color: currentTheme.primary }]}>
+                        {item.discountType === 'PERCENTAGE' 
+                          ? `-${item.discountValue}%` 
+                          : `-${item.discountValue.toLocaleString()} VNĐ`}
+                      </Text>
+                      {discount > 0 && (
+                        <Text style={[styles.promotionDiscountAmount, { color: currentTheme.primary }]}>
+                          Tiết kiệm: {discount.toLocaleString()} VNĐ
+                        </Text>
+                      )}
+                    </View>
+                    {item.minAmount && (
+                      <Text style={[styles.promotionMinAmount, { color: currentTheme.subtext }]}>
+                        Áp dụng cho đơn từ {item.minAmount.toLocaleString()} VNĐ
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        )}
         {appliedPromotion && (
-          <View style={[styles.promotionInfo, { backgroundColor: currentTheme.background }]}>
-            <Text style={[styles.promotionName, { color: currentTheme.primary }]}>✓ {appliedPromotion.name}</Text>
-            <Text style={[styles.promotionDesc, { color: currentTheme.subtext }]}>{appliedPromotion.description}</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setAppliedPromotion(null);
-                setPromotionCode('');
-              }}
-            >
-              <Text style={styles.removePromoText}>{t('Xóa mã')}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.removePromoButton}
+            onPress={() => setAppliedPromotion(null)}
+          >
+            <Text style={styles.removePromoText}>{t('Bỏ chọn khuyến mãi')}</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -276,7 +463,7 @@ export default function BookingScreen() {
         </View>
         <View style={styles.summaryRow}>
           <Text style={{ color: currentTheme.text }}>{t('Số lượng ghế:')}</Text>
-          <Text style={{ color: currentTheme.text }}>{selectedSeats.length || (seatNumbers ? seatNumbers.split(',').length : 0)} {t('ghế')}</Text>
+          <Text style={{ color: currentTheme.text }}>{selectedSeats.length || (seatNumbers ? (Array.isArray(seatNumbers) ? seatNumbers.length : seatNumbers.split(',').length) : 0)} {t('ghế')}</Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={{ color: currentTheme.text }}>{t('Giá mỗi vé:')}</Text>
@@ -436,42 +623,73 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  promotionContainer: {
+  paymentMethodsContainer: {
     flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  paymentMethodCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 2,
     gap: 8,
   },
-  promotionInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+  paymentMethodText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-  applyButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  promotionCard: {
+    marginBottom: 12,
     borderRadius: 8,
-    justifyContent: 'center',
+    borderWidth: 1,
+    padding: 12,
+  },
+  promotionCardContent: {
+    gap: 8,
+  },
+  promotionCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  applyButtonText: {
-    color: '#fff',
+  promotionCardName: {
     fontSize: 16,
     fontWeight: '600',
+    flex: 1,
   },
-  promotionInfo: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 8,
-  },
-  promotionName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  promotionDesc: {
+  promotionCardDesc: {
     fontSize: 14,
-    marginBottom: 8,
+  },
+  promotionCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  promotionDiscount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  promotionDiscountAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  promotionMinAmount: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  noPromotionsText: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  removePromoButton: {
+    marginTop: 12,
+    padding: 8,
+    alignItems: 'center',
   },
   removePromoText: {
     fontSize: 14,
