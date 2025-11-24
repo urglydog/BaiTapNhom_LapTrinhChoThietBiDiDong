@@ -24,6 +24,10 @@ export default function PromotionsTabScreen() {
     const t = useTranslation();
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
+
     useEffect(() => {
         fetchPromotions();
     }, [selectedFilter]);
@@ -72,11 +76,11 @@ export default function PromotionsTabScreen() {
     };
 
     const getDiscountText = (promotion: Promotion) => {
-        if (!promotion.discountValue) return 'Giảm giá';
+        if (!promotion.discountValue) return t('Giảm giá');
         if (promotion.discountType === 'PERCENTAGE') {
-            return `Giảm ${promotion.discountValue}%`;
+            return t('Giảm {discountValue}%', { discountValue: promotion.discountValue });
         } else {
-            return `Giảm ${promotion.discountValue.toLocaleString()} VNĐ`;
+            return t('Giảm {discountValue} VNĐ', { discountValue: promotion.discountValue.toLocaleString() });
         }
     };
 
@@ -204,49 +208,55 @@ export default function PromotionsTabScreen() {
                 <TouchableOpacity
                     style={[
                         styles.filterButton,
-                        selectedFilter === 'available' && styles.filterButtonActive,
+                        { backgroundColor: currentTheme.background },
+                        selectedFilter === 'available' && [styles.filterButtonActive, { backgroundColor: currentTheme.accent }],
                     ]}
                     onPress={() => setSelectedFilter('available')}
                 >
                     <Text
                         style={[
                             styles.filterText,
+                            { color: currentTheme.subtext },
                             selectedFilter === 'available' && styles.filterTextActive,
                         ]}
                     >
-                        Có thể dùng
+                        {t('Có thể dùng')}
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[
                         styles.filterButton,
-                        selectedFilter === 'expired' && styles.filterButtonActive,
+                        { backgroundColor: currentTheme.background },
+                        selectedFilter === 'expired' && [styles.filterButtonActive, { backgroundColor: currentTheme.accent }],
                     ]}
                     onPress={() => setSelectedFilter('expired')}
                 >
                     <Text
                         style={[
                             styles.filterText,
+                            { color: currentTheme.subtext },
                             selectedFilter === 'expired' && styles.filterTextActive,
                         ]}
                     >
-                        Đã hết hạn
+                        {t('Đã hết hạn')}
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[
                         styles.filterButton,
-                        selectedFilter === 'all' && styles.filterButtonActive,
+                        { backgroundColor: currentTheme.background },
+                        selectedFilter === 'all' && [styles.filterButtonActive, { backgroundColor: currentTheme.accent }],
                     ]}
                     onPress={() => setSelectedFilter('all')}
                 >
                     <Text
                         style={[
                             styles.filterText,
+                            { color: currentTheme.subtext },
                             selectedFilter === 'all' && styles.filterTextActive,
                         ]}
                     >
-                        Tất cả
+                        {t('Tất cả')}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -262,11 +272,11 @@ export default function PromotionsTabScreen() {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyIcon}>🎁</Text>
-                        <Text style={styles.emptyText}>
-                            Hiện không có khuyến mãi nào
+                        <Text style={[styles.emptyText, { color: currentTheme.text }]}>
+                            {t('Hiện không có khuyến mãi nào')}
                         </Text>
-                        <Text style={styles.emptySubtext}>
-                            Vui lòng quay lại sau để xem các ưu đãi mới
+                        <Text style={[styles.emptySubtext, { color: currentTheme.subtext }]}>
+                            {t('Vui lòng quay lại sau để xem các ưu đãi mới')}
                         </Text>
                     </View>
                 }
@@ -278,27 +288,22 @@ export default function PromotionsTabScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f3f6fb',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f3f6fb',
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
     },
     header: {
-        backgroundColor: '#FF6B6B',
         paddingHorizontal: 20,
         paddingTop: 48,
         paddingBottom: 20,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
-        shadowColor: '#FF6B6B',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
@@ -345,11 +350,9 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
         borderLeftWidth: 4,
-        borderLeftColor: '#FF6B6B',
     },
     expiredCard: {
         opacity: 0.6,
-        borderLeftColor: '#999',
     },
     promotionHeader: {
         flexDirection: 'row',
@@ -358,7 +361,6 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     promotionBadge: {
-        backgroundColor: '#FF6B6B',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
@@ -462,13 +464,11 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 8,
         textAlign: 'center',
     },
     emptySubtext: {
         fontSize: 14,
-        color: '#666',
         textAlign: 'center',
     },
 });

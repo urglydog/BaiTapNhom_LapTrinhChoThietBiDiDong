@@ -16,10 +16,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { authService } from '../src/services/authService';
 import { RootState } from '../src/store';
 import { useRouter } from 'expo-router';
+import { useTranslation } from '../src/localization';
+import { lightTheme, darkTheme } from '../src/themes';
 
 export default function ChangePasswordScreen() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const { theme } = useSelector((state: RootState) => state.theme);
+  const t = useTranslation();
+  const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
   const [formData, setFormData] = useState({
     oldPassword: '',
@@ -34,23 +39,23 @@ export default function ChangePasswordScreen() {
     const newErrors: Partial<typeof formData> = {};
 
     if (!formData.oldPassword.trim()) {
-      newErrors.oldPassword = 'Mật khẩu cũ không được để trống';
+      newErrors.oldPassword = t('Mật khẩu cũ không được để trống');
     }
 
     if (!formData.newPassword.trim()) {
-      newErrors.newPassword = 'Mật khẩu mới không được để trống';
+      newErrors.newPassword = t('Mật khẩu mới không được để trống');
     } else if (formData.newPassword.length < 6) {
-      newErrors.newPassword = 'Mật khẩu mới phải có ít nhất 6 ký tự';
+      newErrors.newPassword = t('Mật khẩu mới phải có ít nhất 6 ký tự');
     }
 
     if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Xác nhận mật khẩu không được để trống';
+      newErrors.confirmPassword = t('Xác nhận mật khẩu không được để trống');
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+      newErrors.confirmPassword = t('Mật khẩu xác nhận không khớp');
     }
 
     if (formData.oldPassword === formData.newPassword) {
-      newErrors.newPassword = 'Mật khẩu mới phải khác mật khẩu cũ';
+      newErrors.newPassword = t('Mật khẩu mới phải khác mật khẩu cũ');
     }
 
     setErrors(newErrors);
@@ -66,8 +71,8 @@ export default function ChangePasswordScreen() {
     try {
       await authService.changePassword(formData.oldPassword, formData.newPassword);
       Alert.alert(
-        'Thành công',
-        'Mật khẩu đã được thay đổi thành công!',
+        t('Thành công'),
+        t('Mật khẩu đã được thay đổi thành công!'),
         [
           {
             text: 'OK',
@@ -84,7 +89,7 @@ export default function ChangePasswordScreen() {
         ]
       );
     } catch (error: any) {
-      setErrorMessage(error.message || 'Không thể thay đổi mật khẩu');
+      setErrorMessage(error.message || t('Không thể thay đổi mật khẩu'));
     } finally {
       setIsLoading(false);
     }
@@ -92,21 +97,21 @@ export default function ChangePasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: currentTheme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Movie Ticket Booking</Text>
-          <Text style={styles.subtitle}>Đổi mật khẩu</Text>
+          <Text style={[styles.title, { color: currentTheme.text }]}>Movie Ticket Booking</Text>
+          <Text style={[styles.subtitle, { color: currentTheme.subtext }]}>{t('Đổi mật khẩu')}</Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: currentTheme.card }]}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu cũ</Text>
+            <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mật khẩu cũ')}</Text>
             <TextInput
-              style={[styles.input, errors.oldPassword && styles.inputError]}
-              placeholder="Nhập mật khẩu cũ"
+              style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.oldPassword && styles.inputError]}
+              placeholder={t('Nhập mật khẩu cũ')}
               value={formData.oldPassword}
               onChangeText={(text) => {
                 setFormData(prev => ({ ...prev, oldPassword: text }));
@@ -118,10 +123,10 @@ export default function ChangePasswordScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu mới</Text>
+            <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mật khẩu mới')}</Text>
             <TextInput
-              style={[styles.input, errors.newPassword && styles.inputError]}
-              placeholder="Nhập mật khẩu mới"
+              style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.newPassword && styles.inputError]}
+              placeholder={t('Nhập mật khẩu mới')}
               value={formData.newPassword}
               onChangeText={(text) => {
                 setFormData(prev => ({ ...prev, newPassword: text }));
@@ -133,10 +138,10 @@ export default function ChangePasswordScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Xác nhận mật khẩu mới</Text>
+            <Text style={[styles.label, { color: currentTheme.text }]}>{t('Xác nhận mật khẩu mới')}</Text>
             <TextInput
-              style={[styles.input, errors.confirmPassword && styles.inputError]}
-              placeholder="Nhập lại mật khẩu mới"
+              style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.confirmPassword && styles.inputError]}
+              placeholder={t('Nhập lại mật khẩu mới')}
               value={formData.confirmPassword}
               onChangeText={(text) => {
                 setFormData(prev => ({ ...prev, confirmPassword: text }));
@@ -154,14 +159,14 @@ export default function ChangePasswordScreen() {
           ) : null}
 
           <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: currentTheme.primary }, isLoading && styles.buttonDisabled]}
             onPress={handleChangePassword}
             disabled={isLoading}
           >
             {isLoading ? (
-              <Text style={styles.buttonText}>Đang xử lý...</Text>
+              <Text style={styles.buttonText}>{t('Đang xử lý...')}</Text>
             ) : (
-              <Text style={styles.buttonText}>Đổi mật khẩu</Text>
+              <Text style={styles.buttonText}>{t('Đổi mật khẩu')}</Text>
             )}
           </TouchableOpacity>
 
@@ -169,7 +174,7 @@ export default function ChangePasswordScreen() {
             style={styles.secondaryButton}
             onPress={() => router.back()}
           >
-            <Text style={styles.secondaryButtonText}>Hủy</Text>
+            <Text style={[styles.secondaryButtonText, { color: currentTheme.primary }]}>{t('Hủy')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -179,9 +184,9 @@ export default function ChangePasswordScreen() {
           animationType="fade"
         >
           <View style={styles.loadingOverlay}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4f8cff" />
-              <Text style={styles.loadingText}>Đang xử lý...</Text>
+            <View style={[styles.loadingContainer, { backgroundColor: currentTheme.card }]}>
+              <ActivityIndicator size="large" color={currentTheme.primary} />
+              <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang xử lý...')}</Text>
             </View>
           </View>
         </Modal>
@@ -193,7 +198,6 @@ export default function ChangePasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -207,15 +211,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
   },
   form: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
@@ -233,7 +234,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
@@ -242,7 +242,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
   },
   inputError: {
     borderColor: '#e74c3c',
@@ -253,7 +252,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   button: {
-    backgroundColor: '#007AFF',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -273,7 +271,6 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   secondaryButtonText: {
-    color: '#007AFF',
     fontSize: 16,
   },
   errorContainer: {
@@ -300,7 +297,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingContainer: {
-    backgroundColor: 'white',
     padding: 24,
     borderRadius: 12,
     alignItems: 'center',
@@ -309,7 +305,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
     fontWeight: '500',
   },
 });

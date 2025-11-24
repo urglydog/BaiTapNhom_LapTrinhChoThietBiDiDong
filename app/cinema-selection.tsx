@@ -16,6 +16,10 @@ import { showtimeService } from '../src/services/showtimeService';
 import { movieService } from '../src/services/movieService';
 import api from '../src/services/api';
 import { Cinema } from '../src/types';
+import { useSelector } from 'react-redux';
+import { RootState } from '../src/store';
+import { useTranslation } from '../src/localization';
+import { lightTheme, darkTheme } from '../src/themes';
 
 export default function CinemaSelectionScreen() {
     const { movieId, movieTitle } = useLocalSearchParams();
@@ -23,6 +27,9 @@ export default function CinemaSelectionScreen() {
     const [cinemas, setCinemas] = useState<Cinema[]>([]);
     const [loading, setLoading] = useState(true);
     const [cinemasWithShowtimes, setCinemasWithShowtimes] = useState<Set<number>>(new Set());
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
     useEffect(() => {
         loadCinemas();
@@ -104,8 +111,8 @@ export default function CinemaSelectionScreen() {
             if (!allShowtimes || allShowtimes.length === 0) {
                 setCinemas([]);
                 Alert.alert(
-                    'Thông báo',
-                    'Hiện tại không có lịch chiếu cho phim này',
+                    t('Thông báo'),
+                    t('Hiện tại không có lịch chiếu cho phim này'),
                     [
                         { text: 'OK', onPress: () => router.back() }
                     ]
@@ -242,8 +249,8 @@ export default function CinemaSelectionScreen() {
 
             if (availableCinemas.length === 0) {
                 Alert.alert(
-                    'Thông báo',
-                    'Hiện tại không có rạp nào có lịch chiếu cho phim này',
+                    t('Thông báo'),
+                    t('Hiện tại không có rạp nào có lịch chiếu cho phim này'),
                     [
                         { text: 'OK', onPress: () => router.back() }
                     ]
@@ -251,7 +258,7 @@ export default function CinemaSelectionScreen() {
             }
         } catch (error: any) {
             console.error('Error loading cinemas:', error);
-            Alert.alert('Lỗi', 'Không thể tải danh sách rạp', [
+            Alert.alert(t('Lỗi'), t('Không thể tải danh sách rạp'), [
                 { text: 'OK', onPress: () => router.back() }
             ]);
         } finally {
@@ -277,13 +284,14 @@ export default function CinemaSelectionScreen() {
             <TouchableOpacity
                 style={[
                     styles.cinemaCard,
+                    { backgroundColor: currentTheme.card, borderColor: currentTheme.background },
                     !hasShowtimes && styles.cinemaCardDisabled
                 ]}
                 onPress={() => hasShowtimes && handleCinemaSelect(item)}
                 disabled={!hasShowtimes}
                 activeOpacity={0.7}
             >
-                <View style={styles.cinemaImageContainer}>
+                <View style={[styles.cinemaImageContainer, { backgroundColor: currentTheme.background }]}>
                     {item.imageUrl ? (
                         <Image
                             source={{ uri: item.imageUrl }}
@@ -291,37 +299,37 @@ export default function CinemaSelectionScreen() {
                             resizeMode="cover"
                         />
                     ) : (
-                        <View style={styles.placeholderImage}>
-                            <Ionicons name="film-outline" size={40} color="#999" />
+                        <View style={[styles.placeholderImage, { backgroundColor: currentTheme.background }]}>
+                            <Ionicons name="film-outline" size={40} color={currentTheme.subtext} />
                         </View>
                     )}
                 </View>
                 <View style={styles.cinemaInfo}>
-                    <Text style={styles.cinemaName}>{item.name}</Text>
+                    <Text style={[styles.cinemaName, { color: currentTheme.text }]}>{item.name}</Text>
                     {item.address && (
                         <View style={styles.addressRow}>
-                            <Ionicons name="location-outline" size={16} color="#666" />
-                            <Text style={styles.cinemaAddress} numberOfLines={2}>
+                            <Ionicons name="location-outline" size={16} color={currentTheme.subtext} />
+                            <Text style={[styles.cinemaAddress, { color: currentTheme.subtext }]} numberOfLines={2}>
                                 {item.address}
                             </Text>
                         </View>
                     )}
                     {item.city && (
                         <View style={styles.cityRow}>
-                            <Ionicons name="business-outline" size={16} color="#666" />
-                            <Text style={styles.cinemaCity}>{item.city}</Text>
+                            <Ionicons name="business-outline" size={16} color={currentTheme.subtext} />
+                            <Text style={[styles.cinemaCity, { color: currentTheme.subtext }]}>{item.city}</Text>
                         </View>
                     )}
                     {item.phone && (
                         <View style={styles.phoneRow}>
-                            <Ionicons name="call-outline" size={16} color="#666" />
-                            <Text style={styles.cinemaPhone}>{item.phone}</Text>
+                            <Ionicons name="call-outline" size={16} color={currentTheme.subtext} />
+                            <Text style={[styles.cinemaPhone, { color: currentTheme.subtext }]}>{item.phone}</Text>
                         </View>
                     )}
                 </View>
                 {hasShowtimes && (
                     <View style={styles.selectIndicator}>
-                        <Ionicons name="chevron-forward" size={24} color="#E91E63" />
+                        <Ionicons name="chevron-forward" size={24} color={currentTheme.accent} />
                     </View>
                 )}
             </TouchableOpacity>
@@ -330,23 +338,23 @@ export default function CinemaSelectionScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.centerContent]}>
-                <ActivityIndicator size="large" color="#E91E63" />
-                <Text style={styles.loadingText}>Đang tải danh sách rạp...</Text>
+            <View style={[styles.container, styles.centerContent, { backgroundColor: currentTheme.background }]}>
+                <ActivityIndicator size="large" color={currentTheme.accent} />
+                <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải danh sách rạp...')}</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
+            <View style={[styles.header, { borderBottomColor: currentTheme.background }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
+                    <Ionicons name="arrow-back" size={24} color={currentTheme.text} />
                 </TouchableOpacity>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.headerTitle}>Chọn rạp chiếu</Text>
+                    <Text style={[styles.headerTitle, { color: currentTheme.text }]}>{t('Chọn rạp chiếu')}</Text>
                     {movieTitle && (
-                        <Text style={styles.headerSubtitle} numberOfLines={1}>
+                        <Text style={[styles.headerSubtitle, { color: currentTheme.subtext }]} numberOfLines={1}>
                             {movieTitle}
                         </Text>
                     )}
@@ -360,9 +368,9 @@ export default function CinemaSelectionScreen() {
                 contentContainerStyle={styles.listContainer}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="film-outline" size={64} color="#ccc" />
-                        <Text style={styles.emptyText}>
-                            Không có rạp nào có lịch chiếu cho phim này
+                        <Ionicons name="film-outline" size={64} color={currentTheme.subtext} />
+                        <Text style={[styles.emptyText, { color: currentTheme.subtext }]}>
+                            {t('Không có rạp nào có lịch chiếu cho phim này')}
                         </Text>
                     </View>
                 }
@@ -374,7 +382,6 @@ export default function CinemaSelectionScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     centerContent: {
         justifyContent: 'center',
@@ -383,14 +390,12 @@ const styles = StyleSheet.create({
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
         paddingTop: 50,
     },
     backButton: {
@@ -402,11 +407,9 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
     },
     headerSubtitle: {
         fontSize: 14,
-        color: '#666',
         marginTop: 4,
     },
     listContainer: {
@@ -414,7 +417,6 @@ const styles = StyleSheet.create({
     },
     cinemaCard: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
         borderRadius: 12,
         marginBottom: 16,
         padding: 16,
@@ -424,7 +426,6 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
         borderWidth: 1,
-        borderColor: '#eee',
     },
     cinemaCardDisabled: {
         opacity: 0.5,
@@ -435,7 +436,6 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         overflow: 'hidden',
         marginRight: 16,
-        backgroundColor: '#f5f5f5',
     },
     cinemaImage: {
         width: '100%',
@@ -446,7 +446,6 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
     },
     cinemaInfo: {
         flex: 1,
@@ -455,7 +454,6 @@ const styles = StyleSheet.create({
     cinemaName: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 8,
     },
     addressRow: {
@@ -465,7 +463,6 @@ const styles = StyleSheet.create({
     },
     cinemaAddress: {
         fontSize: 14,
-        color: '#666',
         marginLeft: 4,
         flex: 1,
     },
@@ -476,7 +473,6 @@ const styles = StyleSheet.create({
     },
     cinemaCity: {
         fontSize: 14,
-        color: '#666',
         marginLeft: 4,
     },
     phoneRow: {
@@ -485,7 +481,6 @@ const styles = StyleSheet.create({
     },
     cinemaPhone: {
         fontSize: 14,
-        color: '#666',
         marginLeft: 4,
     },
     selectIndicator: {
@@ -500,7 +495,6 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 16,
-        color: '#999',
         marginTop: 16,
         textAlign: 'center',
     },

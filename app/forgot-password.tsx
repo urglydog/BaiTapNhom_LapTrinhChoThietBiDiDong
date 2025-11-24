@@ -156,22 +156,22 @@ export default function ForgotPassword() {
   };
 
   const renderEmailStep = () => (
-    <View style={styles.stepContainer}>
+    <View style={[styles.stepContainer, { backgroundColor: currentTheme.card }]}>
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => router.replace('/login')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Quên mật khẩu</Text>
-      <Text style={styles.subtitle}>Nhập email của bạn để nhận mã OTP</Text>
+      <Text style={[styles.title, { color: currentTheme.text }]}>{t('Quên mật khẩu')}</Text>
+      <Text style={[styles.subtitle, { color: currentTheme.subtext }]}>{t('Nhập email của bạn để nhận mã OTP')}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Email')}</Text>
         <TextInput
-          style={[styles.input, errors.email && styles.inputError]}
-          placeholder="Nhập email của bạn"
+          style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.email && styles.inputError]}
+          placeholder={t('Nhập email của bạn')}
           value={formData.email}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, email: text }));
@@ -188,11 +188,11 @@ export default function ForgotPassword() {
       </View>
 
       <TouchableOpacity
-        style={[styles.button, (isLoading || isSubmitting) && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: currentTheme.primary }, (isLoading || isSubmitting) && styles.buttonDisabled]}
         onPress={handleSendOtp}
         disabled={isLoading || isSubmitting}
       >
-        <Text style={styles.buttonText}>Gửi OTP</Text>
+        <Text style={styles.buttonText}>{t('Gửi OTP')}</Text>
       </TouchableOpacity>
 
       <View style={styles.linksContainer}>
@@ -201,16 +201,16 @@ export default function ForgotPassword() {
             onPress={() => router.push('/login')}
             style={styles.linkButton}
           >
-            <Text style={styles.linkText}>Đăng nhập</Text>
+            <Text style={[styles.linkText, { color: currentTheme.primary }]}>{t('Đăng nhập')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.linkSeparator}>|</Text>
+          <Text style={[styles.linkSeparator, { color: currentTheme.subtext }]}>|</Text>
 
           <TouchableOpacity
             onPress={() => router.push('/register' as any)}
             style={styles.linkButton}
           >
-            <Text style={styles.linkText}>Đăng ký</Text>
+            <Text style={[styles.linkText, { color: currentTheme.primary }]}>{t('Đăng ký')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -218,22 +218,22 @@ export default function ForgotPassword() {
   );
 
   const renderOtpStep = () => (
-    <View style={styles.stepContainer}>
+    <View style={[styles.stepContainer, { backgroundColor: currentTheme.card }]}>
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => setStep('email')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Xác thực OTP</Text>
-      <Text style={styles.subtitle}>Nhập mã OTP đã được gửi đến email của bạn</Text>
+      <Text style={[styles.title, { color: currentTheme.text }]}>{t('Xác thực OTP')}</Text>
+      <Text style={[styles.subtitle, { color: currentTheme.subtext }]}>{t('Nhập mã OTP đã được gửi đến email của bạn')}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Mã OTP</Text>
+        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mã OTP')}</Text>
         <TextInput
-          style={[styles.input, errors.otp && styles.inputError]}
-          placeholder="Nhập 6 chữ số OTP"
+          style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.otp && styles.inputError]}
+          placeholder={t('Nhập 6 chữ số OTP')}
           value={formData.otp}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, otp: text }));
@@ -251,18 +251,18 @@ export default function ForgotPassword() {
 
       {otpExpiresAt && (
         <View style={styles.countdownContainer}>
-          <Text style={styles.countdownText}>
-            OTP hết hạn sau: {getOtpCountdown()}
+          <Text style={[styles.countdownText, { color: currentTheme.subtext }]}>
+            {t('OTP hết hạn sau:')} {getOtpCountdown()}
           </Text>
         </View>
       )}
 
       <TouchableOpacity
-        style={[styles.button, (isLoading || isSubmitting) && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: currentTheme.primary }, (isLoading || isSubmitting) && styles.buttonDisabled]}
         onPress={handleVerifyOtp}
         disabled={isLoading || isSubmitting}
       >
-        <Text style={styles.buttonText}>Xác thực OTP</Text>
+        <Text style={styles.buttonText}>{t('Xác thực OTP')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -270,30 +270,30 @@ export default function ForgotPassword() {
         onPress={handleResendOtp}
         disabled={isLoading || isSubmitting}
       >
-        <Text style={[styles.resendText, (isLoading || isSubmitting) && styles.resendTextDisabled]}>
-          Gửi lại OTP
+        <Text style={[styles.resendText, { color: currentTheme.primary }, (isLoading || isSubmitting) && styles.resendTextDisabled]}>
+          {t('Gửi lại OTP')}
         </Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderNewPasswordStep = () => (
-    <View style={styles.stepContainer}>
+    <View style={[styles.stepContainer, { backgroundColor: currentTheme.card }]}>
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => setStep('otp')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Đặt mật khẩu mới</Text>
-      <Text style={styles.subtitle}>Nhập mật khẩu mới cho tài khoản của bạn</Text>
+      <Text style={[styles.title, { color: currentTheme.text }]}>{t('Đặt mật khẩu mới')}</Text>
+      <Text style={[styles.subtitle, { color: currentTheme.subtext }]}>{t('Nhập mật khẩu mới cho tài khoản của bạn')}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Mật khẩu mới</Text>
+        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mật khẩu mới')}</Text>
         <TextInput
-          style={[styles.input, errors.newPassword && styles.inputError]}
-          placeholder="Nhập mật khẩu mới"
+          style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.newPassword && styles.inputError]}
+          placeholder={t('Nhập mật khẩu mới')}
           value={formData.newPassword}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, newPassword: text }));
@@ -309,10 +309,10 @@ export default function ForgotPassword() {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Xác nhận mật khẩu</Text>
+        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Xác nhận mật khẩu')}</Text>
         <TextInput
-          style={[styles.input, errors.confirmPassword && styles.inputError]}
-          placeholder="Nhập lại mật khẩu mới"
+          style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.confirmPassword && styles.inputError]}
+          placeholder={t('Nhập lại mật khẩu mới')}
           value={formData.confirmPassword}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, confirmPassword: text }));
@@ -328,37 +328,37 @@ export default function ForgotPassword() {
       </View>
 
       <TouchableOpacity
-        style={[styles.button, (isLoading || isSubmitting) && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: currentTheme.primary }, (isLoading || isSubmitting) && styles.buttonDisabled]}
         onPress={handleResetPassword}
         disabled={isLoading || isSubmitting}
       >
-        <Text style={styles.buttonText}>Đặt lại mật khẩu</Text>
+        <Text style={styles.buttonText}>{t('Đặt lại mật khẩu')}</Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderSuccessStep = () => (
-    <View style={styles.stepContainer}>
+    <View style={[styles.stepContainer, { backgroundColor: currentTheme.card }]}>
       <View style={styles.successIconContainer}>
         <Text style={styles.successIcon}>✓</Text>
       </View>
 
-      <Text style={styles.title}>Thành công!</Text>
-      <Text style={styles.subtitle}>Mật khẩu của bạn đã được đặt lại thành công</Text>
+      <Text style={[styles.title, { color: currentTheme.text }]}>{t('Thành công!')}</Text>
+      <Text style={[styles.subtitle, { color: currentTheme.subtext }]}>{t('Mật khẩu của bạn đã được đặt lại thành công')}</Text>
 
-      <View style={styles.successMessage}>
-        <Text style={styles.successText}>
-          Bạn có thể sử dụng mật khẩu mới để đăng nhập vào tài khoản của mình.
+      <View style={[styles.successMessage, { backgroundColor: '#E8F5E8' }]}>
+        <Text style={[styles.successText, { color: '#2E7D32' }]}>
+          {t('Bạn có thể sử dụng mật khẩu mới để đăng nhập vào tài khoản của mình.')}
         </Text>
       </View>
 
       <TouchableOpacity
-        style={styles.successButton}
+        style={[styles.successButton, { backgroundColor: '#4CAF50' }]}
         onPress={() => {
           router.replace('/login');
         }}
       >
-        <Text style={styles.successButtonText}>Quay lại đăng nhập</Text>
+        <Text style={styles.successButtonText}>{t('Quay lại đăng nhập')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -394,7 +394,6 @@ export default function ForgotPassword() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -402,7 +401,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   stepContainer: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
@@ -414,13 +412,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -430,7 +426,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
@@ -439,7 +434,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
   },
   inputError: {
     borderColor: '#FF6B6B',
@@ -450,7 +444,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   button: {
-    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -470,7 +463,6 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   resendText: {
-    color: '#007AFF',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -482,16 +474,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   countdownText: {
-    color: '#666',
     fontSize: 14,
   },
   errorContainer: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: '#FFE6E6',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FF6B6B',
   },
   successIconContainer: {
     alignItems: 'center',
@@ -503,21 +492,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   successMessage: {
-    backgroundColor: '#E8F5E8',
     padding: 16,
     borderRadius: 8,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#4CAF50',
   },
   successText: {
-    color: '#2E7D32',
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
   },
   successButton: {
-    backgroundColor: '#4CAF50',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -541,7 +526,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   linksContainer: {
     marginTop: 24,
@@ -552,7 +536,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkSeparator: {
-    color: '#666',
     fontSize: 16,
     marginHorizontal: 8,
   },
@@ -560,7 +543,6 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   linkText: {
-    color: '#007AFF',
     fontSize: 16,
     textDecorationLine: 'underline',
   },
@@ -570,7 +552,6 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backButtonText: {
-    color: '#007AFF',
     fontSize: 16,
     fontWeight: '500',
   },

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useAppSelector } from '../src/hooks/redux';
 import { lightTheme, darkTheme } from '../src/themes';
-import { ThemeProvider } from 'styled-components';
+import { ThemeProvider } from 'styled-components/native';
 import { sendMessage } from '../src/services/chatService';
 import { Ionicons } from '@expo/vector-icons'; // Assuming Ionicons are available
 

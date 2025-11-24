@@ -52,7 +52,7 @@ export default function HomeScreen() {
     } catch (error: any) {
       console.error('Error fetching movies:', error);
       setHasError(true);
-      setErrorMessage(error?.message || 'Không thể tải danh sách phim. Vui lòng thử lại.');
+      setErrorMessage(error?.message || t('Không thể tải danh sách phim. Vui lòng thử lại.'));
       // Không hiển thị Alert để không làm gián đoạn UX, thay vào đó hiển thị error state
     } finally {
       setIsLoading(false);
@@ -161,9 +161,9 @@ export default function HomeScreen() {
             resizeMode="cover"
           />
         ) : (
-          <View style={styles.placeholderImage}>
+          <View style={[styles.placeholderImage, { backgroundColor: currentTheme.background }]}>
             <Text style={styles.placeholderText}>📽️</Text>
-            <Text style={styles.placeholderSubtext}>Không có ảnh</Text>
+            <Text style={[styles.placeholderSubtext, { color: currentTheme.subtext }]}>{t('Không có ảnh')}</Text>
           </View>
         )}
         {item.rating != null && item.rating > 0 && (
@@ -195,9 +195,9 @@ export default function HomeScreen() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Chào buổi sáng';
-    if (hour < 18) return 'Chào buổi chiều';
-    return 'Chào buổi tối';
+    if (hour < 12) return t('Chào buổi sáng');
+    if (hour < 18) return t('Chào buổi chiều');
+    return t('Chào buổi tối');
   };
 
   if (isLoading) {
@@ -300,6 +300,7 @@ export default function HomeScreen() {
           }
         />
       )}
+      <ChatbotFloatingButton />
     </View>
   );
 }
@@ -307,19 +308,15 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f6fb',
   },
   header: {
-    backgroundColor: '#4f8cff',
     paddingHorizontal: 20,
     paddingTop: 48,
     paddingBottom: 24,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#4f8cff',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    // For web compatibility, use boxShadow instead of shadow* properties
+    boxShadow: '0px 4px 12px rgba(79, 140, 255, 0.15)',
     elevation: 8,
   },
   headerContent: {
@@ -347,6 +344,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     minWidth: 70,
+    // Explicitly disable shadows for web compatibility
+    boxShadow: 'none',
+    elevation: 0,
   },
   quickActionIcon: {
     fontSize: 24,
@@ -365,25 +365,20 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    shadowColor: '#4f8cff',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    // For web compatibility, use boxShadow instead of shadow* properties
+    boxShadow: '0px 2px 6px rgba(79, 140, 255, 0.08)',
     elevation: 2,
   },
   searchIcon: {
     fontSize: 20,
     marginRight: 8,
-    color: '#4f8cff',
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#222',
     backgroundColor: 'transparent',
     paddingVertical: 4,
   },
@@ -399,18 +394,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   movieCard: {
-    backgroundColor: 'white',
     borderRadius: 12,
     marginBottom: 16,
     width: CARD_WIDTH,
     marginHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    // For web compatibility, use boxShadow instead of shadow* properties
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
     overflow: 'hidden',
   },
@@ -429,7 +418,6 @@ const styles = StyleSheet.create({
   placeholderImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -439,7 +427,6 @@ const styles = StyleSheet.create({
   },
   placeholderSubtext: {
     fontSize: 12,
-    color: '#999',
   },
   ratingBadge: {
     position: 'absolute',
@@ -471,7 +458,6 @@ const styles = StyleSheet.create({
   },
   movieDuration: {
     fontSize: 13,
-    color: '#888',
     marginBottom: 8,
   },
   ageRatingContainer: {
@@ -480,7 +466,6 @@ const styles = StyleSheet.create({
   ageRating: {
     fontSize: 12,
     color: '#fff',
-    backgroundColor: '#4f8cff',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -500,25 +485,21 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f6fb',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   errorContainer: {
     flex: 1,
@@ -534,31 +515,42 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 12,
     textAlign: 'center',
   },
   errorMessage: {
     fontSize: 15,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
   },
   retryButton: {
-    backgroundColor: '#4f8cff',
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: '#4f8cff',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    // For web compatibility, use boxShadow instead of shadow* properties
+    boxShadow: '0px 4px 8px rgba(79, 140, 255, 0.3)',
     elevation: 4,
   },
   retryButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  fab: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 20,
+    bottom: 20,
+    borderRadius: 28,
+    // For web compatibility, use boxShadow instead of shadow* properties
+    boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
+  },
+  fabIcon: {
+    fontSize: 24,
+    color: 'white',
   },
 });

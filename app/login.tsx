@@ -32,7 +32,7 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         if (!username.trim() || !password.trim()) {
-            Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
+            Alert.alert(t('Lỗi'), t('Vui lòng nhập đầy đủ thông tin'));
             return;
         }
 
@@ -50,7 +50,7 @@ export default function LoginScreen() {
                 router.replace('/(tabs)/profile');
             }
         } catch (error) {
-            Alert.alert('Đăng nhập thất bại', error as string);
+            Alert.alert(t('Đăng nhập thất bại'), error as string);
         } finally {
             setIsLoading(false);
         }
@@ -155,7 +155,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
     },
     scrollContainer: {
         flexGrow: 1,
@@ -169,15 +168,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#666',
     },
     form: {
-        backgroundColor: 'white',
         borderRadius: 12,
         padding: 24,
         shadowColor: '#000',
@@ -195,7 +191,6 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
         marginBottom: 8,
     },
     input: {
@@ -204,10 +199,8 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 12,
         fontSize: 16,
-        backgroundColor: '#f9f9f9',
     },
     loginButton: {
-        backgroundColor: '#007AFF',
         borderRadius: 8,
         padding: 16,
         alignItems: 'center',
@@ -227,12 +220,10 @@ const styles = StyleSheet.create({
     },
     footerText: {
         fontSize: 14,
-        color: '#666',
         marginBottom: 8,
     },
     demoText: {
         fontSize: 12,
-        color: '#999',
         marginBottom: 4,
     },
     backButton: {
@@ -241,14 +232,12 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     backButtonText: {
-        color: '#007AFF',
         fontSize: 16,
         fontWeight: '500',
     },
     formTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
         textAlign: 'center',
         marginBottom: 24,
     },

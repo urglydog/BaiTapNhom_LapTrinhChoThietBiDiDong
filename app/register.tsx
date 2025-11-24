@@ -191,7 +191,7 @@ export default function RegisterScreen() {
       };
 
       await authService.register(userData);
-      Alert.alert('Thành công', 'Đăng ký tài khoản thành công!', [
+      Alert.alert(t('Thành công'), t('Đăng ký tài khoản thành công!'), [
         { text: 'OK', onPress: () => {
           router.replace('/login');
         }}
@@ -229,16 +229,16 @@ export default function RegisterScreen() {
         style={styles.backButton}
         onPress={() => router.replace('/login' as any)}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.formTitle}>Đăng ký</Text>
+      <Text style={[styles.formTitle, { color: currentTheme.text }]}>{t('Đăng ký')}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Email')}</Text>
         <TextInput
-          style={[styles.input, errors.email && styles.inputError]}
-          placeholder="Nhập email của bạn"
+          style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.email && styles.inputError]}
+          placeholder={t('Nhập email của bạn')}
           value={formData.email}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, email: text }));
@@ -251,14 +251,14 @@ export default function RegisterScreen() {
       </View>
 
       <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: currentTheme.primary }, isLoading && styles.buttonDisabled]}
         onPress={handleSendOtp}
         disabled={isLoading}
       >
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Gửi OTP</Text>
+          <Text style={styles.buttonText}>{t('Gửi OTP')}</Text>
         )}
       </TouchableOpacity>
     </>
@@ -270,14 +270,14 @@ export default function RegisterScreen() {
         style={styles.backButton}
         onPress={() => setStep('email')}
       >
-        <Text style={styles.backButtonText}>← Quay lại</Text>
+        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
       </TouchableOpacity>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Mã OTP</Text>
+        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mã OTP')}</Text>
         <TextInput
-          style={[styles.input, errors.otp && styles.inputError]}
-          placeholder="Nhập 6 chữ số OTP"
+          style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.otp && styles.inputError]}
+          placeholder={t('Nhập 6 chữ số OTP')}
           value={formData.otp}
           onChangeText={(text) => {
             setFormData(prev => ({ ...prev, otp: text.replace(/[^0-9]/g, '') }));
@@ -291,19 +291,19 @@ export default function RegisterScreen() {
 
       {otpExpiresAt && (
         <Text style={styles.countdownText}>
-          OTP hết hạn sau: {getOtpCountdown()}
+          {t('OTP hết hạn sau:')} {getOtpCountdown()}
         </Text>
       )}
 
       <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: currentTheme.primary }, isLoading && styles.buttonDisabled]}
         onPress={handleVerifyOtp}
         disabled={isLoading}
       >
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Xác thực OTP</Text>
+          <Text style={styles.buttonText}>{t('Xác thực OTP')}</Text>
         )}
       </TouchableOpacity>
 
@@ -312,7 +312,7 @@ export default function RegisterScreen() {
         onPress={handleResendOtp}
         disabled={isLoading}
       >
-        <Text style={styles.secondaryButtonText}>Gửi lại OTP</Text>
+        <Text style={[styles.secondaryButtonText, { color: currentTheme.primary }]}>{t('Gửi lại OTP')}</Text>
       </TouchableOpacity>
     </>
   );
@@ -504,7 +504,6 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -518,15 +517,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
   },
   form: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
@@ -544,7 +540,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
@@ -553,7 +548,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
   },
   inputError: {
     borderColor: '#e74c3c',
@@ -564,7 +558,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   button: {
-    backgroundColor: '#007AFF',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -584,7 +577,6 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   secondaryButtonText: {
-    color: '#007AFF',
     fontSize: 16,
   },
   countdownText: {
@@ -611,7 +603,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginHorizontal: 5,
-    backgroundColor: '#f9f9f9',
   },
   genderButtonActive: {
     backgroundColor: '#007AFF',
@@ -619,7 +610,6 @@ const styles = StyleSheet.create({
   },
   genderText: {
     fontSize: 16,
-    color: '#666',
   },
   genderTextActive: {
     color: '#fff',
@@ -630,15 +620,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#666',
   },
   linkText: {
-    color: '#007AFF',
     fontSize: 14,
   },
   dateHint: {
     fontSize: 12,
-    color: '#666',
     marginTop: 4,
     fontStyle: 'italic',
   },
@@ -655,7 +642,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -663,14 +649,12 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backButtonText: {
-    color: '#007AFF',
     fontSize: 16,
     fontWeight: '500',
   },
   formTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
     textAlign: 'center',
     marginBottom: 24,
   },

@@ -28,9 +28,7 @@ const rootReducer = combineReducers({
 });
 
 // Chỉ persist cho mobile, web dùng reducer thường
-const persistedReducer = Platform.OS === 'web' 
-  ? rootReducer 
-  : persistReducer(persistConfig, rootReducer);
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
   reducer: persistedReducer,
@@ -42,9 +40,7 @@ export const store = configureStore({
     }),
 });
 
-export const persistor = Platform.OS === 'web' 
-  ? null 
-  : persistStore(store);
+export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

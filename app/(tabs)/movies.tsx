@@ -58,10 +58,10 @@ export default function MoviesScreen() {
         } catch (error: any) {
             console.error('Error fetching movies:', error);
             Alert.alert(
-                'Lỗi kết nối',
-                error?.message || 'Không thể tải danh sách phim. Vui lòng thử lại.',
+                t('Lỗi kết nối'),
+                error?.message || t('Không thể tải danh sách phim. Vui lòng thử lại.'),
                 [
-                    { text: 'Thử lại', onPress: () => fetchMovies() },
+                    { text: t('Thử lại'), onPress: () => fetchMovies() },
                     { text: 'OK', style: 'cancel' },
                 ]
             );
@@ -233,12 +233,12 @@ export default function MoviesScreen() {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyIcon}>🎬</Text>
-                        <Text style={styles.emptyText}>
+                        <Text style={[styles.emptyText, { color: currentTheme.text }]}>
                             {selectedCategory === 'showing'
-                                ? 'Hiện không có phim đang chiếu'
+                                ? t('Hiện không có phim đang chiếu')
                                 : selectedCategory === 'upcoming'
-                                    ? 'Hiện không có phim sắp chiếu'
-                                    : 'Không có phim nào'}
+                                    ? t('Hiện không có phim sắp chiếu')
+                                    : t('Không có phim nào')}
                         </Text>
                     </View>
                 }
@@ -250,27 +250,22 @@ export default function MoviesScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f3f6fb',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f3f6fb',
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
     },
     header: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 20,
         paddingTop: 48,
         paddingBottom: 20,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
-        shadowColor: '#4f8cff',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
@@ -302,6 +297,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 4,
         borderRadius: 12,
     },
+    categoryButtonActive: {},
     categoryIcon: {
         fontSize: 18,
         marginRight: 6,
@@ -346,7 +342,6 @@ const styles = StyleSheet.create({
     placeholderImage: {
         width: '100%',
         height: '100%',
-        backgroundColor: '#e0e0e0',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -356,7 +351,6 @@ const styles = StyleSheet.create({
     },
     placeholderSubtext: {
         fontSize: 12,
-        color: '#999',
     },
     ratingBadge: {
         position: 'absolute',
@@ -397,19 +391,16 @@ const styles = StyleSheet.create({
     movieTitle: {
         fontSize: 17,
         fontWeight: 'bold',
-        color: '#222',
         marginBottom: 4,
         minHeight: 40,
     },
     movieGenre: {
         fontSize: 14,
-        color: '#4f8cff',
         marginBottom: 2,
         fontWeight: '500',
     },
     movieDuration: {
         fontSize: 13,
-        color: '#888',
         marginBottom: 4,
     },
     releaseDateText: {
@@ -420,15 +411,14 @@ const styles = StyleSheet.create({
     },
     ageRatingContainer: {
         marginTop: 4,
-    },
-    ageRating: {
-        fontSize: 12,
-        color: '#fff',
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 4,
         alignSelf: 'flex-start',
+    },
+    ageRating: {
+        fontSize: 12,
+        color: '#fff',
     },
     emptyContainer: {
         flex: 1,
@@ -444,7 +434,6 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         textAlign: 'center',
     },
 });

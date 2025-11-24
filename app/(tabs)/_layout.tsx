@@ -100,10 +100,8 @@ const styles = StyleSheet.create({
         height: 60,
         paddingBottom: 8,
         paddingTop: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
+        // For web compatibility, use boxShadow instead of shadow* properties
+        boxShadow: '0px -2px 4px rgba(0, 0, 0, 0.05)',
         elevation: 8,
     },
     tabBarLabel: {

@@ -191,27 +191,22 @@ export default function FavouritesTabScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f3f6fb',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f3f6fb',
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
     },
     header: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 20,
         paddingTop: 48,
         paddingBottom: 20,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
-        shadowColor: '#4f8cff',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
@@ -232,7 +227,6 @@ const styles = StyleSheet.create({
     },
     movieCard: {
         flexDirection: 'row',
-        backgroundColor: 'white',
         borderRadius: 16,
         marginBottom: 16,
         overflow: 'hidden',
@@ -258,7 +252,6 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: 'rgba(255, 107, 107, 0.9)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -278,18 +271,15 @@ const styles = StyleSheet.create({
     movieTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 4,
     },
     movieGenre: {
         fontSize: 14,
-        color: '#4f8cff',
         marginBottom: 4,
         fontWeight: '500',
     },
     movieDuration: {
         fontSize: 13,
-        color: '#888',
         marginBottom: 8,
     },
     ratingContainer: {
@@ -299,12 +289,10 @@ const styles = StyleSheet.create({
     },
     rating: {
         fontSize: 14,
-        color: '#FFA500',
         fontWeight: 'bold',
         marginRight: 12,
     },
     ageRatingBadge: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
@@ -316,7 +304,6 @@ const styles = StyleSheet.create({
     },
     movieDescription: {
         fontSize: 13,
-        color: '#666',
         lineHeight: 18,
     },
     emptyContainer: {
@@ -333,22 +320,18 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 8,
         textAlign: 'center',
     },
     emptySubtext: {
         fontSize: 15,
-        color: '#666',
         textAlign: 'center',
         marginBottom: 24,
     },
     browseButton: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 32,
         paddingVertical: 14,
         borderRadius: 12,
-        shadowColor: '#4f8cff',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
