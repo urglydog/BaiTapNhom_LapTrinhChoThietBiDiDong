@@ -375,16 +375,16 @@ export default function ForgotPassword() {
         {step === 'success' && renderSuccessStep()}
 
         {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={[styles.errorContainer, { backgroundColor: currentTheme.card }]}>
+            <Text style={[styles.errorText, { color: currentTheme.error }]}>{error}</Text>
           </View>
         )}
       </ScrollView>
 
       {(isLoading || isSubmitting) && (
-        <View style={styles.loadingOverlay}>
+        <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
           <ActivityIndicator size="large" color={currentTheme.primary} />
-          <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang xử lý...')}</Text>
+          <Text style={[styles.loadingText, { color: '#fff' }]}>{t('Đang xử lý...')}</Text>
         </View>
       )}
     </KeyboardAvoidingView>

@@ -27,9 +27,8 @@ export default function CinemasScreen() {
 
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { cinemas } = useSelector((state: RootState) => state.movie);
+  const { cinemas, isLoading, error } = useSelector((state: RootState) => state.movie);
   const t = useTranslation();
-    console.log("t('Cinema')", t('Cinema'));
 
   useEffect(() => {
     dispatch(fetchCinemas());
@@ -47,7 +46,7 @@ export default function CinemasScreen() {
     try {
       const cinemaShowtimes = await movieService.getCinemaShowtimes(cinema.id);
       setShowtimes(cinemaShowtimes);
-      
+
       // Nhóm showtimes theo phim
       const grouped: { [movieId: number]: { movie: any; showtimes: Showtime[] } } = {};
       cinemaShowtimes.forEach((showtime) => {
@@ -132,24 +131,6 @@ export default function CinemasScreen() {
     </TouchableOpacity>
   );
 
-const renderShowtime = ({ item }: { item: Showtime }) => (
-    <TouchableOpacity
-      style={styles.showtimeCard}
-      onPress={() => handleShowtimePress(item)}
-    >
-      <View style={styles.showtimeInfo}>
-        <Text style={styles.showtimeMovie}>
-          {item.movie?.title || t('Phim')}
-        </Text>
-        {item.startTime && item.endTime && (
-          <Text style={styles.showtimeTime}>
-            {item.startTime} - {item.endTime}
-          </Text>
-        )}
-        {item.showDate && (
-          <Text style={styles.showtimeDate}>
-            {new Date(item.showDate).toLocaleDateString(t('vi-VN'))}
-          </Text>
   const renderMovieGroup = (movieId: number, data: { movie: any; showtimes: Showtime[] }) => (
     <View style={styles.movieGroup} key={movieId}>
       <View style={styles.movieGroupHeader}>
@@ -197,20 +178,37 @@ const renderShowtime = ({ item }: { item: Showtime }) => (
         </Text>
       </View>
 
-      <FlatList
-        data={cinemas}
-        renderItem={renderCinema}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.cinemaList}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>{t('Không có rạp chiếu nào')}</Text>
-          </View>
-        }
-      />
+      {isLoading && cinemas.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>{t('Đang tải danh sách rạp...')}</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{t('Lỗi:')} {error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={handleRefresh}
+          >
+            <Text style={styles.retryButtonText}>{t('Thử lại')}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={cinemas}
+          renderItem={renderCinema}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.cinemaList}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>{t('Không có rạp chiếu nào')}</Text>
+            </View>
+          }
+        />
+      )}
 
       {selectedCinema && (
         <View style={styles.showtimesContainer}>
@@ -479,8 +477,38 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   loadingContainer: {
-    padding: 40,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#d32f2f',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

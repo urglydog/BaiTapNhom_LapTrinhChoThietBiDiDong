@@ -50,11 +50,34 @@ export default function FavouritesScreen() {
 
   const renderMovie = ({ item }: { item: Favourite }) => {
     const movie = item.movie;
-    // Nếu không có movie object, có thể cần load lại hoặc bỏ qua
-    if (!movie) {
+    // Nếu không có movie object, có thể cần load từ movieId
+    if (!movie && !item.movieId) {
       console.warn('Favourite item missing movie:', item);
       return null;
     }
+
+    // Nếu không có movie object nhưng có movieId, hiển thị placeholder
+    if (!movie && item.movieId) {
+      return (
+        <TouchableOpacity
+          style={styles.movieCard}
+          onPress={() => router.push(`/movie-detail?movieId=${item.movieId}`)}
+        >
+          <View style={styles.movieImageContainer}>
+            <View style={[styles.moviePoster, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}>
+              <Text style={{ fontSize: 24 }}>🎬</Text>
+            </View>
+          </View>
+          <View style={styles.movieInfo}>
+            <Text style={styles.movieTitle} numberOfLines={2}>
+              {t('Đang tải...')}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    if (!movie) return null;
 
     return (
       <TouchableOpacity

@@ -85,10 +85,46 @@ export const showtimeService = {
     // Lấy lịch chiếu theo phim (tất cả ngày)
     getShowtimesByMovie: async (movieId: number): Promise<Showtime[]> => {
         try {
-            const response = await api.get<ApiResponse<Showtime[]>>(
-                `/showtimes/movie/${movieId}`
-            );
-            const showtimes = response.data.result || [];
+            console.log('🎬 Fetching showtimes for movie ID:', movieId);
+            const url = `/showtimes/movie/${movieId}`;
+            console.log('📡 Full URL will be:', `${api.defaults.baseURL}${url}`);
+            
+            const response = await api.get<ApiResponse<Showtime[]>>(url);
+            
+            console.log('📡 Showtimes API Response:', JSON.stringify(response.data, null, 2));
+            
+            // Xử lý nhiều format response
+            let showtimes: Showtime[] = [];
+            
+            if (response.data) {
+                // Format 1: { code: 200, message: "...", result: [...] }
+                if (response.data.code === 200 && Array.isArray(response.data.result)) {
+                    showtimes = response.data.result;
+                    console.log('✅ Found showtimes in result array:', showtimes.length);
+                }
+                // Format 2: Response trực tiếp là array
+                else if (Array.isArray(response.data)) {
+                    showtimes = response.data;
+                    console.log('✅ Response is direct array:', showtimes.length);
+                }
+                // Format 3: { result: [...] } (không có code)
+                else if (Array.isArray(response.data.result)) {
+                    showtimes = response.data.result;
+                    console.log('✅ Found showtimes in result (no code):', showtimes.length);
+                }
+                // Format 4: { data: [...] }
+                else if (Array.isArray(response.data.data)) {
+                    showtimes = response.data.data;
+                    console.log('✅ Found showtimes in data:', showtimes.length);
+                }
+            }
+            
+            if (!showtimes || showtimes.length === 0) {
+                console.log('⚠️ No showtimes found for movie:', movieId);
+                return []; // Trả về mảng rỗng thay vì throw error
+            }
+            
+            console.log('📋 Processing showtimes, adding cinemaHallId...');
             
             // Vì cinemaHall có @JsonBackReference, cần map lại để có cinemaHallId
             // Thử lấy từ cinemaHall.id hoặc fetch từng showtime detail
@@ -107,29 +143,69 @@ export const showtimeService = {
                         };
                     }
                     
-                    // Nếu không có, thử fetch detail
+                    // Nếu không có, thử fetch detail (chỉ cho vài cái đầu để tránh quá nhiều request)
                     try {
                         const detailResponse = await api.get(`/showtimes/${st.id}`);
                         const detail = detailResponse.data.result;
-                        if (detail.cinemaHall && detail.cinemaHall.id) {
+                        if (detail && detail.cinemaHall && detail.cinemaHall.id) {
                             return {
                                 ...st,
                                 cinemaHallId: detail.cinemaHall.id,
                             };
                         }
                     } catch (e) {
-                        // Ignore error
+                        console.log(`⚠️ Could not fetch detail for showtime ${st.id}`);
                     }
                     
                     return st;
                 })
             );
             
+            console.log('✅ Processed showtimes:', showtimesWithHallId.length);
             return showtimesWithHallId;
         } catch (error: any) {
-            console.error('Error fetching showtimes:', error);
+            console.error('❌ Error fetching showtimes:', error);
+            console.error('Error details:', {
+                message: error.message,
+                code: error.code,
+                response: error.response?.data,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                isNetworkError: (error as any).isNetworkError,
+                isTimeoutError: (error as any).isTimeoutError,
+                isCorsError: (error as any).isCorsError,
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    baseURL: error.config?.baseURL,
+                },
+            });
+            
+            // Nếu là network error từ interceptor, throw lại message đã được format
+            if ((error as any).isNetworkError || (error as any).isTimeoutError || (error as any).isCorsError) {
+                throw error; // Throw lại error đã được format từ interceptor
+            }
+            
+            // Nếu là network error thông thường (không có response)
+            if (!error.response) {
+                // Kiểm tra xem có phải là Render.com không
+                const url = error.config?.baseURL || '';
+                if (url.includes('onrender.com')) {
+                    throw new Error('Server đang khởi động. Vui lòng đợi vài giây rồi thử lại.');
+                }
+                throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+            }
+            
+            // Nếu server trả về 404 hoặc empty result, trả về mảng rỗng
+            if (error.response?.status === 404) {
+                console.log('⚠️ No showtimes found (404)');
+                return [];
+            }
+            
             throw new Error(
-                error.response?.data?.message || 'Không thể tải lịch chiếu'
+                error.response?.data?.message || 
+                error.message || 
+                'Không thể tải lịch chiếu'
             );
         }
     },

@@ -68,7 +68,7 @@ export default function CinemasTabScreen() {
             style={[
                 styles.cinemaCard,
                 { backgroundColor: currentTheme.card },
-                selectedCinema === item.id && [styles.cinemaCardSelected, { borderColor: currentTheme.primary }],
+                selectedCinema === item.id && { borderColor: currentTheme.primary, borderWidth: 2 },
             ]}
             onPress={() => handleCinemaPress(item)}
             activeOpacity={0.8}
@@ -87,7 +87,7 @@ export default function CinemasTabScreen() {
                 )}
             </View>
             <View style={styles.cinemaInfo}>
-                <Text style={[styles.cinemaName, { color: currentTheme.text }]}>{item.name || t('Cinema')}</Text>
+                <Text style={[styles.cinemaName, { color: currentTheme.text }]}>{item.name || t('Rạp chiếu phim')}</Text>
                 {item.address && (
                     <Text style={[styles.cinemaAddress, { color: currentTheme.subtext }]} numberOfLines={2}>
                         📍 {item.address}
@@ -147,9 +147,9 @@ export default function CinemasTabScreen() {
 
     return (
         <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
-            <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
-                <Text style={styles.headerTitle}>{t('Cinema')}</Text>
-                <Text style={styles.headerSubtitle}>
+            <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
+                <Text style={[styles.headerTitle, { color: currentTheme.text }]}>{t('Rạp Chiếu Phim')}</Text>
+                <Text style={[styles.headerSubtitle, { color: currentTheme.subtext }]}>
                     {t('Chọn rạp để xem lịch chiếu')}
                 </Text>
             </View>
@@ -163,7 +163,7 @@ export default function CinemasTabScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
+                    <View style={[styles.emptyContainer, { backgroundColor: currentTheme.background }]}>
                         <Text style={styles.emptyIcon}>🎭</Text>
                         <Text style={[styles.emptyText, { color: currentTheme.text }]}>{t('Không có rạp chiếu nào')}</Text>
                     </View>
@@ -172,7 +172,7 @@ export default function CinemasTabScreen() {
 
             {selectedCinema && (
                 <View style={[styles.showtimesContainer, { backgroundColor: currentTheme.card }]}>
-                    <View style={[styles.showtimesHeader, { borderBottomColor: currentTheme.background }]}>
+                    <View style={[styles.showtimesHeader, { borderBottomColor: currentTheme.border }]}>
                         <Text style={[styles.showtimesTitle, { color: currentTheme.text }]}>{t('Lịch Chiếu')}</Text>
                         <TouchableOpacity
                             onPress={() => setSelectedCinema(null)}
@@ -182,8 +182,9 @@ export default function CinemasTabScreen() {
                         </TouchableOpacity>
                     </View>
                     {loadingShowtimes ? (
-                        <View style={styles.loadingContainer}>
+                        <View style={[styles.loadingContainer, { backgroundColor: currentTheme.background }]}>
                             <ActivityIndicator size="large" color={currentTheme.primary} />
+                            <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải lịch chiếu...')}</Text>
                         </View>
                     ) : (
                         <FlatList
@@ -192,7 +193,7 @@ export default function CinemasTabScreen() {
                             keyExtractor={(item) => item.id.toString()}
                             contentContainerStyle={styles.showtimesList}
                             ListEmptyComponent={
-                                <View style={styles.emptyContainer}>
+                                <View style={[styles.emptyContainer, { backgroundColor: currentTheme.background }]}>
                                     <Text style={[styles.emptyText, { color: currentTheme.text }]}>
                                         {t('Không có suất chiếu nào')}
                                     </Text>
@@ -216,6 +217,7 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
@@ -224,12 +226,10 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: 'white',
         marginBottom: 4,
     },
     headerSubtitle: {
         fontSize: 15,
-        color: 'rgba(255,255,255,0.9)',
     },
     cinemaList: {
         padding: 16,
@@ -246,7 +246,6 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: 'transparent',
     },
-    cinemaCardSelected: {},
     cinemaImageContainer: {
         width: '100%',
         height: 180,
