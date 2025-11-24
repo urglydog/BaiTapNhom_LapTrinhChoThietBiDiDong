@@ -129,26 +129,6 @@ export default function CinemasScreen() {
     </TouchableOpacity>
   );
 
-<<<<<<< Updated upstream
-  const renderShowtime = ({ item }: { item: Showtime }) => (
-    <TouchableOpacity
-      style={styles.showtimeCard}
-      onPress={() => handleShowtimePress(item)}
-    >
-      <View style={styles.showtimeInfo}>
-        <Text style={styles.showtimeMovie}>
-          {item.movie?.title || 'Phim'}
-        </Text>
-        {item.startTime && item.endTime && (
-          <Text style={styles.showtimeTime}>
-            {item.startTime} - {item.endTime}
-          </Text>
-        )}
-        {item.showDate && (
-          <Text style={styles.showtimeDate}>
-            {new Date(item.showDate).toLocaleDateString('vi-VN')}
-          </Text>
-=======
   const renderMovieGroup = (movieId: number, data: { movie: any; showtimes: Showtime[] }) => (
     <View style={styles.movieGroup} key={movieId}>
       <View style={styles.movieGroupHeader}>
@@ -158,7 +138,6 @@ export default function CinemasScreen() {
             style={styles.moviePoster}
             resizeMode="cover"
           />
->>>>>>> Stashed changes
         )}
         <View style={styles.movieGroupInfo}>
           <Text style={styles.movieGroupTitle}>{data.movie.title || t('Phim')}</Text>
@@ -167,20 +146,6 @@ export default function CinemasScreen() {
           )}
         </View>
       </View>
-<<<<<<< Updated upstream
-      <View style={styles.showtimePriceContainer}>
-        {item.price != null && (
-          <Text style={styles.showtimePrice}>
-            {item.price.toLocaleString()} VNĐ
-          </Text>
-        )}
-        <TouchableOpacity
-          style={styles.bookButton}
-          onPress={() => router.push(`/booking?showtimeId=${item.id}`)}
-        >
-          <Text style={styles.bookButtonText}>Đặt vé</Text>
-        </TouchableOpacity>
-=======
       <View style={styles.showtimesGrid}>
         {data.showtimes.map((showtime) => (
           <TouchableOpacity
@@ -198,7 +163,6 @@ export default function CinemasScreen() {
             )}
           </TouchableOpacity>
         ))}
->>>>>>> Stashed changes
       </View>
     </View>
   );

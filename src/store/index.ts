@@ -8,6 +8,7 @@ import authReducer from './authSlice';
 import movieReducer from './movieSlice';
 import bookingReducer from './bookingSlice';
 import otpReducer from './otpSlice';
+import themeReducer from './themeSlice';
 
 // Chỉ sử dụng persist cho mobile, không dùng cho web
 const persistConfig = {
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
   movie: movieReducer,
   booking: bookingReducer,
   otp: otpReducer,
+  theme: themeReducer,
 });
 
 // Chỉ persist cho mobile, web dùng reducer thường

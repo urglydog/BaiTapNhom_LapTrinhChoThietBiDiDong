@@ -184,14 +184,6 @@ export default function BookingScreen() {
   }
 
   return (
-<<<<<<< Updated upstream
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Đặt vé</Text>
-        <Text style={styles.movieTitle}>{movieTitle || showtime?.movie?.title || 'Phim'}</Text>
-        <Text style={styles.cinemaInfo}>
-          {cinemaName || 'Rạp chiếu'} • {hallName || 'Phòng chiếu'}
-=======
     <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
       <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
         <View style={styles.headerRow}>
@@ -203,7 +195,6 @@ export default function BookingScreen() {
         <Text style={[styles.movieTitle, { color: currentTheme.subtext }]}>{movieTitle || showtime?.movie?.title || t('Phim')}</Text>
         <Text style={[styles.cinemaInfo, { color: currentTheme.subtext }]}>
           {cinemaName || t('Cinema')} • {hallName || t('Phòng chiếu')}
->>>>>>> Stashed changes
         </Text>
         {showDate && showTime && (
           <Text style={styles.showtime}>

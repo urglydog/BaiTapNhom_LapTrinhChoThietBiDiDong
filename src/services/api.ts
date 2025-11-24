@@ -3,16 +3,11 @@ import { storage } from "../utils/storage";
 
 // Base API configuration
 // Server Render.com
-<<<<<<< Updated upstream
 const API_BASE_URL = "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
-=======
-const API_BASE_URL = 
-"https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
 // Local development: "http://localhost:8080/api";
 
 // Log API URL for debugging
 console.log('🔗 API Base URL:', API_BASE_URL);
->>>>>>> Stashed changes
 
 const api = axios.create({
     baseURL: API_BASE_URL,
