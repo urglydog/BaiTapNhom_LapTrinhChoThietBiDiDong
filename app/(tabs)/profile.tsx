@@ -154,6 +154,26 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.menuItem}
+                    onPress={() => router.push('/booking-history')}
+                >
+                    <View style={styles.menuItemLeft}>
+                        <Text style={styles.menuIcon}>🎫</Text>
+                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Lịch sử đặt vé')}</Text>
+                    </View>
+                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => router.push('/watched-movies')}
+                >
+                    <View style={styles.menuItemLeft}>
+                        <Text style={styles.menuIcon}>🎬</Text>
+                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Phim đã xem')}</Text>
+                    </View>
+                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.menuItem}
                     onPress={() => router.push('/(tabs)/cinemas')}
                 >
                     <View style={styles.menuItemLeft}>

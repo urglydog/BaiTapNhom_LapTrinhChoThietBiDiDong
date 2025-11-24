@@ -84,7 +84,9 @@ export interface CinemaHall {
   id: number;
   cinemaId: number;
   hallName: string;
+  name?: string; // Alias của hallName
   totalSeats: number;
+  cinema?: Cinema;
 }
 
 // Showtime Types
@@ -129,8 +131,9 @@ export interface Booking {
   showtimeId: number;
   totalAmount: number;
   bookingDate: string;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
-  seats: BookingSeat[];
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+  seats?: BookingSeat[]; // Legacy - có thể map từ bookingItems
+  bookingItems?: BookingItem[]; // Mới - từ backend
   user?: User;
   showtime?: Showtime;
 }
@@ -139,6 +142,14 @@ export interface BookingSeat {
   id: number;
   bookingId: number;
   seatId: number;
+  seat?: Seat;
+}
+
+export interface BookingItem {
+  id: number;
+  bookingId: number;
+  seatId: number;
+  price: number;
   seat?: Seat;
 }
 

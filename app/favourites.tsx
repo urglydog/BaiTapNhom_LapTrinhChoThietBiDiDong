@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../src/store';
 import { fetchFavourites, toggleFavourite } from '../src/store/movieSlice';
@@ -24,6 +24,13 @@ export default function FavouritesScreen() {
   useEffect(() => {
     dispatch(fetchFavourites());
   }, [dispatch]);
+
+  // Refresh khi màn hình được focus
+  useFocusEffect(
+    React.useCallback(() => {
+      dispatch(fetchFavourites());
+    }, [dispatch])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -41,7 +48,11 @@ export default function FavouritesScreen() {
 
   const renderMovie = ({ item }: { item: Favourite }) => {
     const movie = item.movie;
-    if (!movie) return null;
+    // Nếu không có movie object, có thể cần load lại hoặc bỏ qua
+    if (!movie) {
+      console.warn('Favourite item missing movie:', item);
+      return null;
+    }
 
     return (
       <TouchableOpacity

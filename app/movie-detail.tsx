@@ -53,13 +53,13 @@ export default function MovieDetailScreen() {
         loadMovie();
     }, [movieId, router]);
     
-    // Load favourites khi vào màn hình
+    // Load favourites khi vào màn hình và khi movie thay đổi
     useFocusEffect(
         React.useCallback(() => {
             if (user) {
                 dispatch(fetchFavourites());
             }
-        }, [user, dispatch])
+        }, [user, dispatch, movieId])
     );
     
     const handleToggleFavourite = async () => {
@@ -76,6 +76,13 @@ export default function MovieDetailScreen() {
             if (toggleFavourite.fulfilled.match(result)) {
                 // Refresh favourites sau khi toggle để đảm bảo sync với server
                 await dispatch(fetchFavourites());
+                
+                // Hiển thị thông báo thành công
+                if (result.payload.action === 'add') {
+                    Alert.alert(t('Thành công'), t('Đã lưu phim vào yêu thích'));
+                } else {
+                    Alert.alert(t('Thành công'), t('Đã bỏ yêu thích phim'));
+                }
             } else if (toggleFavourite.rejected.match(result)) {
                 // Hiển thị lỗi cụ thể từ server
                 const errorMessage = result.payload as string || 'Không thể cập nhật yêu thích. Vui lòng thử lại.';
@@ -139,7 +146,7 @@ export default function MovieDetailScreen() {
                     <Text style={styles.backIconText}>←</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                    style={styles.favouriteButton} 
+                    style={[styles.favouriteButton, isFavourite && styles.favouriteButtonActive]} 
                     onPress={handleToggleFavourite}
                     activeOpacity={0.8}
                 >
@@ -342,6 +349,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 5,
+    },
+    favouriteButtonActive: {
+        backgroundColor: 'rgba(255, 0, 0, 0.7)',
     },
     favouriteIcon: {
         fontSize: 28,

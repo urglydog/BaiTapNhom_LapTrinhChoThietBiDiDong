@@ -184,12 +184,26 @@ export default function BookingScreen() {
   }
 
   return (
+<<<<<<< Updated upstream
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Đặt vé</Text>
         <Text style={styles.movieTitle}>{movieTitle || showtime?.movie?.title || 'Phim'}</Text>
         <Text style={styles.cinemaInfo}>
           {cinemaName || 'Rạp chiếu'} • {hallName || 'Phòng chiếu'}
+=======
+    <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
+      <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={[styles.title, { color: currentTheme.text }]}>{t('Đặt vé')}</Text>
+        <Text style={[styles.movieTitle, { color: currentTheme.subtext }]}>{movieTitle || showtime?.movie?.title || t('Phim')}</Text>
+        <Text style={[styles.cinemaInfo, { color: currentTheme.subtext }]}>
+          {cinemaName || t('Cinema')} • {hallName || t('Phòng chiếu')}
+>>>>>>> Stashed changes
         </Text>
         {showDate && showTime && (
           <Text style={styles.showtime}>
@@ -322,6 +336,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 20,
     marginBottom: 1,
+  },
+  headerRow: {
+    marginBottom: 12,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   title: {
     fontSize: 24,

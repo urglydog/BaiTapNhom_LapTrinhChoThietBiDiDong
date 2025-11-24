@@ -5,6 +5,11 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '../src/store';
 import { loadStoredAuth }  from '../src/store/authSlice';
 import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
+<<<<<<< Updated upstream
+=======
+import { ThemeProvider } from 'styled-components';
+import { lightTheme, darkTheme } from '../src/themes';
+>>>>>>> Stashed changes
 
 export default function RootLayout() {
   return (
@@ -31,6 +36,8 @@ function AppNavigator() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="movie-detail" />
       <Stack.Screen name="booking" />
+      <Stack.Screen name="booking-history" />
+      <Stack.Screen name="watched-movies" />
       <Stack.Screen name="cinemas" />
       <Stack.Screen name="favourites" />
       <Stack.Screen name="promotions" />
