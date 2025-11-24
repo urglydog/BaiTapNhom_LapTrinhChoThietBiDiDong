@@ -9,11 +9,13 @@ import {
 } from 'react-native';
 import { promotionService } from '../src/services/promotionService';
 import { Promotion } from '../src/types';
+import { useTranslation } from '../src/localization';
 
 export default function PromotionsScreen() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const t = useTranslation();
 
   useEffect(() => {
     fetchPromotions();
@@ -30,8 +32,8 @@ export default function PromotionsScreen() {
       setPromotions([
         {
           id: 1,
-          name: 'Chào mừng khách hàng mới',
-          description: 'Giảm 10% cho đơn hàng đầu tiên',
+          name: t('Chào mừng khách hàng mới'),
+          description: t('Giảm 10% cho đơn hàng đầu tiên'),
           discountType: 'PERCENTAGE',
           discountValue: 10,
           minAmount: 100000,
@@ -42,8 +44,8 @@ export default function PromotionsScreen() {
         },
         {
           id: 2,
-          name: 'Khách hàng VIP',
-          description: 'Giảm 20% cho khách hàng VIP',
+          name: t('Khách hàng VIP'),
+          description: t('Giảm 20% cho khách hàng VIP'),
           discountType: 'PERCENTAGE',
           discountValue: 20,
           minAmount: 200000,
@@ -54,8 +56,8 @@ export default function PromotionsScreen() {
         },
         {
           id: 3,
-          name: 'Cuối tuần vui vẻ',
-          description: 'Giảm 15% cho suất chiếu cuối tuần',
+          name: t('Cuối tuần vui vẻ'),
+          description: t('Giảm 15% cho suất chiếu cuối tuần'),
           discountType: 'PERCENTAGE',
           discountValue: 15,
           minAmount: 150000,
@@ -78,7 +80,7 @@ export default function PromotionsScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
+    return date.toLocaleDateString(t('vi-VN'), {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -86,11 +88,11 @@ export default function PromotionsScreen() {
   };
 
   const getDiscountText = (promotion: Promotion) => {
-    if (!promotion.discountValue) return 'Giảm giá';
+    if (!promotion.discountValue) return t('Giảm giá');
     if (promotion.discountType === 'PERCENTAGE') {
-      return `Giảm ${promotion.discountValue}%`;
+      return `${t('Giảm ')}${promotion.discountValue}%`;
     } else {
-      return `Giảm ${promotion.discountValue.toLocaleString()} VNĐ`;
+      return `${t('Giảm ')}${promotion.discountValue.toLocaleString()} ${t('VNĐ')}`;
     }
   };
 
@@ -107,7 +109,7 @@ export default function PromotionsScreen() {
           </View>
           {isExpired && (
             <View style={styles.expiredBadge}>
-              <Text style={styles.expiredBadgeText}>Hết hạn</Text>
+              <Text style={styles.expiredBadgeText}>{t('Hết hạn')}</Text>
             </View>
           )}
         </View>
@@ -120,22 +122,22 @@ export default function PromotionsScreen() {
         <View style={styles.promotionDetails}>
           {item.minAmount && (
             <Text style={styles.promotionDetail}>
-              Đơn tối thiểu: {item.minAmount.toLocaleString()} VNĐ
+              {t('Đơn tối thiểu: ')}{item.minAmount.toLocaleString()} {t('VNĐ')}
             </Text>
           )}
           {item.maxDiscount && (
             <Text style={styles.promotionDetail}>
-              Giảm tối đa: {item.maxDiscount.toLocaleString()} VNĐ
+              {t('Giảm tối đa: ')}{item.maxDiscount.toLocaleString()} {t('VNĐ')}
             </Text>
           )}
           {item.endDate && (
             <Text style={styles.promotionDetail}>
-              Áp dụng đến: {formatDate(item.endDate)}
+              {t('Áp dụng đến: ')}{formatDate(item.endDate)}
             </Text>
           )}
           {item.usageLimit && (
             <Text style={styles.promotionDetail}>
-              Số lượng: {item.usageLimit} lượt
+              {t('Số lượng: ')}{item.usageLimit}{t(' lượt')}
             </Text>
           )}
         </View>
@@ -147,7 +149,7 @@ export default function PromotionsScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Đang tải khuyến mãi...</Text>
+        <Text style={styles.loadingText}>{t('Đang tải khuyến mãi...')}</Text>
       </View>
     );
   }
@@ -155,9 +157,9 @@ export default function PromotionsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Khuyến Mãi</Text>
+        <Text style={styles.headerTitle}>{t('Khuyến Mãi')}</Text>
         <Text style={styles.headerSubtitle}>
-          {promotions.length} khuyến mãi đang áp dụng
+          {promotions.length}{t(' khuyến mãi đang áp dụng')}
         </Text>
       </View>
 
@@ -173,10 +175,10 @@ export default function PromotionsScreen() {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>🎁</Text>
             <Text style={styles.emptyText}>
-              Hiện không có khuyến mãi nào
+              {t('Hiện không có khuyến mãi nào')}
             </Text>
             <Text style={styles.emptySubtext}>
-              Vui lòng quay lại sau để xem các ưu đãi mới
+              {t('Vui lòng quay lại sau để xem các ưu đãi mới')}
             </Text>
           </View>
         }

@@ -18,6 +18,8 @@ import { fetchFavourites, toggleFavourite } from '../src/store/movieSlice';
 import { movieService } from '../src/services/movieService';
 import { Movie } from '../src/types';
 import { useFocusEffect } from 'expo-router';
+import { useTranslation } from '../src/localization';
+import { lightTheme, darkTheme } from '../src/themes';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +29,9 @@ export default function MovieDetailScreen() {
     const dispatch = useDispatch<AppDispatch>();
     const { favourites } = useSelector((state: RootState) => state.movie);
     const { user } = useSelector((state: RootState) => state.auth);
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
     const [movie, setMovie] = useState<Movie | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     
@@ -42,7 +47,7 @@ export default function MovieDetailScreen() {
                 setMovie(movieData);
             } catch (error: any) {
                 console.error('Error loading movie:', error);
-                Alert.alert('Lỗi', 'Không thể tải thông tin phim', [
+                Alert.alert(t('Lỗi'), t('Không thể tải thông tin phim'), [
                     { text: 'OK', onPress: () => router.back() },
                 ]);
             } finally {
@@ -65,9 +70,9 @@ export default function MovieDetailScreen() {
     const handleToggleFavourite = async () => {
         if (!movie) return;
         if (!user) {
-            Alert.alert('Thông báo', 'Vui lòng đăng nhập để thêm phim vào yêu thích', [
-                { text: 'Đăng nhập', onPress: () => router.push('/login') },
-                { text: 'Hủy', style: 'cancel' },
+            Alert.alert(t('Thông báo'), t('Vui lòng đăng nhập để thêm phim vào yêu thích'), [
+                { text: t('Đăng nhập'), onPress: () => router.push('/login') },
+                { text: t('Hủy'), style: 'cancel' },
             ]);
             return;
         }
@@ -78,13 +83,13 @@ export default function MovieDetailScreen() {
                 await dispatch(fetchFavourites());
             } else if (toggleFavourite.rejected.match(result)) {
                 // Hiển thị lỗi cụ thể từ server
-                const errorMessage = result.payload as string || 'Không thể cập nhật yêu thích. Vui lòng thử lại.';
-                Alert.alert('Lỗi', errorMessage);
+                const errorMessage = result.payload as string || t('Không thể cập nhật yêu thích. Vui lòng thử lại.');
+                Alert.alert(t('Lỗi'), errorMessage);
             }
         } catch (error: any) {
             console.error('Toggle favourite error:', error);
-            const errorMessage = error?.message || error?.response?.data?.message || 'Không thể cập nhật yêu thích. Vui lòng thử lại.';
-            Alert.alert('Lỗi', errorMessage);
+            const errorMessage = error?.message || error?.response?.data?.message || t('Không thể cập nhật yêu thích. Vui lòng thử lại.');
+            Alert.alert(t('Lỗi'), errorMessage);
         }
     };
 
@@ -92,35 +97,35 @@ export default function MovieDetailScreen() {
         if (movie?.trailerUrl) {
             Linking.openURL(movie.trailerUrl).catch((err) => {
                 console.error('Error opening trailer:', err);
-                Alert.alert('Lỗi', 'Không thể mở trailer. Vui lòng kiểm tra URL.');
+                Alert.alert(t('Lỗi'), t('Không thể mở trailer. Vui lòng kiểm tra URL.'));
             });
         } else {
-            Alert.alert('Thông báo', 'Phim này chưa có trailer');
+            Alert.alert(t('Thông báo'), t('Phim này chưa có trailer'));
         }
     };
 
     if (isLoading) {
         return (
-            <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={styles.loadingText}>Đang tải thông tin phim...</Text>
+            <View style={[styles.centerContainer, { backgroundColor: currentTheme.background }]}>
+                <ActivityIndicator size="large" color={currentTheme.primary} />
+                <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải thông tin phim...')}</Text>
             </View>
         );
     }
 
     if (!movie) {
         return (
-            <View style={styles.centerContainer}>
-                <Text style={styles.errorText}>Không tìm thấy phim</Text>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Text style={styles.backButtonText}>Quay lại</Text>
+            <View style={[styles.centerContainer, { backgroundColor: currentTheme.background }]}>
+                <Text style={[styles.errorText, { color: currentTheme.subtext }]}>{t('Không tìm thấy phim')}</Text>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: currentTheme.primary }]} onPress={() => router.back()}>
+                    <Text style={styles.backButtonText}>{t('Quay lại')}</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]} showsVerticalScrollIndicator={false}>
             {/* Poster */}
             <View style={styles.posterContainer}>
                 {movie.posterUrl ? (
@@ -130,9 +135,9 @@ export default function MovieDetailScreen() {
                         resizeMode="cover"
                     />
                 ) : (
-                    <View style={styles.placeholderPoster}>
+                    <View style={[styles.placeholderPoster, { backgroundColor: currentTheme.background }]}>
                         <Text style={styles.placeholderText}>📽️</Text>
-                        <Text style={styles.placeholderSubtext}>Không có ảnh</Text>
+                        <Text style={[styles.placeholderSubtext, { color: currentTheme.subtext }]}>{t('Không có ảnh')}</Text>
                     </View>
                 )}
                 <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
@@ -150,13 +155,13 @@ export default function MovieDetailScreen() {
             </View>
 
             {/* Content */}
-            <View style={styles.content}>
+            <View style={[styles.content, { backgroundColor: currentTheme.card }]}>
                 {/* Title and Trailer Button */}
                 <View style={styles.titleSection}>
-                    <Text style={styles.title}>{movie.title}</Text>
+                    <Text style={[styles.title, { color: currentTheme.text }]}>{movie.title}</Text>
                     {movie.trailerUrl && (
                         <TouchableOpacity style={styles.trailerButton} onPress={handleWatchTrailer}>
-                            <Text style={styles.trailerButtonText}>▶ Xem Trailer</Text>
+                            <Text style={styles.trailerButtonText}>▶ {t('Xem Trailer')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -164,74 +169,74 @@ export default function MovieDetailScreen() {
                 {/* Movie Info */}
                 <View style={styles.infoRow}>
                     {movie.rating && (
-                        <View style={styles.infoBadge}>
-                            <Text style={styles.infoBadgeText}>⭐ {movie.rating.toFixed(1)}</Text>
+                        <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
+                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>⭐ {movie.rating.toFixed(1)}</Text>
                         </View>
                     )}
                     {movie.duration && (
-                        <View style={styles.infoBadge}>
-                            <Text style={styles.infoBadgeText}>⏱️ {movie.duration} phút</Text>
+                        <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
+                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>⏱️ {movie.duration} {t('phút')}</Text>
                         </View>
                     )}
                     {movie.ageRating && (
-                        <View style={styles.infoBadge}>
-                            <Text style={styles.infoBadgeText}>{movie.ageRating}</Text>
+                        <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
+                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>{movie.ageRating}</Text>
                         </View>
                     )}
                 </View>
 
                 {/* Description */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Mô tả</Text>
-                    <Text style={styles.description}>{movie.description || 'Chưa có mô tả'}</Text>
+                    <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Mô tả')}</Text>
+                    <Text style={[styles.description, { color: currentTheme.subtext }]}>{movie.description || t('Chưa có mô tả')}</Text>
                 </View>
 
                 {/* Details */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
+                    <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Thông tin chi tiết')}</Text>
                     {movie.genre && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Thể loại:</Text>
-                            <Text style={styles.detailValue}>{movie.genre}</Text>
+                            <Text style={[styles.detailLabel, { color: currentTheme.subtext }]}>{t('Thể loại:')}</Text>
+                            <Text style={[styles.detailValue, { color: currentTheme.text }]}>{movie.genre}</Text>
                         </View>
                     )}
                     {movie.director && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Đạo diễn:</Text>
-                            <Text style={styles.detailValue}>{movie.director}</Text>
+                            <Text style={[styles.detailLabel, { color: currentTheme.subtext }]}>{t('Đạo diễn:')}</Text>
+                            <Text style={[styles.detailValue, { color: currentTheme.text }]}>{movie.director}</Text>
                         </View>
                     )}
                     {movie.cast && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Diễn viên:</Text>
-                            <Text style={styles.detailValue}>{movie.cast}</Text>
+                            <Text style={[styles.detailLabel, { color: currentTheme.subtext }]}>{t('Diễn viên:')}</Text>
+                            <Text style={[styles.detailValue, { color: currentTheme.text }]}>{movie.cast}</Text>
                         </View>
                     )}
                     {movie.language && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Ngôn ngữ:</Text>
-                            <Text style={styles.detailValue}>{movie.language}</Text>
+                            <Text style={[styles.detailLabel, { color: currentTheme.subtext }]}>{t('Ngôn ngữ:')}</Text>
+                            <Text style={[styles.detailValue, { color: currentTheme.text }]}>{movie.language}</Text>
                         </View>
                     )}
                     {movie.subtitle && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Phụ đề:</Text>
-                            <Text style={styles.detailValue}>{movie.subtitle}</Text>
+                            <Text style={[styles.detailLabel, { color: currentTheme.subtext }]}>{t('Phụ đề:')}</Text>
+                            <Text style={[styles.detailValue, { color: currentTheme.text }]}>{movie.subtitle}</Text>
                         </View>
                     )}
                     {movie.releaseDate && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Ngày khởi chiếu:</Text>
-                            <Text style={styles.detailValue}>
-                                {new Date(movie.releaseDate).toLocaleDateString('vi-VN')}
+                            <Text style={[styles.detailLabel, { color: currentTheme.subtext }]}>{t('Ngày khởi chiếu:')}</Text>
+                            <Text style={[styles.detailValue, { color: currentTheme.text }]}>
+                                {new Date(movie.releaseDate).toLocaleDateString(t('vi-VN'))}
                             </Text>
                         </View>
                     )}
                     {movie.endDate && (
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Ngày kết thúc:</Text>
-                            <Text style={styles.detailValue}>
-                                {new Date(movie.endDate).toLocaleDateString('vi-VN')}
+                            <Text style={[styles.detailLabel, { color: currentTheme.subtext }]}>{t('Ngày kết thúc:')}</Text>
+                            <Text style={[styles.detailValue, { color: currentTheme.text }]}>
+                                {new Date(movie.endDate).toLocaleDateString(t('vi-VN'))}
                             </Text>
                         </View>
                     )}
@@ -239,7 +244,7 @@ export default function MovieDetailScreen() {
 
                 {/* Buy Ticket Button */}
                 <TouchableOpacity
-                    style={styles.buyTicketButton}
+                    style={[styles.buyTicketButton, { backgroundColor: currentTheme.accent }]}
                     onPress={() => router.push({
                         pathname: '/cinema-selection',
                         params: {
@@ -248,7 +253,7 @@ export default function MovieDetailScreen() {
                         }
                     })}
                 >
-                    <Text style={styles.buyTicketButtonText}>Mua vé</Text>
+                    <Text style={styles.buyTicketButtonText}>{t('Mua vé')}</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>
@@ -258,26 +263,21 @@ export default function MovieDetailScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
     },
     errorText: {
         fontSize: 18,
-        color: '#999',
         marginBottom: 16,
     },
     backButton: {
-        backgroundColor: '#007AFF',
         paddingHorizontal: 24,
         paddingVertical: 12,
         borderRadius: 8,
@@ -299,7 +299,6 @@ const styles = StyleSheet.create({
     placeholderPoster: {
         width: '100%',
         height: '100%',
-        backgroundColor: '#e0e0e0',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -309,7 +308,6 @@ const styles = StyleSheet.create({
     },
     placeholderSubtext: {
         fontSize: 16,
-        color: '#999',
     },
     backIcon: {
         position: 'absolute',
@@ -347,7 +345,6 @@ const styles = StyleSheet.create({
         fontSize: 28,
     },
     content: {
-        backgroundColor: '#fff',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         marginTop: -24,
@@ -359,7 +356,6 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 12,
     },
     trailerButton: {
@@ -381,14 +377,12 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     infoBadge: {
-        backgroundColor: '#f0f0f0',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
     },
     infoBadgeText: {
         fontSize: 14,
-        color: '#333',
         fontWeight: '500',
     },
     section: {
@@ -397,12 +391,10 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 12,
     },
     description: {
         fontSize: 16,
-        color: '#666',
         lineHeight: 24,
     },
     detailRow: {
@@ -412,17 +404,14 @@ const styles = StyleSheet.create({
     },
     detailLabel: {
         fontSize: 16,
-        color: '#666',
         fontWeight: '500',
         width: 120,
     },
     detailValue: {
         fontSize: 16,
-        color: '#333',
         flex: 1,
     },
     buyTicketButton: {
-        backgroundColor: '#E91E63',
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: 'center',
