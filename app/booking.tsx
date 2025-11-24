@@ -262,8 +262,6 @@ export default function BookingScreen() {
             <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
           </TouchableOpacity>
         </View>
-    <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
-      <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
         <Text style={[styles.title, { color: currentTheme.text }]}>{t('Đặt vé')}</Text>
         <Text style={[styles.movieTitle, { color: currentTheme.subtext }]}>{movieTitle || showtime?.movie?.title || t('Phim')}</Text>
         <Text style={[styles.cinemaInfo, { color: currentTheme.subtext }]}>
