@@ -15,6 +15,8 @@ import { RootState, AppDispatch } from '../../src/store';
 import { fetchCinemas } from '../../src/store/movieSlice';
 import { Cinema, Showtime } from '../../src/types';
 import { movieService } from '../../src/services/movieService';
+import { useTranslation } from '../../src/localization';
+import { lightTheme, darkTheme } from '../../src/themes';
 
 export default function CinemasTabScreen() {
     const [selectedCinema, setSelectedCinema] = useState<number | null>(null);
@@ -25,6 +27,9 @@ export default function CinemasTabScreen() {
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { cinemas } = useSelector((state: RootState) => state.movie);
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
     useEffect(() => {
         dispatch(fetchCinemas());
@@ -62,7 +67,8 @@ export default function CinemasTabScreen() {
         <TouchableOpacity
             style={[
                 styles.cinemaCard,
-                selectedCinema === item.id && styles.cinemaCardSelected,
+                { backgroundColor: currentTheme.card },
+                selectedCinema === item.id && [styles.cinemaCardSelected, { borderColor: currentTheme.primary }],
             ]}
             onPress={() => handleCinemaPress(item)}
             activeOpacity={0.8}
@@ -75,27 +81,27 @@ export default function CinemasTabScreen() {
                         resizeMode="cover"
                     />
                 ) : (
-                    <View style={styles.placeholderImage}>
+                    <View style={[styles.placeholderImage, { backgroundColor: currentTheme.background }]}>
                         <Text style={styles.placeholderText}>🎭</Text>
                     </View>
                 )}
             </View>
             <View style={styles.cinemaInfo}>
-                <Text style={styles.cinemaName}>{item.name || 'Rạp chiếu phim'}</Text>
+                <Text style={[styles.cinemaName, { color: currentTheme.text }]}>{item.name || t('Cinema')}</Text>
                 {item.address && (
-                    <Text style={styles.cinemaAddress} numberOfLines={2}>
+                    <Text style={[styles.cinemaAddress, { color: currentTheme.subtext }]} numberOfLines={2}>
                         📍 {item.address}
                     </Text>
                 )}
                 {item.city && (
-                    <Text style={styles.cinemaCity}>🏙️ {item.city}</Text>
+                    <Text style={[styles.cinemaCity, { color: currentTheme.subtext }]}>🏙️ {item.city}</Text>
                 )}
                 {item.phone && (
-                    <Text style={styles.cinemaPhone}>📞 {item.phone}</Text>
+                    <Text style={[styles.cinemaPhone, { color: currentTheme.subtext }]}>📞 {item.phone}</Text>
                 )}
             </View>
             {selectedCinema === item.id && (
-                <View style={styles.selectedIndicator}>
+                <View style={[styles.selectedIndicator, { backgroundColor: currentTheme.primary }]}>
                     <Text style={styles.selectedIndicatorText}>✓</Text>
                 </View>
             )}
@@ -104,47 +110,47 @@ export default function CinemasTabScreen() {
 
     const renderShowtime = ({ item }: { item: Showtime }) => (
         <TouchableOpacity
-            style={styles.showtimeCard}
+            style={[styles.showtimeCard, { backgroundColor: currentTheme.background, borderLeftColor: currentTheme.primary }]}
             onPress={() => handleShowtimePress(item)}
             activeOpacity={0.8}
         >
             <View style={styles.showtimeInfo}>
-                <Text style={styles.showtimeMovie} numberOfLines={1}>
-                    {item.movie?.title || 'Phim'}
+                <Text style={[styles.showtimeMovie, { color: currentTheme.text }]} numberOfLines={1}>
+                    {item.movie?.title || t('Phim')}
                 </Text>
                 {item.startTime && item.endTime && (
-                    <Text style={styles.showtimeTime}>
+                    <Text style={[styles.showtimeTime, { color: currentTheme.subtext }]}>
                         ⏰ {item.startTime} - {item.endTime}
                     </Text>
                 )}
                 {item.showDate && (
-                    <Text style={styles.showtimeDate}>
-                        📅 {new Date(item.showDate).toLocaleDateString('vi-VN')}
+                    <Text style={[styles.showtimeDate, { color: currentTheme.subtext }]}>
+                        📅 {new Date(item.showDate).toLocaleDateString(t('vi-VN'))}
                     </Text>
                 )}
             </View>
             <View style={styles.showtimeActions}>
                 {item.price != null && (
-                    <Text style={styles.showtimePrice}>
-                        {item.price.toLocaleString()} VNĐ
+                    <Text style={[styles.showtimePrice, { color: currentTheme.primary }]}>
+                        {item.price.toLocaleString()} {t('VNĐ')}
                     </Text>
                 )}
                 <TouchableOpacity
-                    style={styles.bookButton}
+                    style={[styles.bookButton, { backgroundColor: currentTheme.primary }]}
                     onPress={() => handleBookShowtime(item)}
                 >
-                    <Text style={styles.bookButtonText}>Đặt vé</Text>
+                    <Text style={styles.bookButtonText}>{t('Đặt vé')}</Text>
                 </TouchableOpacity>
             </View>
         </TouchableOpacity>
     );
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Rạp Chiếu Phim</Text>
+        <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
+            <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
+                <Text style={styles.headerTitle}>{t('Cinema')}</Text>
                 <Text style={styles.headerSubtitle}>
-                    Chọn rạp để xem lịch chiếu
+                    {t('Chọn rạp để xem lịch chiếu')}
                 </Text>
             </View>
 
@@ -159,25 +165,25 @@ export default function CinemasTabScreen() {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyIcon}>🎭</Text>
-                        <Text style={styles.emptyText}>Không có rạp chiếu nào</Text>
+                        <Text style={[styles.emptyText, { color: currentTheme.text }]}>{t('Không có rạp chiếu nào')}</Text>
                     </View>
                 }
             />
 
             {selectedCinema && (
-                <View style={styles.showtimesContainer}>
-                    <View style={styles.showtimesHeader}>
-                        <Text style={styles.showtimesTitle}>Lịch Chiếu</Text>
+                <View style={[styles.showtimesContainer, { backgroundColor: currentTheme.card }]}>
+                    <View style={[styles.showtimesHeader, { borderBottomColor: currentTheme.background }]}>
+                        <Text style={[styles.showtimesTitle, { color: currentTheme.text }]}>{t('Lịch Chiếu')}</Text>
                         <TouchableOpacity
                             onPress={() => setSelectedCinema(null)}
-                            style={styles.closeButton}
+                            style={[styles.closeButton, { backgroundColor: currentTheme.background }]}
                         >
-                            <Text style={styles.closeButtonText}>✕</Text>
+                            <Text style={[styles.closeButtonText, { color: currentTheme.subtext }]}>✕</Text>
                         </TouchableOpacity>
                     </View>
                     {loadingShowtimes ? (
                         <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" color="#4f8cff" />
+                            <ActivityIndicator size="large" color={currentTheme.primary} />
                         </View>
                     ) : (
                         <FlatList
@@ -187,8 +193,8 @@ export default function CinemasTabScreen() {
                             contentContainerStyle={styles.showtimesList}
                             ListEmptyComponent={
                                 <View style={styles.emptyContainer}>
-                                    <Text style={styles.emptyText}>
-                                        Không có suất chiếu nào
+                                    <Text style={[styles.emptyText, { color: currentTheme.text }]}>
+                                        {t('Không có suất chiếu nào')}
                                     </Text>
                                 </View>
                             }
@@ -203,16 +209,13 @@ export default function CinemasTabScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f3f6fb',
     },
     header: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 20,
         paddingTop: 48,
         paddingBottom: 20,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
-        shadowColor: '#4f8cff',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
@@ -232,7 +235,6 @@ const styles = StyleSheet.create({
         padding: 16,
     },
     cinemaCard: {
-        backgroundColor: 'white',
         borderRadius: 16,
         marginBottom: 16,
         overflow: 'hidden',
@@ -244,13 +246,10 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: 'transparent',
     },
-    cinemaCardSelected: {
-        borderColor: '#4f8cff',
-    },
+    cinemaCardSelected: {},
     cinemaImageContainer: {
         width: '100%',
         height: 180,
-        backgroundColor: '#e0e0e0',
     },
     cinemaImage: {
         width: '100%',
@@ -261,7 +260,6 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#e0e0e0',
     },
     placeholderText: {
         fontSize: 64,
@@ -272,22 +270,18 @@ const styles = StyleSheet.create({
     cinemaName: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 8,
     },
     cinemaAddress: {
         fontSize: 14,
-        color: '#666',
         marginBottom: 4,
     },
     cinemaCity: {
         fontSize: 14,
-        color: '#666',
         marginBottom: 4,
     },
     cinemaPhone: {
         fontSize: 14,
-        color: '#666',
     },
     selectedIndicator: {
         position: 'absolute',
@@ -296,7 +290,6 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#4f8cff',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -310,7 +303,6 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'white',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         maxHeight: '60%',
@@ -326,24 +318,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#e5e5e5',
     },
     showtimesTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
     },
     closeButton: {
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#f0f0f0',
         justifyContent: 'center',
         alignItems: 'center',
     },
     closeButtonText: {
         fontSize: 18,
-        color: '#666',
         fontWeight: 'bold',
     },
     loadingContainer: {
@@ -354,12 +342,10 @@ const styles = StyleSheet.create({
         padding: 16,
     },
     showtimeCard: {
-        backgroundColor: '#f9f9f9',
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
         borderLeftWidth: 4,
-        borderLeftColor: '#4f8cff',
     },
     showtimeInfo: {
         marginBottom: 12,
@@ -367,17 +353,14 @@ const styles = StyleSheet.create({
     showtimeMovie: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 6,
     },
     showtimeTime: {
         fontSize: 14,
-        color: '#666',
         marginBottom: 4,
     },
     showtimeDate: {
         fontSize: 14,
-        color: '#666',
     },
     showtimeActions: {
         flexDirection: 'row',
@@ -387,10 +370,8 @@ const styles = StyleSheet.create({
     showtimePrice: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#4f8cff',
     },
     bookButton: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 20,
         paddingVertical: 8,
         borderRadius: 8,
@@ -414,7 +395,6 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         textAlign: 'center',
     },
 });
