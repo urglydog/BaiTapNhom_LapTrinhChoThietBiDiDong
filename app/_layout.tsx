@@ -5,6 +5,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor, RootState } from '../src/store';
 import { loadStoredAuth }  from '../src/store/authSlice';
 import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
+
 import { ThemeProvider } from 'styled-components/native';
 import { lightTheme, darkTheme } from '../src/themes';
 
@@ -44,6 +45,8 @@ function AppNavigator() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="movie-detail" />
       <Stack.Screen name="booking" />
+      <Stack.Screen name="booking-history" />
+      <Stack.Screen name="watched-movies" />
       <Stack.Screen name="cinemas" />
       <Stack.Screen name="favourites" />
       <Stack.Screen name="promotions" />

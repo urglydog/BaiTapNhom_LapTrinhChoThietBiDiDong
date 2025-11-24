@@ -191,6 +191,13 @@ export default function BookingScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
       <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
+          </TouchableOpacity>
+        </View>
+    <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
+      <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
         <Text style={[styles.title, { color: currentTheme.text }]}>{t('Đặt vé')}</Text>
         <Text style={[styles.movieTitle, { color: currentTheme.subtext }]}>{movieTitle || showtime?.movie?.title || t('Phim')}</Text>
         <Text style={[styles.cinemaInfo, { color: currentTheme.subtext }]}>
@@ -325,6 +332,16 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     marginBottom: 1,
+  },
+  headerRow: {
+    marginBottom: 12,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   title: {
     fontSize: 24,
