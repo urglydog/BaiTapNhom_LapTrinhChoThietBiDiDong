@@ -24,10 +24,6 @@ export default function PromotionsTabScreen() {
     const t = useTranslation();
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
-    const { theme } = useSelector((state: RootState) => state.theme);
-    const t = useTranslation();
-    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
-
     useEffect(() => {
         fetchPromotions();
     }, [selectedFilter]);
