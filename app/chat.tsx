@@ -3,7 +3,6 @@ import { View, TextInput, Button, FlatList, Text, StyleSheet, ActivityIndicator 
 import { Stack } from 'expo-router';
 import { useAppSelector } from '../src/hooks/redux';
 import { lightTheme, darkTheme } from '../src/themes';
-import { ThemeProvider } from 'styled-components/native';
 import { sendMessage } from '../src/services/chatService';
 
 interface Message {
@@ -55,7 +54,7 @@ const ChatScreen = () => {
   }, [input]);
 
   return (
-    <ThemeProvider theme={theme}>
+    <>
       <Stack.Screen options={{ title: 'MovieBot' }} />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <FlatList
@@ -84,7 +83,7 @@ const ChatScreen = () => {
         </View>
         {loading && <ActivityIndicator size="large" color={theme.primary} />}
       </View>
-    </ThemeProvider>
+    </>
   );
 };
 
