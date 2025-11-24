@@ -8,14 +8,21 @@ import {
     RefreshControl,
     TouchableOpacity,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../src/store';
 import { promotionService } from '../../src/services/promotionService';
 import { Promotion } from '../../src/types';
+import { useTranslation } from '../../src/localization';
+import { lightTheme, darkTheme } from '../../src/themes';
 
 export default function PromotionsTabScreen() {
     const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'available' | 'expired'>('active');
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
     useEffect(() => {
         fetchPromotions();
@@ -79,73 +86,73 @@ export default function PromotionsTabScreen() {
             item.usedCount >= item.usageLimit;
 
         return (
-            <View style={[styles.promotionCard, (isExpired || isUsedUp) && styles.expiredCard]}>
+            <View style={[styles.promotionCard, { backgroundColor: currentTheme.card }, (isExpired || isUsedUp) && styles.expiredCard]}>
                 <View style={styles.promotionHeader}>
-                    <View style={styles.promotionBadge}>
+                    <View style={[styles.promotionBadge, { backgroundColor: currentTheme.primary }]}>
                         <Text style={styles.promotionBadgeText}>
                             {getDiscountText(item)}
                         </Text>
                     </View>
                     {isExpired && (
-                        <View style={styles.expiredBadge}>
-                            <Text style={styles.expiredBadgeText}>Hết hạn</Text>
+                        <View style={[styles.expiredBadge, { backgroundColor: currentTheme.subtext }]}>
+                            <Text style={styles.expiredBadgeText}>{t('Hết hạn')}</Text>
                         </View>
                     )}
                     {isUsedUp && !isExpired && (
-                        <View style={styles.usedUpBadge}>
-                            <Text style={styles.usedUpBadgeText}>Đã hết</Text>
+                        <View style={[styles.usedUpBadge, { backgroundColor: currentTheme.warning }]}>
+                            <Text style={styles.usedUpBadgeText}>{t('Đã hết')}</Text>
                         </View>
                     )}
                 </View>
                 {item.code && (
-                    <View style={styles.codeContainer}>
-                        <Text style={styles.codeLabel}>Mã:</Text>
-                        <Text style={styles.codeText}>{item.code}</Text>
+                    <View style={[styles.codeContainer, { backgroundColor: currentTheme.background }]}>
+                        <Text style={[styles.codeLabel, { color: currentTheme.text }]}>{t('Mã:')}</Text>
+                        <Text style={[styles.codeText, { color: currentTheme.primary }]}>{item.code}</Text>
                     </View>
                 )}
                 {item.name && (
-                    <Text style={styles.promotionName}>{item.name}</Text>
+                    <Text style={[styles.promotionName, { color: currentTheme.text }]}>{item.name}</Text>
                 )}
                 {item.description && (
-                    <Text style={styles.promotionDescription}>{item.description}</Text>
+                    <Text style={[styles.promotionDescription, { color: currentTheme.subtext }]}>{item.description}</Text>
                 )}
-                <View style={styles.promotionDetails}>
+                <View style={[styles.promotionDetails, { borderTopColor: currentTheme.border }]}>
                     {item.minAmount && (
                         <View style={styles.detailRow}>
                             <Text style={styles.detailIcon}>💰</Text>
-                            <Text style={styles.promotionDetail}>
-                                Đơn tối thiểu: {item.minAmount.toLocaleString()} VNĐ
+                            <Text style={[styles.promotionDetail, { color: currentTheme.text }]}>
+                                {t('Đơn tối thiểu:')} {item.minAmount.toLocaleString()} {t('VNĐ')}
                             </Text>
                         </View>
                     )}
                     {item.maxDiscount && (
                         <View style={styles.detailRow}>
                             <Text style={styles.detailIcon}>🎯</Text>
-                            <Text style={styles.promotionDetail}>
-                                Giảm tối đa: {item.maxDiscount.toLocaleString()} VNĐ
+                            <Text style={[styles.promotionDetail, { color: currentTheme.text }]}>
+                                {t('Giảm tối đa:')} {item.maxDiscount.toLocaleString()} {t('VNĐ')}
                             </Text>
                         </View>
                     )}
                     {item.endDate && (
                         <View style={styles.detailRow}>
                             <Text style={styles.detailIcon}>📅</Text>
-                            <Text style={styles.promotionDetail}>
-                                Áp dụng đến: {formatDate(item.endDate)}
+                            <Text style={[styles.promotionDetail, { color: currentTheme.text }]}>
+                                {t('Áp dụng đến:')} {formatDate(item.endDate)}
                             </Text>
                         </View>
                     )}
                     {item.usageLimit && (
                         <View style={styles.detailRow}>
                             <Text style={styles.detailIcon}>🎫</Text>
-                            <Text style={styles.promotionDetail}>
-                                Còn lại: {item.usageLimit - (item.usedCount || 0)} / {item.usageLimit} lượt
+                            <Text style={[styles.promotionDetail, { color: currentTheme.text }]}>
+                                {t('Còn lại:')} {item.usageLimit - (item.usedCount || 0)} / {item.usageLimit} {t('lượt')}
                             </Text>
                         </View>
                     )}
                 </View>
-                <TouchableOpacity style={styles.useButton} disabled={isExpired || isUsedUp}>
+                <TouchableOpacity style={[styles.useButton, { backgroundColor: currentTheme.primary }, (isExpired || isUsedUp) && { backgroundColor: currentTheme.subtext }]} disabled={isExpired || isUsedUp}>
                     <Text style={styles.useButtonText}>
-                        {isExpired ? 'Đã hết hạn' : isUsedUp ? 'Đã hết lượt' : 'Sử dụng mã'}
+                        {isExpired ? t('Đã hết hạn') : isUsedUp ? t('Đã hết lượt') : t('Sử dụng mã')}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -154,42 +161,44 @@ export default function PromotionsTabScreen() {
 
     if (isLoading && promotions.length === 0) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF6B6B" />
-                <Text style={styles.loadingText}>Đang tải khuyến mãi...</Text>
+            <View style={[styles.loadingContainer, { backgroundColor: currentTheme.background }]}>
+                <ActivityIndicator size="large" color={currentTheme.primary} />
+                <Text style={[styles.loadingText, { color: currentTheme.text }]}>{t('Đang tải khuyến mãi...')}</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Khuyến Mãi</Text>
-                <Text style={styles.headerSubtitle}>
-                    {promotions.length} khuyến mãi {
-                        selectedFilter === 'active' ? 'đang áp dụng' :
-                            selectedFilter === 'available' ? 'có thể sử dụng' :
-                                selectedFilter === 'expired' ? 'đã hết hạn' :
-                                    'tất cả'
+        <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
+            <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
+                <Text style={[styles.headerTitle, { color: '#fff' }]}>{t('Khuyến Mãi')}</Text>
+                <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.9)' }]}>
+                    {promotions.length} {t('khuyến mãi')} {
+                        selectedFilter === 'active' ? t('đang áp dụng') :
+                            selectedFilter === 'available' ? t('có thể sử dụng') :
+                                selectedFilter === 'expired' ? t('đã hết hạn') :
+                                    t('tất cả')
                     }
                 </Text>
             </View>
 
-            <View style={styles.filterContainer}>
+            <View style={[styles.filterContainer, { backgroundColor: currentTheme.card, borderBottomColor: currentTheme.border }]}>
                 <TouchableOpacity
                     style={[
                         styles.filterButton,
-                        selectedFilter === 'active' && styles.filterButtonActive,
+                        { backgroundColor: currentTheme.background },
+                        selectedFilter === 'active' && { backgroundColor: currentTheme.primary },
                     ]}
                     onPress={() => setSelectedFilter('active')}
                 >
                     <Text
                         style={[
                             styles.filterText,
-                            selectedFilter === 'active' && styles.filterTextActive,
+                            { color: currentTheme.subtext },
+                            selectedFilter === 'active' && { color: '#fff' },
                         ]}
                     >
-                        Đang áp dụng
+                        {t('Đang áp dụng')}
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -309,9 +318,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: 'white',
         borderBottomWidth: 1,
-        borderBottomColor: '#e5e5e5',
     },
     filterButton: {
         flex: 1,
@@ -319,25 +326,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         marginHorizontal: 4,
         borderRadius: 8,
-        backgroundColor: '#f0f0f0',
         alignItems: 'center',
-    },
-    filterButtonActive: {
-        backgroundColor: '#FF6B6B',
     },
     filterText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#666',
-    },
-    filterTextActive: {
-        color: 'white',
     },
     listContainer: {
         padding: 16,
     },
     promotionCard: {
-        backgroundColor: 'white',
         borderRadius: 16,
         padding: 20,
         marginBottom: 16,
@@ -398,38 +396,32 @@ const styles = StyleSheet.create({
     codeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f0f0f0',
         padding: 12,
         borderRadius: 8,
         marginBottom: 12,
     },
     codeLabel: {
         fontSize: 14,
-        color: '#666',
         marginRight: 8,
         fontWeight: '600',
     },
     codeText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#FF6B6B',
         letterSpacing: 2,
     },
     promotionName: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 8,
     },
     promotionDescription: {
         fontSize: 15,
-        color: '#666',
         marginBottom: 16,
         lineHeight: 22,
     },
     promotionDetails: {
         borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
         paddingTop: 12,
         marginBottom: 16,
     },
@@ -444,11 +436,9 @@ const styles = StyleSheet.create({
     },
     promotionDetail: {
         fontSize: 14,
-        color: '#666',
         flex: 1,
     },
     useButton: {
-        backgroundColor: '#FF6B6B',
         paddingVertical: 14,
         borderRadius: 12,
         alignItems: 'center',

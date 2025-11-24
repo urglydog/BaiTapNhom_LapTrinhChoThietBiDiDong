@@ -3,7 +3,10 @@ import { storage } from "../utils/storage";
 
 // Base API configuration
 // Server Render.com
-const API_BASE_URL = "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
+const API_BASE_URL = 
+"https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
+// const API_BASE_URL = 
+// "http://localhost:8080/api";
 // Local development: "http://localhost:8080/api";
 
 // Log API URL for debugging
@@ -11,7 +14,7 @@ console.log('🔗 API Base URL:', API_BASE_URL);
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 30000, // Tăng timeout lên 30s vì Render.com free tier có thể mất thời gian để wake up
+    timeout: 45000, // Tăng timeout lên 45s vì Render.com free tier có thể mất thời gian để wake up
     headers: {
         "Content-Type": "application/json",
     },

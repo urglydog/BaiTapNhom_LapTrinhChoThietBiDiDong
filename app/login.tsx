@@ -15,6 +15,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../src/store';
 import { clearError, login } from '../src/store/authSlice';
 import { useRouter } from 'expo-router';
+import { useTranslation } from '../src/localization';
+import { lightTheme, darkTheme } from '../src/themes';
 
 export default function LoginScreen() {
     const [username, setUsername] = useState('');
@@ -23,7 +25,10 @@ export default function LoginScreen() {
 
     const dispatch = useDispatch<AppDispatch>();
     const { error } = useSelector((state: RootState) => state.auth);
+    const { theme } = useSelector((state: RootState) => state.theme);
     const router = useRouter();
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
     const handleLogin = async () => {
         if (!username.trim() || !password.trim()) {
@@ -35,9 +40,9 @@ export default function LoginScreen() {
         try {
             const result = await dispatch(login({ username, password })).unwrap();
 
-            if(result) {
+            if (result) {
                 Alert.alert('Thành công', 'Đăng nhập thành công');
-                
+
                 router.replace('/(tabs)');
             }
 
@@ -53,51 +58,53 @@ export default function LoginScreen() {
 
     React.useEffect(() => {
         if (error) {
-            Alert.alert('Lỗi', error);
+            Alert.alert(t('Lỗi'), error);
             dispatch(clearError());
         }
-    }, [error, dispatch]);
+    }, [error, dispatch, t]);
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={[styles.container, { backgroundColor: currentTheme.background }]}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Movie Ticket Booking</Text>
-                    <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
+                <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
+                    <Text style={[styles.title, { color: '#fff' }]}>{t('Movie Ticket Booking')}</Text>
+                    <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.9)' }]}>{t('Đăng nhập để tiếp tục')}</Text>
                 </View>
 
-                <View style={styles.form}>
+                <View style={[styles.form, { backgroundColor: currentTheme.card }]}>
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => router.replace('/(tabs)')}
                     >
-                        <Text style={styles.backButtonText}>← Quay lại</Text>
+                        <Text style={[styles.backButtonText, { color: currentTheme.primary }]}>← {t('Quay lại')}</Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.formTitle}>Đăng nhập</Text>
+                    <Text style={[styles.formTitle, { color: currentTheme.text }]}>{t('Đăng nhập')}</Text>
 
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Tên đăng nhập</Text>
+                        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Tên đăng nhập')}</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.border }]}
                             value={username}
                             onChangeText={setUsername}
-                            placeholder="Nhập tên đăng nhập"
+                            placeholder={t('Nhập tên đăng nhập')}
+                            placeholderTextColor={currentTheme.subtext}
                             autoCapitalize="none"
                             autoCorrect={false}
                         />
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Mật khẩu</Text>
+                        <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mật khẩu')}</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.border }]}
                             value={password}
                             onChangeText={setPassword}
-                            placeholder="Nhập mật khẩu"
+                            placeholder={t('Nhập mật khẩu')}
+                            placeholderTextColor={currentTheme.subtext}
                             secureTextEntry
                             autoCapitalize="none"
                             autoCorrect={false}
@@ -105,40 +112,40 @@ export default function LoginScreen() {
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.loginButton, isLoading && styles.disabledButton]}
+                        style={[styles.loginButton, { backgroundColor: currentTheme.primary }, isLoading && styles.disabledButton]}
                         onPress={handleLogin}
                         disabled={isLoading}
                     >
                         <Text style={styles.loginButtonText}>
-                            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                            {isLoading ? t('Đang đăng nhập...') : t('Đăng nhập')}
                         </Text>
                     </TouchableOpacity>
 
                     <Text
-                        style={{ marginTop: 20, textAlign: 'center' }}
-                    >Bạn chưa có tài khoản 
-                        <TouchableOpacity 
+                        style={[styles.registerPrompt, { color: currentTheme.text }]}
+                    >{t('Bạn chưa có tài khoản')}
+                        <TouchableOpacity
                             onPress={() => router.push('/register')}
                         >
-                                <Text style={{color: '#007AFF'}}> Đăng ký ngay</Text>
+                            <Text style={{ color: currentTheme.primary }}> {t('Đăng ký ngay')}</Text>
                         </TouchableOpacity>
                     </Text>
 
-                    <TouchableOpacity 
-                            onPress={() => router.push('/forgot-password')}
-                            style={{ marginTop: 10, alignSelf: 'center' }}
-                        >
-                                <Text style={{color: '#007AFF'}}> Quên mật khẩu?</Text>
-                        </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => router.push('/forgot-password')}
+                        style={{ marginTop: 10, alignSelf: 'center' }}
+                    >
+                        <Text style={{ color: currentTheme.primary }}> {t('Quên mật khẩu?')}</Text>
+                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        Demo accounts:
+                <View style={[styles.footer, { backgroundColor: currentTheme.card }]}>
+                    <Text style={[styles.footerText, { color: currentTheme.text }]}>
+                        {t('Demo accounts:')}
                     </Text>
-                    <Text style={styles.demoText}>Admin: admin / password</Text>
-                    <Text style={styles.demoText}>Staff: staff1 / password</Text>
-                    <Text style={styles.demoText}>Customer: customer1 / password</Text>
+                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>{t('Admin:')} admin / password</Text>
+                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>{t('Staff:')} staff1 / password</Text>
+                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>{t('Customer:')} customer1 / password</Text>
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
@@ -244,5 +251,9 @@ const styles = StyleSheet.create({
         color: '#333',
         textAlign: 'center',
         marginBottom: 24,
+    },
+    registerPrompt: {
+        marginTop: 20,
+        textAlign: 'center',
     },
 });

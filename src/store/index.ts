@@ -9,12 +9,13 @@ import movieReducer from './movieSlice';
 import bookingReducer from './bookingSlice';
 import otpReducer from './otpSlice';
 import themeReducer from './themeSlice';
+import languageReducer from './languageSlice';
 
 // Chỉ sử dụng persist cho mobile, không dùng cho web
 const persistConfig = {
   key: 'root',
   storage: storage,
-  whitelist: ['auth'], // Chỉ persist auth state
+  whitelist: ['auth', 'theme', 'language'], // Persist auth, theme và language
 };
 
 const rootReducer = combineReducers({
@@ -23,6 +24,7 @@ const rootReducer = combineReducers({
   booking: bookingReducer,
   otp: otpReducer,
   theme: themeReducer,
+  language: languageReducer,
 });
 
 // Chỉ persist cho mobile, web dùng reducer thường

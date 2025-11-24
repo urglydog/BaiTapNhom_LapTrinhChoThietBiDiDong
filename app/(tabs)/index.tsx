@@ -13,8 +13,12 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../src/store';
 import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
+import { useTranslation } from '../../src/localization';
+import { lightTheme, darkTheme } from '../../src/themes';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -32,6 +36,9 @@ export default function HomeScreen() {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const router = useRouter();
+  const { theme } = useSelector((state: RootState) => state.theme);
+  const t = useTranslation();
+  const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
   const fetchMovies = async () => {
     try {
@@ -142,7 +149,7 @@ export default function HomeScreen() {
 
   const renderMovie = ({ item }: { item: Movie }) => (
     <TouchableOpacity
-      style={styles.movieCard}
+      style={[styles.movieCard, { backgroundColor: currentTheme.card }]}
       onPress={() => handleMoviePress(item)}
       activeOpacity={0.8}
     >
@@ -166,20 +173,20 @@ export default function HomeScreen() {
         )}
       </View>
       <View style={styles.movieInfo}>
-        <Text style={styles.movieTitle} numberOfLines={2}>
+        <Text style={[styles.movieTitle, { color: currentTheme.text }]} numberOfLines={2}>
           {item.title}
         </Text>
         {item.genre && (
-          <Text style={styles.movieGenre} numberOfLines={1}>
+          <Text style={[styles.movieGenre, { color: currentTheme.primary }]} numberOfLines={1}>
             {item.genre}
           </Text>
         )}
         {item.duration != null && item.duration > 0 && (
-          <Text style={styles.movieDuration}>{item.duration} phút</Text>
+          <Text style={[styles.movieDuration, { color: currentTheme.subtext }]}>{item.duration} {t('phút')}</Text>
         )}
         {item.ageRating && (
-          <View style={styles.ageRatingContainer}>
-            <Text style={styles.ageRating}>{item.ageRating}</Text>
+          <View style={[styles.ageRatingContainer, { backgroundColor: currentTheme.card }]}>
+            <Text style={[styles.ageRating, { color: currentTheme.text }]}>{item.ageRating}</Text>
           </View>
         )}
       </View>
@@ -195,63 +202,63 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Đang tải danh sách phim...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: currentTheme.background }]}>
+        <ActivityIndicator size="large" color={currentTheme.primary} />
+        <Text style={[styles.loadingText, { color: currentTheme.text }]}>{t('Đang tải danh sách phim...')}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
+      <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
         <View style={styles.headerContent}>
-          <Text style={styles.greeting}>
-            {getGreeting()}, Chào mừng bạn! 👋
+          <Text style={[styles.greeting, { color: '#fff' }]}>
+            {getGreeting()}, {t('Chào mừng bạn!')} 👋
           </Text>
-          <Text style={styles.role}>Khám phá những bộ phim hay</Text>
+          <Text style={[styles.role, { color: 'rgba(255,255,255,0.9)' }]}>{t('Khám phá những bộ phim hay')}</Text>
         </View>
         <View style={styles.quickActions}>
           <TouchableOpacity
-            style={styles.quickActionButton}
+            style={[styles.quickActionButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => router.push('/(tabs)/movies')}
           >
             <Text style={styles.quickActionIcon}>🎬</Text>
-            <Text style={styles.quickActionText}>Phim</Text>
+            <Text style={[styles.quickActionText, { color: '#fff' }]}>{t('Phim')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickActionButton}
+            style={[styles.quickActionButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => router.push('/(tabs)/cinemas')}
           >
             <Text style={styles.quickActionIcon}>🎭</Text>
-            <Text style={styles.quickActionText}>Rạp</Text>
+            <Text style={[styles.quickActionText, { color: '#fff' }]}>{t('Rạp')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickActionButton}
+            style={[styles.quickActionButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
             onPress={() => router.push('/(tabs)/promotions')}
           >
             <Text style={styles.quickActionIcon}>🎁</Text>
-            <Text style={styles.quickActionText}>KM</Text>
+            <Text style={[styles.quickActionText, { color: '#fff' }]}>{t('KM')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
+      <View style={[styles.searchContainer, { backgroundColor: currentTheme.card }]}>
+        <View style={[styles.searchBox, { backgroundColor: currentTheme.background, borderColor: currentTheme.border }]}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
-            style={styles.searchInput}
-            placeholder="Tìm kiếm phim..."
+            style={[styles.searchInput, { color: currentTheme.text }]}
+            placeholder={t('Tìm kiếm phim...')}
             value={searchText}
             onChangeText={handleSearch}
-            placeholderTextColor="#999"
+            placeholderTextColor={currentTheme.subtext}
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
           {isSearching && (
             <ActivityIndicator
               size="small"
-              color="#4f8cff"
+              color={currentTheme.primary}
               style={styles.searchLoading}
             />
           )}
@@ -270,22 +277,22 @@ export default function HomeScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
+            <View style={[styles.emptyContainer, { backgroundColor: currentTheme.background }]}>
               {searchText.trim() ? (
                 <>
                   <Text style={styles.emptyIcon}>🔍</Text>
-                  <Text style={styles.emptyText}>
-                    Không tìm thấy phim nào với từ khóa "{searchText}"
+                  <Text style={[styles.emptyText, { color: currentTheme.text }]}>
+                    {t('Không tìm thấy phim nào với từ khóa')} "{searchText}"
                   </Text>
-                  <Text style={styles.emptySubtext}>
-                    Thử tìm kiếm với từ khóa khác
+                  <Text style={[styles.emptySubtext, { color: currentTheme.subtext }]}>
+                    {t('Thử tìm kiếm với từ khóa khác')}
                   </Text>
                 </>
               ) : (
                 <>
                   <Text style={styles.emptyIcon}>🎬</Text>
-                  <Text style={styles.emptyText}>
-                    Không có phim nào
+                  <Text style={[styles.emptyText, { color: currentTheme.text }]}>
+                    {t('Không có phim nào')}
                   </Text>
                 </>
               )}
@@ -454,13 +461,11 @@ const styles = StyleSheet.create({
   movieTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#222',
     marginBottom: 4,
     minHeight: 40,
   },
   movieGenre: {
     fontSize: 14,
-    color: '#4f8cff',
     marginBottom: 2,
     fontWeight: '500',
   },

@@ -16,6 +16,8 @@ import { AppDispatch, RootState } from '../src/store';
 import { sendOtp, verifyOtp } from '../src/store/otpSlice';
 import { authService } from '../src/services/authService';
 import { useRouter } from 'expo-router';
+import { useTranslation } from '../src/localization';
+import { lightTheme, darkTheme } from '../src/themes';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'success';
 
@@ -23,6 +25,9 @@ export default function ForgotPassword() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isLoading, error, otpExpiresAt } = useSelector((state: RootState) => state.otp);
+  const { theme } = useSelector((state: RootState) => state.theme);
+  const t = useTranslation();
+  const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
   const [step, setStep] = useState<Step>('email');
   const [formData, setFormData] = useState({
@@ -45,28 +50,28 @@ export default function ForgotPassword() {
     switch (currentStep) {
       case 'email':
         if (!formData.email.trim()) {
-          newErrors.email = 'Vui lòng nhập email';
+          newErrors.email = t('Vui lòng nhập email');
         } else if (!validateEmail(formData.email)) {
-          newErrors.email = 'Email không hợp lệ';
+          newErrors.email = t('Email không hợp lệ');
         }
         break;
       case 'otp':
         if (!formData.otp.trim()) {
-          newErrors.otp = 'Vui lòng nhập mã OTP';
+          newErrors.otp = t('Vui lòng nhập mã OTP');
         } else if (formData.otp.length !== 6) {
-          newErrors.otp = 'Mã OTP phải có 6 chữ số';
+          newErrors.otp = t('Mã OTP phải có 6 chữ số');
         }
         break;
       case 'newPassword':
         if (!formData.newPassword.trim()) {
-          newErrors.newPassword = 'Vui lòng nhập mật khẩu mới';
+          newErrors.newPassword = t('Vui lòng nhập mật khẩu mới');
         } else if (formData.newPassword.length < 6) {
-          newErrors.newPassword = 'Mật khẩu phải có ít nhất 6 ký tự';
+          newErrors.newPassword = t('Mật khẩu phải có ít nhất 6 ký tự');
         }
         if (!formData.confirmPassword.trim()) {
-          newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+          newErrors.confirmPassword = t('Vui lòng xác nhận mật khẩu');
         } else if (formData.newPassword !== formData.confirmPassword) {
-          newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+          newErrors.confirmPassword = t('Mật khẩu xác nhận không khớp');
         }
         break;
     }
@@ -85,9 +90,9 @@ export default function ForgotPassword() {
         type: 'RESET_PASSWORD'
       })).unwrap();
       setStep('otp');
-      Alert.alert('Thành công', 'OTP đã được gửi đến email của bạn');
+      Alert.alert(t('Thành công'), t('OTP đã được gửi đến email của bạn'));
     } catch (error: any) {
-      Alert.alert('Lỗi', error?.message || 'Không thể gửi OTP');
+      Alert.alert(t('Lỗi'), error?.message || t('Không thể gửi OTP'));
     } finally {
       setIsSubmitting(false);
     }
@@ -105,9 +110,9 @@ export default function ForgotPassword() {
       })).unwrap();
 
       setStep('newPassword');
-      Alert.alert('Thành công', 'OTP hợp lệ! Vui lòng nhập mật khẩu mới');
+      Alert.alert(t('Thành công'), t('OTP hợp lệ! Vui lòng nhập mật khẩu mới'));
     } catch (error: any) {
-      Alert.alert('Lỗi', error?.message || 'OTP không hợp lệ');
+      Alert.alert(t('Lỗi'), error?.message || t('OTP không hợp lệ'));
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +126,7 @@ export default function ForgotPassword() {
       await authService.resetPasswordByEmail(formData.email, formData.newPassword);
       setStep('success');
     } catch (error: any) {
-      Alert.alert('Lỗi', error?.message || 'Đặt lại mật khẩu thất bại');
+      Alert.alert(t('Lỗi'), error?.message || t('Đặt lại mật khẩu thất bại'));
     } finally {
       setIsSubmitting(false);
     }
@@ -134,9 +139,9 @@ export default function ForgotPassword() {
         email: formData.email,
         type: 'RESET_PASSWORD'
       })).unwrap();
-      Alert.alert('Thành công', 'OTP mới đã được gửi');
+      Alert.alert(t('Thành công'), t('OTP mới đã được gửi'));
     } catch (error: any) {
-      Alert.alert('Lỗi', error?.message || 'Không thể gửi OTP');
+      Alert.alert(t('Lỗi'), error?.message || t('Không thể gửi OTP'));
     } finally {
       setIsSubmitting(false);
     }
@@ -360,7 +365,7 @@ export default function ForgotPassword() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: currentTheme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -370,16 +375,16 @@ export default function ForgotPassword() {
         {step === 'success' && renderSuccessStep()}
 
         {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={[styles.errorContainer, { backgroundColor: currentTheme.card }]}>
+            <Text style={[styles.errorText, { color: currentTheme.error }]}>{error}</Text>
           </View>
         )}
       </ScrollView>
 
       {(isLoading || isSubmitting) && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Đang xử lý...</Text>
+        <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+          <ActivityIndicator size="large" color={currentTheme.primary} />
+          <Text style={[styles.loadingText, { color: '#fff' }]}>{t('Đang xử lý...')}</Text>
         </View>
       )}
     </KeyboardAvoidingView>

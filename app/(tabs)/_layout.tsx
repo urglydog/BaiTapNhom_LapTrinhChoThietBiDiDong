@@ -1,21 +1,33 @@
 import { Tabs } from 'expo-router';
 import { Text, StyleSheet } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../src/store';
+import { useTranslation } from '../../src/localization';
+import { lightTheme, darkTheme } from '../../src/themes';
 
 export default function TabLayout() {
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
+
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarStyle: styles.tabBar,
-                tabBarActiveTintColor: '#4f8cff',
-                tabBarInactiveTintColor: '#999',
+                tabBarStyle: {
+                    ...styles.tabBar,
+                    backgroundColor: currentTheme.card,
+                    borderTopColor: currentTheme.border,
+                },
+                tabBarActiveTintColor: currentTheme.primary,
+                tabBarInactiveTintColor: currentTheme.subtext,
                 tabBarLabelStyle: styles.tabBarLabel,
             }}
         >
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'Trang chủ',
+                    title: t('Trang chủ'),
                     tabBarIcon: ({ color, focused }) => (
                         <Text style={[styles.tabIcon, { color, opacity: focused ? 1 : 0.6 }]}>
                             🏠
@@ -26,7 +38,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="movies"
                 options={{
-                    title: 'Phim',
+                    title: t('Phim'),
                     tabBarIcon: ({ color, focused }) => (
                         <Text style={[styles.tabIcon, { color, opacity: focused ? 1 : 0.6 }]}>
                             🎬
@@ -37,7 +49,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="cinemas"
                 options={{
-                    title: 'Rạp',
+                    title: t('Rạp'),
                     tabBarIcon: ({ color, focused }) => (
                         <Text style={[styles.tabIcon, { color, opacity: focused ? 1 : 0.6 }]}>
                             🎭
@@ -48,7 +60,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="promotions"
                 options={{
-                    title: 'Khuyến mãi',
+                    title: t('Khuyến mãi'),
                     tabBarIcon: ({ color, focused }) => (
                         <Text style={[styles.tabIcon, { color, opacity: focused ? 1 : 0.6 }]}>
                             🎁
@@ -59,7 +71,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="favourites"
                 options={{
-                    title: 'Yêu thích',
+                    title: t('Yêu thích'),
                     tabBarIcon: ({ color, focused }) => (
                         <Text style={[styles.tabIcon, { color, opacity: focused ? 1 : 0.6 }]}>
                             ❤️
@@ -70,7 +82,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="profile"
                 options={{
-                    title: 'Cá nhân',
+                    title: t('Cá nhân'),
                     tabBarIcon: ({ color, focused }) => (
                         <Text style={[styles.tabIcon, { color, opacity: focused ? 1 : 0.6 }]}>
                             👤
@@ -84,9 +96,7 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
     tabBar: {
-        backgroundColor: 'white',
         borderTopWidth: 1,
-        borderTopColor: '#e5e5e5',
         height: 60,
         paddingBottom: 8,
         paddingTop: 8,

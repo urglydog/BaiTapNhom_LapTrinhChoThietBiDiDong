@@ -210,11 +210,65 @@ export const movieService = {
 
   // Lấy danh sách rạp
   getCinemas: async (): Promise<Cinema[]> => {
-    const response = await api.get('/cinemas');
-    if (response.data.code === 200) {
-      return response.data.result;
+    try {
+      const response = await api.get('/cinemas');
+      console.log('📡 Cinemas API Response:', JSON.stringify(response.data, null, 2));
+      
+      // Xử lý nhiều format response khác nhau
+      if (response.data) {
+        // Format 1: { code: 200, message: "...", result: [...] }
+        if (response.data.code === 200 && Array.isArray(response.data.result)) {
+          console.log('✅ Found cinemas in result array:', response.data.result.length);
+          return response.data.result;
+        }
+        
+        // Format 2: { code: 200, result: [...] } (không có message)
+        if (response.data.code === 200 && Array.isArray(response.data.result)) {
+          console.log('✅ Found cinemas in result array (no message):', response.data.result.length);
+          return response.data.result;
+        }
+        
+        // Format 3: Response trực tiếp là array
+        if (Array.isArray(response.data)) {
+          console.log('✅ Response is direct array:', response.data.length);
+          return response.data;
+        }
+        
+        // Format 4: { result: [...] } (không có code)
+        if (Array.isArray(response.data.result)) {
+          console.log('✅ Found cinemas in result (no code):', response.data.result.length);
+          return response.data.result;
+        }
+        
+        // Format 5: { data: [...] }
+        if (Array.isArray(response.data.data)) {
+          console.log('✅ Found cinemas in data:', response.data.data.length);
+          return response.data.data;
+        }
+      }
+      
+      console.error('❌ Unexpected response format:', response.data);
+      throw new Error(response.data?.message || 'Unexpected response format from server');
+    } catch (error: any) {
+      console.error('❌ Error fetching cinemas:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+      });
+      
+      // Nếu là network error, throw message rõ ràng hơn
+      if (!error.response) {
+        throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+      }
+      
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Không thể tải danh sách rạp'
+      );
     }
-    throw new Error(response.data.message || 'Failed to fetch cinemas');
   },
 
   // Lấy lịch chiếu theo rạp

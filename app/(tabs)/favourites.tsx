@@ -9,17 +9,29 @@ import {
     ActivityIndicator,
     RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../src/store';
 import { fetchFavourites, toggleFavourite } from '../../src/store/movieSlice';
 import { Favourite, Movie } from '../../src/types';
+import { useTranslation } from '../../src/localization';
+import { lightTheme, darkTheme } from '../../src/themes';
 
 export default function FavouritesTabScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { favourites, isLoading } = useSelector((state: RootState) => state.movie);
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
+
+    // Refresh khi màn hình được focus
+    useFocusEffect(
+        React.useCallback(() => {
+            dispatch(fetchFavourites());
+        }, [dispatch])
+    );
 
     useEffect(() => {
         dispatch(fetchFavourites());
@@ -37,15 +49,45 @@ export default function FavouritesTabScreen() {
 
     const handleRemoveFavourite = async (movieId: number) => {
         await dispatch(toggleFavourite(movieId));
+        // Refresh sau khi xóa
+        await dispatch(fetchFavourites());
     };
 
     const renderMovie = ({ item }: { item: Favourite }) => {
         const movie = item.movie;
+        // Nếu không có movie object, có thể cần load từ movieId
+        if (!movie && !item.movieId) {
+            console.warn('Favourite item missing movie:', item);
+            return null;
+        }
+
+        // Nếu không có movie object nhưng có movieId, hiển thị placeholder
+        if (!movie && item.movieId) {
+            return (
+                <TouchableOpacity
+                    style={styles.movieCard}
+                    onPress={() => router.push(`/movie-detail?movieId=${item.movieId}`)}
+                    activeOpacity={0.8}
+                >
+                    <View style={styles.movieImageContainer}>
+                        <View style={[styles.moviePoster, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}>
+                            <Text style={{ fontSize: 24 }}>🎬</Text>
+                        </View>
+                    </View>
+                    <View style={styles.movieInfo}>
+                        <Text style={styles.movieTitle} numberOfLines={2}>
+                            {t('Đang tải...')}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            );
+        }
+
         if (!movie) return null;
 
         return (
             <TouchableOpacity
-                style={styles.movieCard}
+                style={[styles.movieCard, { backgroundColor: currentTheme.card }]}
                 onPress={() => handleMoviePress(movie)}
                 activeOpacity={0.8}
             >
@@ -58,7 +100,7 @@ export default function FavouritesTabScreen() {
                         resizeMode="cover"
                     />
                     <TouchableOpacity
-                        style={styles.removeButton}
+                        style={[styles.removeButton, { backgroundColor: currentTheme.error }]}
                         onPress={() => handleRemoveFavourite(movie.id)}
                     >
                         <Text style={styles.removeButtonText}>✕</Text>
@@ -66,30 +108,30 @@ export default function FavouritesTabScreen() {
                 </View>
                 <View style={styles.movieInfo}>
                     <View style={styles.movieHeader}>
-                        <Text style={styles.movieTitle} numberOfLines={2}>
+                        <Text style={[styles.movieTitle, { color: currentTheme.text }]} numberOfLines={2}>
                             {movie.title}
                         </Text>
                     </View>
                     {movie.genre && (
-                        <Text style={styles.movieGenre} numberOfLines={1}>
+                        <Text style={[styles.movieGenre, { color: currentTheme.subtext }]} numberOfLines={1}>
                             {movie.genre}
                         </Text>
                     )}
                     {movie.duration != null && movie.duration > 0 && (
-                        <Text style={styles.movieDuration}>{movie.duration} phút</Text>
+                        <Text style={[styles.movieDuration, { color: currentTheme.subtext }]}>{movie.duration} {t('phút')}</Text>
                     )}
                     <View style={styles.ratingContainer}>
                         {movie.rating != null && movie.rating > 0 && (
-                            <Text style={styles.rating}>⭐ {movie.rating.toFixed(1)}</Text>
+                            <Text style={[styles.rating, { color: currentTheme.primary }]}>⭐ {movie.rating.toFixed(1)}</Text>
                         )}
                         {movie.ageRating && (
-                            <View style={styles.ageRatingBadge}>
-                                <Text style={styles.ageRating}>{movie.ageRating}</Text>
+                            <View style={[styles.ageRatingBadge, { backgroundColor: currentTheme.primary }]}>
+                                <Text style={[styles.ageRating, { color: '#fff' }]}>{movie.ageRating}</Text>
                             </View>
                         )}
                     </View>
                     {movie.description && (
-                        <Text style={styles.movieDescription} numberOfLines={2}>
+                        <Text style={[styles.movieDescription, { color: currentTheme.subtext }]} numberOfLines={2}>
                             {movie.description}
                         </Text>
                     )}
@@ -102,17 +144,17 @@ export default function FavouritesTabScreen() {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#4f8cff" />
-                <Text style={styles.loadingText}>Đang tải phim yêu thích...</Text>
+                <Text style={styles.loadingText}>{t('Đang tải phim yêu thích...')}</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Phim Yêu Thích</Text>
-                <Text style={styles.headerSubtitle}>
-                    {favourites.length} phim đã lưu
+        <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
+            <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
+                <Text style={[styles.headerTitle, { color: '#fff' }]}>{t('Phim Yêu Thích')}</Text>
+                <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.9)' }]}>
+                    {favourites.length} {t('phim đã lưu')}
                 </Text>
             </View>
 
@@ -125,19 +167,19 @@ export default function FavouritesTabScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
+                    <View style={[styles.emptyContainer, { backgroundColor: currentTheme.background }]}>
                         <Text style={styles.emptyIcon}>❤️</Text>
-                        <Text style={styles.emptyText}>
-                            Bạn chưa có phim yêu thích nào
+                        <Text style={[styles.emptyText, { color: currentTheme.text }]}>
+                            {t('Bạn chưa có phim yêu thích nào')}
                         </Text>
-                        <Text style={styles.emptySubtext}>
-                            Thêm phim vào yêu thích để xem lại sau
+                        <Text style={[styles.emptySubtext, { color: currentTheme.subtext }]}>
+                            {t('Thêm phim vào yêu thích để xem lại sau')}
                         </Text>
                         <TouchableOpacity
-                            style={styles.browseButton}
+                            style={[styles.browseButton, { backgroundColor: currentTheme.primary }]}
                             onPress={() => router.push('/(tabs)/')}
                         >
-                            <Text style={styles.browseButtonText}>Khám phá phim</Text>
+                            <Text style={styles.browseButtonText}>{t('Khám phá phim')}</Text>
                         </TouchableOpacity>
                     </View>
                 }

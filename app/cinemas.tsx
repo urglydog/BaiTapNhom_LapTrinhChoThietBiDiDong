@@ -16,6 +16,7 @@ import { RootState, AppDispatch } from '../src/store';
 import { fetchCinemas } from '../src/store/movieSlice';
 import { Cinema, Showtime } from '../src/types';
 import { movieService } from '../src/services/movieService';
+import { useTranslation } from '../src/localization';
 
 export default function CinemasScreen() {
   const [selectedCinema, setSelectedCinema] = useState<number | null>(null);
@@ -26,7 +27,8 @@ export default function CinemasScreen() {
 
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { cinemas } = useSelector((state: RootState) => state.movie);
+  const { cinemas, isLoading, error } = useSelector((state: RootState) => state.movie);
+  const t = useTranslation();
 
   useEffect(() => {
     dispatch(fetchCinemas());
@@ -44,7 +46,7 @@ export default function CinemasScreen() {
     try {
       const cinemaShowtimes = await movieService.getCinemaShowtimes(cinema.id);
       setShowtimes(cinemaShowtimes);
-      
+
       // Nhóm showtimes theo phim
       const grouped: { [movieId: number]: { movie: any; showtimes: Showtime[] } } = {};
       cinemaShowtimes.forEach((showtime) => {
@@ -110,7 +112,7 @@ export default function CinemasScreen() {
         )}
       </View>
       <View style={styles.cinemaInfo}>
-        <Text style={styles.cinemaName}>{item.name || 'Rạp chiếu phim'}</Text>
+        <Text style={styles.cinemaName}>{item.name || t('Cinema')}</Text>
         {item.address && (
           <Text style={styles.cinemaAddress}>{item.address}</Text>
         )}
@@ -170,31 +172,48 @@ export default function CinemasScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Rạp Chiếu Phim</Text>
+        <Text style={styles.headerTitle}>{t('Cinema')}</Text>
         <Text style={styles.headerSubtitle}>
-          Chọn rạp để xem lịch chiếu
+          {t('Chọn rạp để xem lịch chiếu')}
         </Text>
       </View>
 
-      <FlatList
-        data={cinemas}
-        renderItem={renderCinema}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.cinemaList}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Không có rạp chiếu nào</Text>
-          </View>
-        }
-      />
+      {isLoading && cinemas.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>{t('Đang tải danh sách rạp...')}</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{t('Lỗi:')} {error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={handleRefresh}
+          >
+            <Text style={styles.retryButtonText}>{t('Thử lại')}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={cinemas}
+          renderItem={renderCinema}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.cinemaList}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>{t('Không có rạp chiếu nào')}</Text>
+            </View>
+          }
+        />
+      )}
 
       {selectedCinema && (
         <View style={styles.showtimesContainer}>
           <View style={styles.showtimesHeader}>
-            <Text style={styles.showtimesTitle}>Lịch Chiếu</Text>
+            <Text style={styles.showtimesTitle}>{t('Lịch Chiếu')}</Text>
             <TouchableOpacity onPress={() => setSelectedCinema(null)}>
               <Text style={styles.closeButton}>✕</Text>
             </TouchableOpacity>
@@ -212,7 +231,7 @@ export default function CinemasScreen() {
               ) : (
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>
-                    Không có suất chiếu nào
+                    {t('Không có suất chiếu nào')}
                   </Text>
                 </View>
               )}
@@ -252,10 +271,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    // For web compatibility, use boxShadow instead of shadow* properties
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
   },
   selectedCinemaCard: {
@@ -308,10 +325,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '60%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    // For web compatibility, use boxShadow instead of shadow* properties
+    boxShadow: '0px -2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 5,
   },
   showtimesHeader: {
@@ -462,8 +477,38 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   loadingContainer: {
-    padding: 40,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#d32f2f',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

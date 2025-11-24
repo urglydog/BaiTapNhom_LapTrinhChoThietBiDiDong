@@ -14,12 +14,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../src/store';
 import { fetchFavourites, toggleFavourite } from '../src/store/movieSlice';
 import { Favourite, Movie } from '../src/types';
+import { useTranslation } from '../src/localization';
 
 export default function FavouritesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { favourites, isLoading } = useSelector((state: RootState) => state.movie);
+  const t = useTranslation();
 
   useEffect(() => {
     dispatch(fetchFavourites());
@@ -48,11 +50,34 @@ export default function FavouritesScreen() {
 
   const renderMovie = ({ item }: { item: Favourite }) => {
     const movie = item.movie;
-    // Nếu không có movie object, có thể cần load lại hoặc bỏ qua
-    if (!movie) {
+    // Nếu không có movie object, có thể cần load từ movieId
+    if (!movie && !item.movieId) {
       console.warn('Favourite item missing movie:', item);
       return null;
     }
+
+    // Nếu không có movie object nhưng có movieId, hiển thị placeholder
+    if (!movie && item.movieId) {
+      return (
+        <TouchableOpacity
+          style={styles.movieCard}
+          onPress={() => router.push(`/movie-detail?movieId=${item.movieId}`)}
+        >
+          <View style={styles.movieImageContainer}>
+            <View style={[styles.moviePoster, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}>
+              <Text style={{ fontSize: 24 }}>🎬</Text>
+            </View>
+          </View>
+          <View style={styles.movieInfo}>
+            <Text style={styles.movieTitle} numberOfLines={2}>
+              {t('Đang tải...')}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    if (!movie) return null;
 
     return (
       <TouchableOpacity
@@ -84,7 +109,7 @@ export default function FavouritesScreen() {
             <Text style={styles.movieGenre}>{movie.genre}</Text>
           )}
           {movie.duration != null && movie.duration > 0 && (
-            <Text style={styles.movieDuration}>{movie.duration} phút</Text>
+            <Text style={styles.movieDuration}>{movie.duration} {t('phút')}</Text>
           )}
           <View style={styles.ratingContainer}>
             {movie.rating != null && movie.rating > 0 && (
@@ -108,7 +133,7 @@ export default function FavouritesScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Đang tải phim yêu thích...</Text>
+        <Text style={styles.loadingText}>{t('Đang tải phim yêu thích...')}</Text>
       </View>
     );
   }
@@ -116,9 +141,9 @@ export default function FavouritesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Phim Yêu Thích</Text>
+        <Text style={styles.headerTitle}>{t('Phim Yêu Thích')}</Text>
         <Text style={styles.headerSubtitle}>
-          {favourites.length} phim đã lưu
+          {favourites.length}{t(' phim đã lưu')}
         </Text>
       </View>
 
@@ -134,16 +159,16 @@ export default function FavouritesScreen() {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>❤️</Text>
             <Text style={styles.emptyText}>
-              Bạn chưa có phim yêu thích nào
+              {t('Bạn chưa có phim yêu thích nào')}
             </Text>
             <Text style={styles.emptySubtext}>
-              Thêm phim vào yêu thích để xem lại sau
+              {t('Thêm phim vào yêu thích để xem lại sau')}
             </Text>
             <TouchableOpacity
               style={styles.browseButton}
               onPress={() => router.push('/(tabs)/')}
             >
-              <Text style={styles.browseButtonText}>Khám phá phim</Text>
+              <Text style={styles.browseButtonText}>{t('Khám phá phim')}</Text>
             </TouchableOpacity>
           </View>
         }
