@@ -9,16 +9,26 @@ import {
     View,
     Modal,
     Platform,
+    Switch,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../src/store';
 import { logout } from '../../src/store/authSlice';
+import { setTheme } from '../../src/store/themeSlice';
+import { setLanguage } from '../../src/store/languageSlice';
+import { useTranslation } from '../../src/localization';
+import { lightTheme, darkTheme } from '../../src/themes';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { user } = useSelector((state: RootState) => state.auth);
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const { language } = useSelector((state: RootState) => state.language);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
     const handleLogout = () => {
         setShowLogoutModal(true);
@@ -34,12 +44,7 @@ export default function ProfileScreen() {
     };
 
     const getRoleDisplayName = (role: string) => {
-        switch (role) {
-            case 'ADMIN': return 'Quản trị viên';
-            case 'STAFF': return 'Nhân viên';
-            case 'CUSTOMER': return 'Khách hàng';
-            default: return role;
-        }
+        return t(role as any);
     };
 
     const getRoleColor = (role: string) => {
@@ -51,21 +56,29 @@ export default function ProfileScreen() {
         }
     };
 
+    const toggleTheme = () => {
+        dispatch(setTheme(theme === 'light' ? 'dark' : 'light'));
+    };
+
+    const toggleLanguage = () => {
+        dispatch(setLanguage(language === 'vi' ? 'en' : 'vi'));
+    };
+
     if (!user) {
         return (
-            <View style={[styles.container, styles.centeredContainer]}>
-                <View style={styles.notLoggedInCard}>
+            <View style={[styles.container, styles.centeredContainer, { backgroundColor: currentTheme.background }]}>
+                <View style={[styles.notLoggedInCard, { backgroundColor: currentTheme.card }]}>
                     <View style={styles.avatarLarge}>
                         <Text style={styles.avatarLargeText}>?</Text>
                     </View>
-                    <Text style={styles.notLoggedInTitle}>Bạn chưa đăng nhập</Text>
-                    <Text style={styles.notLoggedInSubtitle}>Hãy đăng nhập để sử dụng các chức năng cá nhân hóa!</Text>
-                    <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/login')}>
-                        <Text style={styles.loginButtonText}>Đăng nhập</Text>
+                    <Text style={[styles.notLoggedInTitle, { color: currentTheme.text }]}>{t('Bạn chưa đăng nhập')}</Text>
+                    <Text style={[styles.notLoggedInSubtitle, { color: currentTheme.subtext }]}>{t('Hãy đăng nhập để sử dụng các chức năng cá nhân hóa!')}</Text>
+                    <TouchableOpacity style={[styles.loginButton, { backgroundColor: currentTheme.primary }]} onPress={() => router.push('/login')}>
+                        <Text style={styles.loginButtonText}>{t('Đăng nhập')}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.orText}>hoặc</Text>
+                    <Text style={[styles.orText, { color: currentTheme.subtext }]}>{t('hoặc')}</Text>
                     <TouchableOpacity style={styles.registerLink} onPress={() => router.push('/register')}>
-                        <Text style={styles.registerLinkText}>Tạo tài khoản</Text>
+                        <Text style={[styles.registerLinkText, { color: currentTheme.primary }]}>{t('Tạo tài khoản')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -81,28 +94,57 @@ export default function ProfileScreen() {
                 onRequestClose={cancelLogout}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Đăng xuất</Text>
-                        <Text style={styles.modalMessage}>Bạn có chắc chắn muốn đăng xuất?</Text>
+                    <View style={[styles.modalContent, { backgroundColor: currentTheme.card }]}>
+                        <Text style={[styles.modalTitle, { color: currentTheme.text }]}>{t('Đăng xuất')}</Text>
+                        <Text style={[styles.modalMessage, { color: currentTheme.subtext }]}>{t('Bạn có chắc chắn muốn đăng xuất?')}</Text>
                         <View style={styles.modalButtons}>
-                            <TouchableOpacity style={styles.cancelButton} onPress={cancelLogout}>
-                                <Text style={styles.cancelButtonText}>Hủy</Text>
+                            <TouchableOpacity style={[styles.cancelButton, { backgroundColor: currentTheme.background }]} onPress={cancelLogout}>
+                                <Text style={[styles.cancelButtonText, { color: currentTheme.text }]}>{t('Hủy')}</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.confirmButton} onPress={confirmLogout}>
-                                <Text style={styles.confirmButtonText}>Đăng xuất</Text>
+                            <TouchableOpacity style={[styles.confirmButton, { backgroundColor: currentTheme.accent }]} onPress={confirmLogout}>
+                                <Text style={styles.confirmButtonText}>{t('Đăng xuất')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
             </Modal>
-            <ScrollView style={styles.container}>
-            <View style={styles.header}>
+            <Modal
+                visible={showSettingsModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowSettingsModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: currentTheme.card }]}>
+                        <Text style={[styles.modalTitle, { color: currentTheme.text }]}>{t('Cài đặt')}</Text>
+                        <View style={styles.settingRow}>
+                            <Text style={[styles.settingText, { color: currentTheme.text }]}>{t('Chế độ tối')}</Text>
+                            <Switch
+                                value={theme === 'dark'}
+                                onValueChange={toggleTheme}
+                            />
+                        </View>
+                        <View style={styles.settingRow}>
+                            <Text style={[styles.settingText, { color: currentTheme.text }]}>{t('Ngôn ngữ (English/Tiếng Việt)')}</Text>
+                            <Switch
+                                value={language === 'en'}
+                                onValueChange={toggleLanguage}
+                            />
+                        </View>
+                        <TouchableOpacity style={[styles.closeButton, { backgroundColor: currentTheme.primary }]} onPress={() => setShowSettingsModal(false)}>
+                            <Text style={styles.closeButtonText}>{t('Đóng')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+            <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
+            <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
                 <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
                         {user?.fullName?.charAt(0).toUpperCase() || 'U'}
                     </Text>
                 </View>
-                <Text style={styles.name}>{user?.fullName}</Text>
+                <Text style={[styles.name, { color: currentTheme.text }]}>{user?.fullName}</Text>
                 <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user?.role || '') }]}>
                     <Text style={styles.roleText}>
                         {getRoleDisplayName(user?.role || '')}
@@ -110,47 +152,47 @@ export default function ProfileScreen() {
                 </View>
             </View>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
-                <View style={styles.infoCard}>
+            <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
+                <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Thông tin cá nhân')}</Text>
+                <View style={[styles.infoCard, { backgroundColor: currentTheme.background }]}>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Tên đăng nhập:</Text>
-                        <Text style={styles.infoValue}>{user?.username}</Text>
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Tên đăng nhập:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.username}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Email:</Text>
-                        <Text style={styles.infoValue}>{user?.email}</Text>
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Email:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.email}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Số điện thoại:</Text>
-                        <Text style={styles.infoValue}>{user?.phone}</Text>
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Số điện thoại:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.phone}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Ngày sinh:</Text>
-                        <Text style={styles.infoValue}>
-                            {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('vi-VN') : 'N/A'}
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Ngày sinh:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>
+                            {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString(t('vi-VN')) : t('N/A')}
                         </Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Giới tính:</Text>
-                        <Text style={styles.infoValue}>
-                            {user?.gender === 'MALE' ? 'Nam' : user?.gender === 'FEMALE' ? 'Nữ' : 'N/A'}
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Giới tính:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>
+                            {t(user?.gender === 'MALE' ? 'Nam' : user?.gender === 'FEMALE' ? 'Nữ' : 'N/A')}
                         </Text>
                     </View>
                 </View>
             </View>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Chức năng</Text>
+            <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
+                <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Chức năng')}</Text>
                 <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => router.push('/(tabs)/favourites')}
                 >
                     <View style={styles.menuItemLeft}>
                         <Text style={styles.menuIcon}>❤️</Text>
-                        <Text style={styles.menuText}>Phim yêu thích</Text>
+                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Phim yêu thích')}</Text>
                     </View>
-                    <Text style={styles.menuArrow}>›</Text>
+                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.menuItem}
@@ -178,9 +220,9 @@ export default function ProfileScreen() {
                 >
                     <View style={styles.menuItemLeft}>
                         <Text style={styles.menuIcon}>🎭</Text>
-                        <Text style={styles.menuText}>Rạp chiếu phim</Text>
+                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Cinema')}</Text>
                     </View>
-                    <Text style={styles.menuArrow}>›</Text>
+                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.menuItem}
@@ -188,46 +230,46 @@ export default function ProfileScreen() {
                 >
                     <View style={styles.menuItemLeft}>
                         <Text style={styles.menuIcon}>🎁</Text>
-                        <Text style={styles.menuText}>Khuyến mãi</Text>
+                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Khuyến mãi')}</Text>
                     </View>
-                    <Text style={styles.menuArrow}>›</Text>
+                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => setShowSettingsModal(true)}>
                     <View style={styles.menuItemLeft}>
                         <Text style={styles.menuIcon}>⚙️</Text>
-                        <Text style={styles.menuText}>Cài đặt</Text>
+                        <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Cài đặt')}</Text>
                     </View>
-                    <Text style={styles.menuArrow}>›</Text>
+                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                 </TouchableOpacity>
                 {user?.role === 'ADMIN' && (
                     <TouchableOpacity style={styles.menuItem}>
                         <View style={styles.menuItemLeft}>
                             <Text style={styles.menuIcon}>👑</Text>
-                            <Text style={styles.menuText}>Quản lý hệ thống</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Quản lý hệ thống')}</Text>
                         </View>
-                        <Text style={styles.menuArrow}>›</Text>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                     </TouchableOpacity>
                 )}
                 {user?.role === 'STAFF' && (
                     <TouchableOpacity style={styles.menuItem}>
                         <View style={styles.menuItemLeft}>
                             <Text style={styles.menuIcon}>🎫</Text>
-                            <Text style={styles.menuText}>Quản lý đặt vé</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Quản lý đặt vé')}</Text>
                         </View>
-                        <Text style={styles.menuArrow}>›</Text>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity 
                     style={styles.menuItem}
                     onPress={() => router.push('/change-password')}
                 >
-                    <Text style={styles.menuText}>Đổi mật khẩu</Text>
-                    <Text style={styles.menuArrow}>›</Text>
+                    <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Đổi mật khẩu')}</Text>
+                    <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText} onPress={handleLogout}>Đăng xuất</Text>
+            <TouchableOpacity style={[styles.logoutButton, { backgroundColor: currentTheme.accent }]} onPress={handleLogout}>
+                <Text style={styles.logoutButtonText} onPress={handleLogout}>{t('Đăng xuất')}</Text>
             </TouchableOpacity>
         </ScrollView>
         </>
@@ -237,10 +279,8 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
     },
     header: {
-        backgroundColor: 'white',
         alignItems: 'center',
         padding: 30,
         marginBottom: 1,
@@ -262,7 +302,6 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 8,
     },
     roleBadge: {
@@ -276,18 +315,15 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     section: {
-        backgroundColor: 'white',
         marginBottom: 1,
         padding: 20,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 16,
     },
     infoCard: {
-        backgroundColor: '#f9f9f9',
         borderRadius: 8,
         padding: 16,
     },
@@ -298,12 +334,10 @@ const styles = StyleSheet.create({
     },
     infoLabel: {
         fontSize: 14,
-        color: '#666',
         flex: 1,
     },
     infoValue: {
         fontSize: 14,
-        color: '#333',
         fontWeight: '500',
         flex: 1,
         textAlign: 'right',
@@ -327,16 +361,13 @@ const styles = StyleSheet.create({
     },
     menuText: {
         fontSize: 16,
-        color: '#333',
         fontWeight: '500',
     },
     menuArrow: {
         fontSize: 20,
-        color: '#ccc',
         fontWeight: '300',
     },
     logoutButton: {
-        backgroundColor: '#FF6B6B',
         margin: 20,
         padding: 16,
         borderRadius: 8,
@@ -347,15 +378,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    // Đẹp cho phần chưa đăng nhập
     centeredContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
     },
     notLoggedInCard: {
-        backgroundColor: 'white',
         borderRadius: 16,
         padding: 32,
         alignItems: 'center',
@@ -384,18 +412,15 @@ const styles = StyleSheet.create({
     notLoggedInTitle: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#22223b',
         marginBottom: 8,
         textAlign: 'center',
     },
     notLoggedInSubtitle: {
         fontSize: 15,
-        color: '#6c757d',
         marginBottom: 24,
         textAlign: 'center',
     },
     loginButton: {
-        backgroundColor: '#007AFF',
         paddingVertical: 14,
         paddingHorizontal: 48,
         borderRadius: 8,
@@ -416,7 +441,6 @@ const styles = StyleSheet.create({
         marginTop: 12,
         marginBottom: 8,
         fontSize: 16,
-        color: '#666',
         textAlign: 'center',
     },
     registerLink: {
@@ -424,7 +448,6 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     registerLinkText: {
-        color: '#007AFF',
         fontSize: 16,
         textDecorationLine: 'underline',
     },
@@ -435,7 +458,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContent: {
-        backgroundColor: 'white',
         borderRadius: 12,
         padding: 24,
         margin: 20,
@@ -450,13 +472,11 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 12,
         textAlign: 'center',
     },
     modalMessage: {
         fontSize: 16,
-        color: '#666',
         marginBottom: 24,
         textAlign: 'center',
         lineHeight: 22,
@@ -468,7 +488,6 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 8,
@@ -476,13 +495,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelButtonText: {
-        color: '#666',
         fontSize: 16,
         fontWeight: '600',
     },
     confirmButton: {
         flex: 1,
-        backgroundColor: '#FF6B6B',
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 8,
@@ -493,5 +510,27 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
+    },
+    settingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        paddingVertical: 12,
+    },
+    settingText: {
+        fontSize: 16,
+    },
+    closeButton: {
+        marginTop: 24,
+        paddingVertical: 12,
+        paddingHorizontal: 48,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    closeButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });

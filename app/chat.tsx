@@ -3,7 +3,7 @@ import { View, TextInput, Button, FlatList, Text, StyleSheet, ActivityIndicator 
 import { Stack } from 'expo-router';
 import { useAppSelector } from '../src/hooks/redux';
 import { lightTheme, darkTheme } from '../src/themes';
-import { ThemeProvider } from 'styled-components';
+import { ThemeProvider } from 'styled-components/native';
 import { sendMessage } from '../src/services/chatService';
 
 interface Message {

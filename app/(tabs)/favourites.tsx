@@ -14,12 +14,17 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../src/store';
 import { fetchFavourites, toggleFavourite } from '../../src/store/movieSlice';
 import { Favourite, Movie } from '../../src/types';
+import { useTranslation } from '../../src/localization';
+import { lightTheme, darkTheme } from '../../src/themes';
 
 export default function FavouritesTabScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { favourites, isLoading } = useSelector((state: RootState) => state.movie);
+    const { theme } = useSelector((state: RootState) => state.theme);
+    const t = useTranslation();
+    const currentTheme = theme === 'light' ? lightTheme : darkTheme;
 
     useEffect(() => {
         dispatch(fetchFavourites());
@@ -45,7 +50,7 @@ export default function FavouritesTabScreen() {
 
         return (
             <TouchableOpacity
-                style={styles.movieCard}
+                style={[styles.movieCard, { backgroundColor: currentTheme.card }]}
                 onPress={() => handleMoviePress(movie)}
                 activeOpacity={0.8}
             >
@@ -58,7 +63,7 @@ export default function FavouritesTabScreen() {
                         resizeMode="cover"
                     />
                     <TouchableOpacity
-                        style={styles.removeButton}
+                        style={[styles.removeButton, { backgroundColor: currentTheme.accent }]}
                         onPress={() => handleRemoveFavourite(movie.id)}
                     >
                         <Text style={styles.removeButtonText}>✕</Text>
@@ -66,30 +71,30 @@ export default function FavouritesTabScreen() {
                 </View>
                 <View style={styles.movieInfo}>
                     <View style={styles.movieHeader}>
-                        <Text style={styles.movieTitle} numberOfLines={2}>
+                        <Text style={[styles.movieTitle, { color: currentTheme.text }]} numberOfLines={2}>
                             {movie.title}
                         </Text>
                     </View>
                     {movie.genre && (
-                        <Text style={styles.movieGenre} numberOfLines={1}>
+                        <Text style={[styles.movieGenre, { color: currentTheme.primary }]} numberOfLines={1}>
                             {movie.genre}
                         </Text>
                     )}
                     {movie.duration != null && movie.duration > 0 && (
-                        <Text style={styles.movieDuration}>{movie.duration} phút</Text>
+                        <Text style={[styles.movieDuration, { color: currentTheme.subtext }]}>{movie.duration} {t('phút')}</Text>
                     )}
                     <View style={styles.ratingContainer}>
                         {movie.rating != null && movie.rating > 0 && (
-                            <Text style={styles.rating}>⭐ {movie.rating.toFixed(1)}</Text>
+                            <Text style={[styles.rating, { color: currentTheme.primary }]}>⭐ {movie.rating.toFixed(1)}</Text>
                         )}
                         {movie.ageRating && (
-                            <View style={styles.ageRatingBadge}>
+                            <View style={[styles.ageRatingBadge, { backgroundColor: currentTheme.primary }]}>
                                 <Text style={styles.ageRating}>{movie.ageRating}</Text>
                             </View>
                         )}
                     </View>
                     {movie.description && (
-                        <Text style={styles.movieDescription} numberOfLines={2}>
+                        <Text style={[styles.movieDescription, { color: currentTheme.subtext }]} numberOfLines={2}>
                             {movie.description}
                         </Text>
                     )}
@@ -100,19 +105,19 @@ export default function FavouritesTabScreen() {
 
     if (isLoading && favourites.length === 0) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4f8cff" />
-                <Text style={styles.loadingText}>Đang tải phim yêu thích...</Text>
+            <View style={[styles.loadingContainer, { backgroundColor: currentTheme.background }]}>
+                <ActivityIndicator size="large" color={currentTheme.primary} />
+                <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải phim yêu thích...')}</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Phim Yêu Thích</Text>
+        <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
+            <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
+                <Text style={styles.headerTitle}>{t('Phim Yêu Thích')}</Text>
                 <Text style={styles.headerSubtitle}>
-                    {favourites.length} phim đã lưu
+                    {favourites.length} {t('phim đã lưu')}
                 </Text>
             </View>
 
@@ -127,17 +132,17 @@ export default function FavouritesTabScreen() {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyIcon}>❤️</Text>
-                        <Text style={styles.emptyText}>
-                            Bạn chưa có phim yêu thích nào
+                        <Text style={[styles.emptyText, { color: currentTheme.text }]}>
+                            {t('Bạn chưa có phim yêu thích nào')}
                         </Text>
-                        <Text style={styles.emptySubtext}>
-                            Thêm phim vào yêu thích để xem lại sau
+                        <Text style={[styles.emptySubtext, { color: currentTheme.subtext }]}>
+                            {t('Thêm phim vào yêu thích để xem lại sau')}
                         </Text>
                         <TouchableOpacity
-                            style={styles.browseButton}
+                            style={[styles.browseButton, { backgroundColor: currentTheme.primary }]}
                             onPress={() => router.push('/(tabs)/')}
                         >
-                            <Text style={styles.browseButtonText}>Khám phá phim</Text>
+                            <Text style={styles.browseButtonText}>{t('Khám phá phim')}</Text>
                         </TouchableOpacity>
                     </View>
                 }
@@ -149,27 +154,22 @@ export default function FavouritesTabScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f3f6fb',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f3f6fb',
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
     },
     header: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 20,
         paddingTop: 48,
         paddingBottom: 20,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
-        shadowColor: '#4f8cff',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
     },
     movieCard: {
         flexDirection: 'row',
-        backgroundColor: 'white',
         borderRadius: 16,
         marginBottom: 16,
         overflow: 'hidden',
@@ -216,7 +215,6 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: 'rgba(255, 107, 107, 0.9)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -236,18 +234,15 @@ const styles = StyleSheet.create({
     movieTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 4,
     },
     movieGenre: {
         fontSize: 14,
-        color: '#4f8cff',
         marginBottom: 4,
         fontWeight: '500',
     },
     movieDuration: {
         fontSize: 13,
-        color: '#888',
         marginBottom: 8,
     },
     ratingContainer: {
@@ -257,12 +252,10 @@ const styles = StyleSheet.create({
     },
     rating: {
         fontSize: 14,
-        color: '#FFA500',
         fontWeight: 'bold',
         marginRight: 12,
     },
     ageRatingBadge: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
@@ -274,7 +267,6 @@ const styles = StyleSheet.create({
     },
     movieDescription: {
         fontSize: 13,
-        color: '#666',
         lineHeight: 18,
     },
     emptyContainer: {
@@ -291,22 +283,18 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 8,
         textAlign: 'center',
     },
     emptySubtext: {
         fontSize: 15,
-        color: '#666',
         textAlign: 'center',
         marginBottom: 24,
     },
     browseButton: {
-        backgroundColor: '#4f8cff',
         paddingHorizontal: 32,
         paddingVertical: 14,
         borderRadius: 12,
-        shadowColor: '#4f8cff',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
