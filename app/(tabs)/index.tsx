@@ -19,6 +19,7 @@ import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
 import { useTranslation } from '../../src/localization';
 import { lightTheme, darkTheme } from '../../src/themes';
+import ChatbotFloatingButton from '../../components/ChatbotFloatingButton';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -282,7 +283,7 @@ export default function HomeScreen() {
                 <>
                   <Text style={styles.emptyIcon}>🔍</Text>
                   <Text style={[styles.emptyText, { color: currentTheme.text }]}>
-                    {t('Không tìm thấy phim nào với từ khóa')} "{searchText}"
+                    {t('Không tìm thấy phim nào với từ khóa "{searchText}"' as any, { searchText })}
                   </Text>
                   <Text style={[styles.emptySubtext, { color: currentTheme.subtext }]}>
                     {t('Thử tìm kiếm với từ khóa khác')}
