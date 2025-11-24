@@ -8,6 +8,7 @@ import {
     ActivityIndicator,
     RefreshControl,
     Alert,
+    ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,9 +17,15 @@ import { fetchUserBookings } from '../src/store/bookingSlice';
 import { Booking } from '../src/types';
 import { useTranslation } from '../src/localization';
 import { lightTheme, darkTheme } from '../src/themes';
+import { pdfService } from '../src/services/pdfService';
+import * as Sharing from 'expo-sharing';
+import { Ionicons } from '@expo/vector-icons';
+
+type PaymentFilter = 'ALL' | 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'CREDIT_CARD';
 
 export default function BookingHistoryScreen() {
     const [refreshing, setRefreshing] = useState(false);
+    const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('ALL');
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { bookings, isLoading } = useSelector((state: RootState) => state.booking);
@@ -65,6 +72,55 @@ export default function BookingHistoryScreen() {
         }
     };
 
+    const getPaymentMethodText = (method?: string) => {
+        switch (method) {
+            case 'CASH':
+                return t('Tiền mặt');
+            case 'BANK_TRANSFER':
+                return t('Chuyển khoản');
+            case 'VNPAY':
+                return 'VNPay';
+            case 'CREDIT_CARD':
+                return t('Thẻ tín dụng');
+            default:
+                return t('Chưa xác định');
+        }
+    };
+
+    // Filter bookings by payment method
+    const filteredBookings = bookings.filter(booking => {
+        if (paymentFilter === 'ALL') return true;
+        return booking.paymentMethod === paymentFilter;
+    });
+
+    const paymentFilters: { key: PaymentFilter; label: string }[] = [
+        { key: 'ALL', label: t('Tất cả') },
+        { key: 'VNPAY', label: 'VNPay' },
+        { key: 'CASH', label: t('Tiền mặt') },
+        { key: 'BANK_TRANSFER', label: t('Chuyển khoản') },
+    ];
+
+    const handleExportPDF = async (booking: Booking) => {
+        try {
+            const pdfUri = await pdfService.generateTicketPDF(booking);
+            
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(pdfUri, {
+                    mimeType: 'application/pdf',
+                    dialogTitle: t('Xuất vé PDF'),
+                });
+            } else {
+                Alert.alert(
+                    t('Thành công'),
+                    t('PDF đã được tạo')
+                );
+            }
+        } catch (error: any) {
+            console.error('Error exporting PDF:', error);
+            Alert.alert(t('Lỗi'), t('Không thể xuất PDF'));
+        }
+    };
+
     const renderBooking = ({ item }: { item: Booking }) => {
         const movie = item.showtime?.movie;
         const showtime = item.showtime;
@@ -73,11 +129,10 @@ export default function BookingHistoryScreen() {
             <TouchableOpacity
                 style={[styles.bookingCard, { backgroundColor: currentTheme.card }]}
                 onPress={() => {
-                    // Có thể mở chi tiết booking sau
-                    Alert.alert(
-                        t('Chi tiết đặt vé'),
-                        `${t('Mã đặt vé')}: ${item.id}\n${t('Tổng tiền')}: ${item.totalAmount.toLocaleString()} ${t('VNĐ')}\n${t('Trạng thái')}: ${getStatusText(item.status)}`
-                    );
+                    router.push({
+                        pathname: '/ticket-detail',
+                        params: { bookingId: item.id.toString() }
+                    } as any);
                 }}
             >
                 <View style={styles.bookingHeader}>
@@ -119,16 +174,38 @@ export default function BookingHistoryScreen() {
                     </View>
                 )}
 
-                {item.seats && item.seats.length > 0 && (
-                    <View style={styles.seatsInfo}>
-                        <Text style={[styles.seatsLabel, { color: currentTheme.subtext }]}>
-                            {t('Ghế đã đặt')}:
-                        </Text>
-                        <Text style={[styles.seatsText, { color: currentTheme.text }]}>
-                            {item.seats.map(s => s.seatNumber || `${s.seatRow}${s.seatNumber}`).join(', ')}
-                        </Text>
-                    </View>
-                )}
+                {(() => {
+                    // Hỗ trợ cả seats và bookingItems
+                    const seats = item.seats || (item.bookingItems?.map((bi: any) => ({
+                        seat: bi.seat,
+                        seatNumber: bi.seat?.seatNumber,
+                        seatRow: bi.seat?.seatRow,
+                    })) || []);
+                    
+                    if (seats && seats.length > 0) {
+                        const seatNumbers = seats.map((s: any) => {
+                            if (s.seat?.seatNumber) return s.seat.seatNumber;
+                            if (s.seatNumber) return s.seatNumber;
+                            if (s.seat?.seatRow && s.seat?.seatNumber) return `${s.seat.seatRow}${s.seat.seatNumber}`;
+                            if (s.seatRow && s.seatNumber) return `${s.seatRow}${s.seatNumber}`;
+                            return null;
+                        }).filter(Boolean);
+                        
+                        if (seatNumbers.length > 0) {
+                            return (
+                                <View style={styles.seatsInfo}>
+                                    <Text style={[styles.seatsLabel, { color: currentTheme.subtext }]}>
+                                        {t('Ghế đã đặt')}:
+                                    </Text>
+                                    <Text style={[styles.seatsText, { color: currentTheme.text }]}>
+                                        {seatNumbers.join(', ')}
+                                    </Text>
+                                </View>
+                            );
+                        }
+                    }
+                    return null;
+                })()}
 
                 <View style={styles.bookingFooter}>
                     <Text style={[styles.amountLabel, { color: currentTheme.subtext }]}>
@@ -139,11 +216,48 @@ export default function BookingHistoryScreen() {
                     </Text>
                 </View>
 
+                {item.paymentMethod && (
+                    <View style={styles.paymentMethodInfo}>
+                        <Text style={[styles.paymentMethodLabel, { color: currentTheme.subtext }]}>
+                            {t('Phương thức thanh toán')}:
+                        </Text>
+                        <Text style={[styles.paymentMethodValue, { color: currentTheme.text }]}>
+                            {getPaymentMethodText(item.paymentMethod)}
+                        </Text>
+                    </View>
+                )}
+
                 {item.bookingDate && (
                     <Text style={[styles.bookingDate, { color: currentTheme.subtext }]}>
                         {t('Ngày đặt')}: {new Date(item.bookingDate).toLocaleString('vi-VN')}
                     </Text>
                 )}
+
+                <View style={styles.bookingActions}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: currentTheme.primary + '20' }]}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/ticket-detail',
+                                params: { bookingId: item.id.toString() }
+                            } as any);
+                        }}
+                    >
+                        <Ionicons name="eye" size={18} color={currentTheme.primary} />
+                        <Text style={[styles.actionButtonText, { color: currentTheme.primary }]}>
+                            {t('Chi tiết')}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: currentTheme.primary + '20' }]}
+                        onPress={() => handleExportPDF(item)}
+                    >
+                        <Ionicons name="download" size={18} color={currentTheme.primary} />
+                        <Text style={[styles.actionButtonText, { color: currentTheme.primary }]}>
+                            {t('PDF')}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </TouchableOpacity>
         );
     };
@@ -185,12 +299,52 @@ export default function BookingHistoryScreen() {
                     {t('Lịch sử đặt vé')}
                 </Text>
                 <Text style={[styles.headerSubtitle, { color: currentTheme.subtext }]}>
-                    {bookings.length} {t('đặt vé')}
+                    {filteredBookings.length} {t('đặt vé')}
                 </Text>
             </View>
 
+            {/* Payment Method Filter Tabs */}
+            <View style={[styles.filterContainer, { backgroundColor: currentTheme.card }]}>
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterScrollContent}
+                >
+                    {paymentFilters.map((filter) => (
+                        <TouchableOpacity
+                            key={filter.key}
+                            style={[
+                                styles.filterTab,
+                                {
+                                    backgroundColor: paymentFilter === filter.key 
+                                        ? currentTheme.primary 
+                                        : currentTheme.background,
+                                    borderColor: paymentFilter === filter.key 
+                                        ? currentTheme.primary 
+                                        : currentTheme.subtext + '40',
+                                }
+                            ]}
+                            onPress={() => setPaymentFilter(filter.key)}
+                        >
+                            <Text
+                                style={[
+                                    styles.filterTabText,
+                                    {
+                                        color: paymentFilter === filter.key 
+                                            ? '#fff' 
+                                            : currentTheme.text,
+                                    }
+                                ]}
+                            >
+                                {filter.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
             <FlatList
-                data={bookings}
+                data={filteredBookings}
                 renderItem={renderBooking}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.listContainer}
@@ -328,6 +482,39 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 4,
     },
+    paymentMethodInfo: {
+        flexDirection: 'row',
+        marginTop: 8,
+        gap: 8,
+    },
+    paymentMethodLabel: {
+        fontSize: 12,
+    },
+    paymentMethodValue: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    filterContainer: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    filterScrollContent: {
+        gap: 8,
+        paddingHorizontal: 4,
+    },
+    filterTab: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        marginRight: 8,
+    },
+    filterTabText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -374,6 +561,24 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    bookingActions: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 12,
+    },
+    actionButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 10,
+        borderRadius: 8,
+        gap: 6,
+    },
+    actionButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
     },
 });
 

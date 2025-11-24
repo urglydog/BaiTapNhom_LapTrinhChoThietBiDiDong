@@ -178,19 +178,19 @@ export default function MovieDetailScreen() {
 
                 {/* Movie Info */}
                 <View style={styles.infoRow}>
-                    {movie.rating && (
+                    {movie.rating != null && !isNaN(movie.rating) && (
                         <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
-                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>⭐ {movie.rating.toFixed(1)}</Text>
+                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>⭐ {Number(movie.rating).toFixed(1)}</Text>
                         </View>
                     )}
-                    {movie.duration && (
+                    {movie.duration != null && (
                         <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
                             <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>⏱️ {movie.duration} {t('phút')}</Text>
                         </View>
                     )}
                     {movie.ageRating && (
                         <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
-                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>{movie.ageRating}</Text>
+                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>{String(movie.ageRating)}</Text>
                         </View>
                     )}
                 </View>
