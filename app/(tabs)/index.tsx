@@ -19,7 +19,6 @@ import { movieService } from '../../src/services/movieService';
 import { Movie } from '../../src/types';
 import { useTranslation } from '../../src/localization';
 import { lightTheme, darkTheme } from '../../src/themes';
-import ChatbotFloatingButton from '../../components/ChatbotFloatingButton';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -301,7 +300,6 @@ export default function HomeScreen() {
           }
         />
       )}
-      <ChatbotFloatingButton />
     </View>
   );
 }

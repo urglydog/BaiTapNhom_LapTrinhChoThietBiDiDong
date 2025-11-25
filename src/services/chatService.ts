@@ -15,12 +15,8 @@ export interface ChatMessageResponse {
  */
 export const sendMessage = async (message: string): Promise<string> => {
   try {
-    // Backend nhận String trong body, không phải JSON
     const response = await api.post('/chat/ai', message, {
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-      transformRequest: [(data) => data], // Không transform data, gửi trực tiếp string
+      headers: { 'Content-Type': 'text/plain' },
     });
     // Response trả về là String trực tiếp, không phải object
     return typeof response.data === 'string' ? response.data : String(response.data);
@@ -30,4 +26,6 @@ export const sendMessage = async (message: string): Promise<string> => {
     throw new Error(errorMessage);
   }
 };
+
+export { sendMessage };
 

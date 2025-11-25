@@ -5,12 +5,7 @@ import { storage } from "../utils/storage";
 // Server Render.com
 const API_BASE_URL = 
 "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
-// const API_BASE_URL = 
-// "http://localhost:8080/api";
-// Local development: "http://localhost:8080/api";
-
-// Log API URL for debugging
-console.log('🔗 API Base URL:', API_BASE_URL);
+// "http://192.168.1.190:8080/api";
 
 const api = axios.create({
     baseURL: API_BASE_URL,
