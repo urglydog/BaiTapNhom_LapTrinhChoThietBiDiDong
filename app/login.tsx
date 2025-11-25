@@ -1,6 +1,7 @@
 import { navigate } from 'expo-router/build/global-state/routing';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
@@ -13,10 +14,11 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../src/store';
-import { clearError, login } from '../src/store/authSlice';
+import { clearError, googleLogin, login } from '../src/store/authSlice';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../src/localization';
 import { lightTheme, darkTheme } from '../src/themes';
+import { configureGoogleSignIn, signInWithGoogle } from '../src/config/googleSignIn';
 
 export default function LoginScreen() {
     const [username, setUsername] = useState('');
@@ -29,6 +31,11 @@ export default function LoginScreen() {
     const router = useRouter();
     const t = useTranslation();
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
+
+    useEffect(() => {
+        // Configure Google Sign-In when component mounts
+        configureGoogleSignIn();
+    }, []);
 
     const handleLogin = async () => {
         if (!username.trim() || !password.trim()) {
@@ -51,6 +58,27 @@ export default function LoginScreen() {
             }
         } catch (error) {
             Alert.alert(t('Đăng nhập thất bại'), error as string);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setIsLoading(true);
+        try {
+            // Sign in with Google
+            const googleData = await signInWithGoogle();
+            
+            // Send Google data to backend
+            const result = await dispatch(googleLogin(googleData)).unwrap();
+
+            if (result) {
+                Alert.alert('Thành công', 'Đăng nhập Google thành công');
+                router.replace('/(tabs)');
+            }
+        } catch (error: any) {
+            const errorMessage = typeof error === 'string' ? error : error?.message || 'Đăng nhập Google thất bại';
+            Alert.alert(t('Đăng nhập thất bại'), errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -116,8 +144,30 @@ export default function LoginScreen() {
                         onPress={handleLogin}
                         disabled={isLoading}
                     >
-                        <Text style={styles.loginButtonText}>
-                            {isLoading ? t('Đang đăng nhập...') : t('Đăng nhập')}
+                        {isLoading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.loginButtonText}>
+                                {t('Đăng nhập')}
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+
+                    <View style={styles.dividerContainer}>
+                        <View style={[styles.divider, { backgroundColor: currentTheme.border }]} />
+                        <Text style={[styles.dividerText, { color: currentTheme.subtext }]}>
+                            {t('Hoặc')}
+                        </Text>
+                        <View style={[styles.divider, { backgroundColor: currentTheme.border }]} />
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.googleButton, { borderColor: currentTheme.border }, isLoading && styles.disabledButton]}
+                        onPress={handleGoogleLogin}
+                        disabled={isLoading}
+                    >
+                        <Text style={styles.googleButtonText}>
+                            {t('Đăng nhập với Google')}
                         </Text>
                     </TouchableOpacity>
 
@@ -244,5 +294,30 @@ const styles = StyleSheet.create({
     registerPrompt: {
         marginTop: 20,
         textAlign: 'center',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+    },
+    dividerText: {
+        marginHorizontal: 10,
+        fontSize: 14,
+    },
+    googleButton: {
+        borderRadius: 8,
+        padding: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        marginTop: 10,
+    },
+    googleButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#4285F4',
     },
 });

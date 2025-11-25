@@ -9,6 +9,8 @@ export interface User {
   dateOfBirth: string;
   gender: 'MALE' | 'FEMALE';
   role: 'ADMIN' | 'STAFF' | 'CUSTOMER';
+  googleId?: string;
+  avatarUrl?: string;
 }
 
 export interface LoginRequest {
@@ -19,6 +21,13 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   user: User;
+}
+
+export interface GoogleLoginRequest {
+  googleId: string;
+  email: string;
+  fullName: string;
+  avatarUrl?: string;
 }
 
 // OTP Types
