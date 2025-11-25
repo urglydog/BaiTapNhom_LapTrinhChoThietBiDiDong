@@ -1,6 +1,7 @@
 import { navigate } from 'expo-router/build/global-state/routing';
 import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     Image,
     KeyboardAvoidingView,
@@ -21,12 +22,11 @@ import {
 
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../src/store';
-import { clearError, login, googleLogin } from '../src/store/authSlice';
+import { clearError, googleLogin, login } from '../src/store/authSlice';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../src/localization';
 import { lightTheme, darkTheme } from '../src/themes';
-import { GoogleLoginRequest } from '../src/types';
-import { authService } from '../src/services/authService';
+import { configureGoogleSignIn, signInWithGoogle } from '../src/config/googleSignIn';
 
 export default function LoginScreen() {
     const [username, setUsername] = useState('');
@@ -39,6 +39,11 @@ export default function LoginScreen() {
     const router = useRouter();
     const t = useTranslation();
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
+
+    useEffect(() => {
+        // Configure Google Sign-In when component mounts
+        configureGoogleSignIn();
+    }, []);
 
     const handleLogin = async () => {
         if (!username.trim() || !password.trim()) {
@@ -67,68 +72,23 @@ export default function LoginScreen() {
     };
 
     const handleGoogleLogin = async () => {
+        setIsLoading(true);
         try {
-            await GoogleSignin.hasPlayServices();
-
-            // Đăng xuất và revoke access để đảm bảo clean state và luôn hiển thị account picker
-            try {
-                await GoogleSignin.revokeAccess();
-                await GoogleSignin.signOut();
-            } catch (cleanupError) {
-                // Ignore cleanup errors
-                console.log('Cleanup error (expected):', cleanupError);
-            }
-
-            // Hiển thị dialog chọn tài khoản Google
-            const userInfo = await GoogleSignin.signIn();
-
-            if (isSuccessResponse(userInfo)) {
-                await processGoogleLogin(userInfo);
-            }
-        } catch (error: any) {
-            console.log('Google login error:', error);
-
-            if (isErrorWithCode(error)) {
-                switch (error.code) {
-                    case statusCodes.SIGN_IN_CANCELLED:
-                        Alert.alert('Lỗi', 'Đăng nhập đã bị hủy');
-                        break;
-                    case statusCodes.IN_PROGRESS:
-                        Alert.alert('Lỗi', 'Đăng nhập đang được xử lý');
-                        break;
-                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-                        Alert.alert('Lỗi', 'Google Play Services không khả dụng');
-                        break;
-                    default:
-                        Alert.alert('Lỗi', 'Đăng nhập Google thất bại');
-                }
-            } else {
-                Alert.alert('Lỗi', 'Đăng nhập Google thất bại');
-            }
-        }
-    };
-
-    const processGoogleLogin = async (userInfo: any) => {
-        try {
-            // Extract Google user data
-            const googleUser = userInfo.data?.user || userInfo.user;
-            const googleLoginData: GoogleLoginRequest = {
-                googleId: googleUser.id,
-                email: googleUser.email,
-                fullName: googleUser.name || googleUser.givenName + ' ' + googleUser.familyName,
-                avatarUrl: googleUser.photo || undefined
-            };
-
-            // Call backend API
-            const result = await dispatch(googleLogin(googleLoginData)).unwrap();
+            // Sign in with Google
+            const googleData = await signInWithGoogle();
+            
+            // Send Google data to backend
+            const result = await dispatch(googleLogin(googleData)).unwrap();
 
             if (result) {
-                Alert.alert('Thành công', 'Đăng nhập thành công');
+                Alert.alert('Thành công', 'Đăng nhập Google thành công');
                 router.replace('/(tabs)');
             }
         } catch (error: any) {
-            console.error('Backend login error:', error);
-            Alert.alert('Lỗi', 'Đăng nhập thất bại. Vui lòng thử lại.');
+            const errorMessage = typeof error === 'string' ? error : error?.message || 'Đăng nhập Google thất bại';
+            Alert.alert(t('Đăng nhập thất bại'), errorMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -202,8 +162,30 @@ export default function LoginScreen() {
                         onPress={handleLogin}
                         disabled={isLoading}
                     >
-                        <Text style={styles.loginButtonText}>
-                            {isLoading ? t('Đang đăng nhập...') : t('Đăng nhập')}
+                        {isLoading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.loginButtonText}>
+                                {t('Đăng nhập')}
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+
+                    <View style={styles.dividerContainer}>
+                        <View style={[styles.divider, { backgroundColor: currentTheme.border }]} />
+                        <Text style={[styles.dividerText, { color: currentTheme.subtext }]}>
+                            {t('Hoặc')}
+                        </Text>
+                        <View style={[styles.divider, { backgroundColor: currentTheme.border }]} />
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.googleButton, { borderColor: currentTheme.border }, isLoading && styles.disabledButton]}
+                        onPress={handleGoogleLogin}
+                        disabled={isLoading}
+                    >
+                        <Text style={styles.googleButtonText}>
+                            {t('Đăng nhập với Google')}
                         </Text>
                     </TouchableOpacity>
 
@@ -398,5 +380,30 @@ const styles = StyleSheet.create({
         color: '#3c4043',
         fontSize: 16,
         fontWeight: '500',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+    },
+    dividerText: {
+        marginHorizontal: 10,
+        fontSize: 14,
+    },
+    googleButton: {
+        borderRadius: 8,
+        padding: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        marginTop: 10,
+    },
+    googleButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#4285F4',
     },
 });

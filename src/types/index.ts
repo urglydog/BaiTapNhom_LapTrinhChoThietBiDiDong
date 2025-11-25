@@ -11,6 +11,8 @@ export interface User {
   avatarUrl?: string;
   googleId?: string;
   role: 'ADMIN' | 'STAFF' | 'CUSTOMER';
+  googleId?: string;
+  avatarUrl?: string;
 }
 
 export interface LoginRequest {
