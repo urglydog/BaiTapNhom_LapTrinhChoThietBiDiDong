@@ -8,6 +8,8 @@ export interface User {
   phone: string;
   dateOfBirth: string;
   gender: 'MALE' | 'FEMALE';
+  avatarUrl?: string;
+  googleId?: string;
   role: 'ADMIN' | 'STAFF' | 'CUSTOMER';
   googleId?: string;
   avatarUrl?: string;

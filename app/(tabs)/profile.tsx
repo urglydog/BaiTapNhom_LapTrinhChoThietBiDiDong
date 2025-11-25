@@ -66,8 +66,37 @@ export default function ProfileScreen() {
 
     if (!user) {
         return (
-            <View style={[styles.container, styles.centeredContainer, { backgroundColor: currentTheme.background }]}>
-                <View style={[styles.notLoggedInCard, { backgroundColor: currentTheme.card }]}>
+            <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]} contentContainerStyle={{ paddingTop: 50 }}>
+                <Modal
+                    visible={showSettingsModal}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowSettingsModal(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={[styles.modalContent, { backgroundColor: currentTheme.card }]}>
+                            <Text style={[styles.modalTitle, { color: currentTheme.text }]}>{t('Cài đặt')}</Text>
+                            <View style={styles.settingRow}>
+                                <Text style={[styles.settingText, { color: currentTheme.text }]}>{t('Chế độ tối')}</Text>
+                                <Switch
+                                    value={theme === 'dark'}
+                                    onValueChange={toggleTheme}
+                                />
+                            </View>
+                            <View style={styles.settingRow}>
+                                <Text style={[styles.settingText, { color: currentTheme.text }]}>{t('Ngôn ngữ (English/Tiếng Việt)')}</Text>
+                                <Switch
+                                    value={language === 'en'}
+                                    onValueChange={toggleLanguage}
+                                />
+                            </View>
+                            <TouchableOpacity style={[styles.closeButton, { backgroundColor: currentTheme.primary }]} onPress={() => setShowSettingsModal(false)}>
+                                <Text style={styles.closeButtonText}>{t('Đóng')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+                <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
                     <View style={styles.avatarLarge}>
                         <Text style={styles.avatarLargeText}>?</Text>
                     </View>
@@ -76,16 +105,51 @@ export default function ProfileScreen() {
                     <TouchableOpacity style={[styles.loginButton, { backgroundColor: currentTheme.primary }]} onPress={() => router.push('/login')}>
                         <Text style={styles.loginButtonText}>{t('Đăng nhập')}</Text>
                     </TouchableOpacity>
-                    <Text style={[styles.orText, { color: currentTheme.subtext }]}>{t('hoặc')}</Text>
-                    <TouchableOpacity style={styles.registerLink} onPress={() => router.push('/register')}>
-                        <Text style={[styles.registerLinkText, { color: currentTheme.primary }]}>{t('Tạo tài khoản')}</Text>
+                </View>
+
+                <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
+                    <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Chức năng')}</Text>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(tabs)/favourites')}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>❤️</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Phim yêu thích')}</Text>
+                        </View>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(tabs)/cinemas')}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>🎭</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Cinema')}</Text>
+                        </View>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => router.push('/(tabs)/promotions')}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>🎁</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Khuyến mãi')}</Text>
+                        </View>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => setShowSettingsModal(true)}>
+                        <View style={styles.menuItemLeft}>
+                            <Text style={styles.menuIcon}>⚙️</Text>
+                            <Text style={[styles.menuText, { color: currentTheme.text }]}>{t('Cài đặt')}</Text>
+                        </View>
+                        <Text style={[styles.menuArrow, { color: currentTheme.subtext }]}>›</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </ScrollView>
         );
-    }
-
-    return (
+    }    return (
         <>
             <Modal
                 visible={showLogoutModal}
@@ -137,11 +201,40 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </Modal>
-            <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]}>
-                <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
-                    <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                            {user?.fullName?.charAt(0).toUpperCase() || 'U'}
+            <ScrollView style={[styles.container, { backgroundColor: currentTheme.background }]} contentContainerStyle={{ paddingTop: 50 }}>
+            <View style={[styles.header, { backgroundColor: currentTheme.card }]}>
+                <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                        {user?.fullName?.charAt(0).toUpperCase() || 'U'}
+                    </Text>
+                </View>
+                <Text style={[styles.name, { color: currentTheme.text }]}>{user?.fullName}</Text>
+                <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user?.role || '') }]}>
+                    <Text style={styles.roleText}>
+                        {getRoleDisplayName(user?.role || '')}
+                    </Text>
+                </View>
+            </View>
+
+            <View style={[styles.section, { backgroundColor: currentTheme.card }]}>
+                <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>{t('Thông tin cá nhân')}</Text>
+                <View style={[styles.infoCard, { backgroundColor: currentTheme.background }]}>
+                    <View style={styles.infoRow}>
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Tên đăng nhập:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.username}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Email:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.email}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Số điện thoại:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>{user?.phone}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={[styles.infoLabel, { color: currentTheme.subtext }]}>{t('Ngày sinh:')}</Text>
+                        <Text style={[styles.infoValue, { color: currentTheme.text }]}>
+                            {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString(t('vi-VN')) : t('N/A')}
                         </Text>
                     </View>
                     <Text style={[styles.name, { color: currentTheme.text }]}>{user?.fullName}</Text>

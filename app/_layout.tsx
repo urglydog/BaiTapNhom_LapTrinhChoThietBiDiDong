@@ -7,6 +7,8 @@ import { loadStoredAuth } from '../src/store/authSlice';
 import { useAppDispatch } from '../src/hooks/redux';
 import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../src/themes';
+import ChatbotFloatingButton from '../components/ChatbotFloatingButton';
+import { usePathname } from 'expo-router';
 
 export default function RootLayout() {
   return (
@@ -35,29 +37,31 @@ function Main() {
 
 function AppNavigator() {
   const dispatch = useAppDispatch();
+  const pathname = usePathname();
 
   useEffect(() => {
     dispatch(loadStoredAuth());
   }, [dispatch]);
+
+  // Hide chatbot on authentication pages
+  const isAuthPage = pathname === '/login' || pathname === '/register' || 
+                     pathname === '/forgot-password' || pathname === '/change-password';
+
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="movie-detail" />
-      <Stack.Screen name="booking" />
-      <Stack.Screen name="booking-history" />
-      <Stack.Screen name="watched-movies" />
-      <Stack.Screen name="cinemas" />
-      <Stack.Screen name="favourites" />
-      <Stack.Screen name="promotions" />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="register" />
-      <Stack.Screen name="change-password" />
-      <Stack.Screen name="forgot-password" />
-      <Stack.Screen name="seat-selection" />
-      <Stack.Screen name="cinema-selection" />
-      <Stack.Screen name="showtime-selection" />
-      <Stack.Screen name="ticket-detail" />
-      <Stack.Screen name="qr-scanner" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="movie-detail" />
+        <Stack.Screen name="booking" />
+        <Stack.Screen name="cinemas" />
+        <Stack.Screen name="favourites" />
+        <Stack.Screen name="promotions" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="change-password" />
+        <Stack.Screen name="forgot-password" />
+      </Stack>
+      {!isAuthPage && <ChatbotFloatingButton />}
+    </>
   );
 }
