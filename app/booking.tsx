@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,6 +16,7 @@ import { RootState, AppDispatch } from '../src/store';
 import { createBooking } from '../src/store/bookingSlice';
 import { Showtime, Seat, Promotion } from '../src/types';
 import { promotionService } from '../src/services/promotionService';
+import { vnpayService } from '../src/services/vnpayService';
 import { useTranslation } from '../src/localization';
 import { lightTheme, darkTheme } from '../src/themes';
 import { Ionicons } from '@expo/vector-icons';
@@ -219,6 +221,7 @@ export default function BookingScreen() {
           onPress: async () => {
             setIsLoading(true);
             try {
+              // Tạo booking trước
               const result = await dispatch(createBooking({
                 showtimeId: Number(showtimeId),
                 seatIds: selectedSeats,
@@ -227,9 +230,43 @@ export default function BookingScreen() {
               })).unwrap();
 
               console.log('Booking result:', result);
-              Alert.alert(t('Thành công'), t('Đặt vé thành công!'), [
-                { text: 'OK', onPress: () => router.replace('/(tabs)') }
-              ]);
+
+              // Nếu là VNPAY, chuyển đến trang thanh toán
+              if (selectedPaymentMethod === 'VNPAY' && result?.id) {
+                try {
+                  const paymentUrl = await vnpayService.createPaymentUrl(result.id);
+                  
+                  // Mở URL thanh toán trong browser
+                  const canOpen = await Linking.canOpenURL(paymentUrl);
+                  if (canOpen) {
+                    await Linking.openURL(paymentUrl);
+                    Alert.alert(
+                      t('Chuyển đến thanh toán'),
+                      t('Đang chuyển đến trang thanh toán VNPay...'),
+                      [{ text: 'OK' }]
+                    );
+                  } else {
+                    throw new Error('Cannot open payment URL');
+                  }
+                } catch (paymentError: any) {
+                  console.error('Payment URL error:', paymentError);
+                  Alert.alert(
+                    t('Lỗi'),
+                    t('Không thể mở trang thanh toán. Vui lòng thử lại sau.'),
+                    [
+                      {
+                        text: t('OK'),
+                        onPress: () => router.replace('/(tabs)')
+                      }
+                    ]
+                  );
+                }
+              } else {
+                // Các phương thức thanh toán khác (CASH, BANK_TRANSFER)
+                Alert.alert(t('Thành công'), t('Đặt vé thành công!'), [
+                  { text: 'OK', onPress: () => router.replace('/(tabs)') }
+                ]);
+              }
             } catch (error: any) {
               console.error('Booking error:', error);
               const errorMessage = error?.message || error?.payload || error || t('Đặt vé thất bại');
