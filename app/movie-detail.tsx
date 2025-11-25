@@ -34,9 +34,12 @@ export default function MovieDetailScreen() {
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
     const [movie, setMovie] = useState<Movie | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     // Kiểm tra xem phim đã được thêm vào yêu thích chưa
-    const isFavourite = movie ? favourites.some(fav => fav.movieId === movie.id) : false;
+    // Kiểm tra cả movieId và movie.id để đảm bảo hoạt động đúng
+    const isFavourite = movie ? favourites.some(fav =>
+        (fav.movieId === movie.id) || (fav.movie?.id === movie.id)
+    ) : false;
 
     useEffect(() => {
         const loadMovie = async () => {
@@ -57,16 +60,16 @@ export default function MovieDetailScreen() {
 
         loadMovie();
     }, [movieId, router]);
-    
-    // Load favourites khi vào màn hình
+
+    // Load favourites khi vào màn hình và khi movie thay đổi
     useFocusEffect(
         React.useCallback(() => {
             if (user) {
                 dispatch(fetchFavourites());
             }
-        }, [user, dispatch])
+        }, [user, dispatch, movieId])
     );
-    
+
     const handleToggleFavourite = async () => {
         if (!movie) return;
         if (!user) {
@@ -81,6 +84,13 @@ export default function MovieDetailScreen() {
             if (toggleFavourite.fulfilled.match(result)) {
                 // Refresh favourites sau khi toggle để đảm bảo sync với server
                 await dispatch(fetchFavourites());
+
+                // Hiển thị thông báo thành công
+                if (result.payload.action === 'add') {
+                    Alert.alert(t('Thành công'), t('Đã lưu phim vào yêu thích'));
+                } else {
+                    Alert.alert(t('Thành công'), t('Đã bỏ yêu thích phim'));
+                }
             } else if (toggleFavourite.rejected.match(result)) {
                 // Hiển thị lỗi cụ thể từ server
                 const errorMessage = result.payload as string || t('Không thể cập nhật yêu thích. Vui lòng thử lại.');
@@ -143,8 +153,8 @@ export default function MovieDetailScreen() {
                 <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
                     <Text style={styles.backIconText}>←</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={styles.favouriteButton} 
+                <TouchableOpacity
+                    style={[styles.favouriteButton, isFavourite && styles.favouriteButtonActive]}
                     onPress={handleToggleFavourite}
                     activeOpacity={0.8}
                 >
@@ -168,19 +178,19 @@ export default function MovieDetailScreen() {
 
                 {/* Movie Info */}
                 <View style={styles.infoRow}>
-                    {movie.rating && (
+                    {movie.rating != null && !isNaN(movie.rating) && (
                         <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
-                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>⭐ {movie.rating.toFixed(1)}</Text>
+                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>⭐ {Number(movie.rating).toFixed(1)}</Text>
                         </View>
                     )}
-                    {movie.duration && (
+                    {movie.duration != null && (
                         <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
                             <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>⏱️ {movie.duration} {t('phút')}</Text>
                         </View>
                     )}
                     {movie.ageRating && (
                         <View style={[styles.infoBadge, { backgroundColor: currentTheme.background }]}>
-                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>{movie.ageRating}</Text>
+                            <Text style={[styles.infoBadgeText, { color: currentTheme.text }]}>{String(movie.ageRating)}</Text>
                         </View>
                     )}
                 </View>
@@ -340,6 +350,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 5,
+    },
+    favouriteButtonActive: {
+        backgroundColor: 'rgba(255, 0, 0, 0.7)',
     },
     favouriteIcon: {
         fontSize: 28,

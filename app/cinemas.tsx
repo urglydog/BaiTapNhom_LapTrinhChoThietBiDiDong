@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,14 +21,14 @@ import { useTranslation } from '../src/localization';
 export default function CinemasScreen() {
   const [selectedCinema, setSelectedCinema] = useState<number | null>(null);
   const [showtimes, setShowtimes] = useState<Showtime[]>([]);
+  const [groupedShowtimes, setGroupedShowtimes] = useState<{ [movieId: number]: { movie: any; showtimes: Showtime[] } }>({});
   const [loadingShowtimes, setLoadingShowtimes] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { cinemas } = useSelector((state: RootState) => state.movie);
+  const { cinemas, isLoading, error } = useSelector((state: RootState) => state.movie);
   const t = useTranslation();
-    console.log("t('Cinema')", t('Cinema'));
 
   useEffect(() => {
     dispatch(fetchCinemas());
@@ -45,16 +46,46 @@ export default function CinemasScreen() {
     try {
       const cinemaShowtimes = await movieService.getCinemaShowtimes(cinema.id);
       setShowtimes(cinemaShowtimes);
+
+      // Nhóm showtimes theo phim
+      const grouped: { [movieId: number]: { movie: any; showtimes: Showtime[] } } = {};
+      cinemaShowtimes.forEach((showtime) => {
+        const movieId = showtime.movieId || showtime.movie?.id;
+        if (movieId) {
+          if (!grouped[movieId]) {
+            grouped[movieId] = {
+              movie: showtime.movie || { id: movieId, title: t('Phim') },
+              showtimes: []
+            };
+          }
+          grouped[movieId].showtimes.push(showtime);
+        }
+      });
+      setGroupedShowtimes(grouped);
     } catch (error) {
       console.error('Error fetching showtimes:', error);
       setShowtimes([]);
+      setGroupedShowtimes({});
     } finally {
       setLoadingShowtimes(false);
     }
   };
 
   const handleShowtimePress = (showtime: Showtime) => {
-    router.push(`/movie-detail?movieId=${showtime.movieId}`);
+    // Chuyển đến trang chọn ghế thay vì movie detail
+    const movie = showtime.movie;
+    router.push({
+      pathname: '/seat-selection',
+      params: {
+        showtimeId: String(showtime.id),
+        movieId: String(showtime.movieId || movie?.id || ''),
+        movieTitle: movie?.title || t('Phim'),
+        cinemaName: showtime.cinemaHall?.cinema?.name || t('Cinema'),
+        hallName: showtime.cinemaHall?.name || t('Phòng chiếu'),
+        showDate: showtime.showDate || '',
+        showTime: showtime.startTime || '',
+      }
+    });
   };
 
   const renderCinema = ({ item }: { item: Cinema }) => (
@@ -66,13 +97,19 @@ export default function CinemasScreen() {
       onPress={() => handleCinemaPress(item)}
     >
       <View style={styles.cinemaImageContainer}>
-        <Image
-          source={{
-            uri: item.imageUrl || 'https://via.placeholder.com/300x200/cccccc/666666?text=Cinema'
-          }}
-          style={styles.cinemaImage}
-          resizeMode="cover"
-        />
+        {item.imageUrl ? (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.cinemaImage}
+            resizeMode="cover"
+            onError={() => console.log('Error loading cinema image:', item.imageUrl)}
+          />
+        ) : (
+          <View style={[styles.cinemaImage, styles.cinemaImagePlaceholder]}>
+            <Text style={styles.cinemaImagePlaceholderText}>🎬</Text>
+            <Text style={styles.cinemaImagePlaceholderLabel}>{t('Cinema')}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.cinemaInfo}>
         <Text style={styles.cinemaName}>{item.name || t('Cinema')}</Text>
@@ -94,40 +131,42 @@ export default function CinemasScreen() {
     </TouchableOpacity>
   );
 
-const renderShowtime = ({ item }: { item: Showtime }) => (
-    <TouchableOpacity
-      style={styles.showtimeCard}
-      onPress={() => handleShowtimePress(item)}
-    >
-      <View style={styles.showtimeInfo}>
-        <Text style={styles.showtimeMovie}>
-          {item.movie?.title || t('Phim')}
-        </Text>
-        {item.startTime && item.endTime && (
-          <Text style={styles.showtimeTime}>
-            {item.startTime} - {item.endTime}
-          </Text>
+  const renderMovieGroup = (movieId: number, data: { movie: any; showtimes: Showtime[] }) => (
+    <View style={styles.movieGroup} key={movieId}>
+      <View style={styles.movieGroupHeader}>
+        {data.movie.posterUrl && (
+          <Image
+            source={{ uri: data.movie.posterUrl }}
+            style={styles.moviePoster}
+            resizeMode="cover"
+          />
         )}
-        {item.showDate && (
-          <Text style={styles.showtimeDate}>
-            {new Date(item.showDate).toLocaleDateString(t('vi-VN'))}
-          </Text>
-        )}
+        <View style={styles.movieGroupInfo}>
+          <Text style={styles.movieGroupTitle}>{data.movie.title || t('Phim')}</Text>
+          {data.movie.genre && (
+            <Text style={styles.movieGroupGenre}>{data.movie.genre}</Text>
+          )}
+        </View>
       </View>
-      <View style={styles.showtimePriceContainer}>
-        {item.price != null && (
-          <Text style={styles.showtimePrice}>
-            {item.price.toLocaleString()} {t('VNĐ')}
-          </Text>
-        )}
-        <TouchableOpacity
-          style={styles.bookButton}
-          onPress={() => router.push(`/booking?showtimeId=${item.id}`)}
-        >
-          <Text style={styles.bookButtonText}>{t('Đặt vé')}</Text>
-        </TouchableOpacity>
+      <View style={styles.showtimesGrid}>
+        {data.showtimes.map((showtime) => (
+          <TouchableOpacity
+            key={showtime.id}
+            style={styles.showtimeButton}
+            onPress={() => handleShowtimePress(showtime)}
+          >
+            <Text style={styles.showtimeButtonTime}>
+              {showtime.startTime ? showtime.startTime.substring(0, 5) : ''}
+            </Text>
+            {showtime.price != null && (
+              <Text style={styles.showtimeButtonPrice}>
+                {showtime.price.toLocaleString()} {t('VNĐ')}
+              </Text>
+            )}
+          </TouchableOpacity>
+        ))}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -139,20 +178,37 @@ const renderShowtime = ({ item }: { item: Showtime }) => (
         </Text>
       </View>
 
-      <FlatList
-        data={cinemas}
-        renderItem={renderCinema}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.cinemaList}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>{t('Không có rạp chiếu nào')}</Text>
-          </View>
-        }
-      />
+      {isLoading && cinemas.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>{t('Đang tải danh sách rạp...')}</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{t('Lỗi:')} {error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={handleRefresh}
+          >
+            <Text style={styles.retryButtonText}>{t('Thử lại')}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={cinemas}
+          renderItem={renderCinema}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.cinemaList}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>{t('Không có rạp chiếu nào')}</Text>
+            </View>
+          }
+        />
+      )}
 
       {selectedCinema && (
         <View style={styles.showtimesContainer}>
@@ -167,19 +223,19 @@ const renderShowtime = ({ item }: { item: Showtime }) => (
               <ActivityIndicator size="large" color="#007AFF" />
             </View>
           ) : (
-            <FlatList
-              data={showtimes}
-              renderItem={renderShowtime}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={styles.showtimesList}
-              ListEmptyComponent={
+            <ScrollView style={styles.showtimesList} contentContainerStyle={styles.showtimesListContent}>
+              {Object.keys(groupedShowtimes).length > 0 ? (
+                Object.entries(groupedShowtimes).map(([movieId, data]) =>
+                  renderMovieGroup(Number(movieId), data)
+                )
+              ) : (
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>
                     {t('Không có suất chiếu nào')}
                   </Text>
                 </View>
-              }
-            />
+              )}
+            </ScrollView>
           )}
         </View>
       )}
@@ -291,7 +347,77 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   showtimesList: {
+    flex: 1,
+  },
+  showtimesListContent: {
     padding: 16,
+  },
+  movieGroup: {
+    marginBottom: 24,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 12,
+  },
+  movieGroupHeader: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  moviePoster: {
+    width: 60,
+    height: 90,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  movieGroupInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  movieGroupTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  movieGroupGenre: {
+    fontSize: 14,
+    color: '#666',
+  },
+  showtimesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  showtimeButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  showtimeButtonTime: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  showtimeButtonPrice: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 12,
+  },
+  cinemaImagePlaceholder: {
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cinemaImagePlaceholderText: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  cinemaImagePlaceholderLabel: {
+    fontSize: 14,
+    color: '#666',
   },
   showtimeCard: {
     flexDirection: 'row',
@@ -351,8 +477,38 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   loadingContainer: {
-    padding: 40,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#d32f2f',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

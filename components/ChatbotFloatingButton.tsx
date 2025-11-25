@@ -69,7 +69,7 @@ const ChatbotFloatingButton = () => {
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.floatingButton, { backgroundColor: theme.primaryColor }]}
+        style={[styles.floatingButton, { backgroundColor: theme.primary }]}
         onPress={() => setModalVisible(true)}
       >
         <Ionicons name="chatbubble-ellipses" size={24} color="white" />
@@ -85,8 +85,8 @@ const ChatbotFloatingButton = () => {
       >
         <ThemeProvider theme={theme}>
           <View style={[styles.centeredView]}>
-            <View style={[styles.modalView, { backgroundColor: theme.backgroundColor, height: '92%' }]}>
-              <View style={[styles.modalHeader, { backgroundColor: theme.primaryColor }]}>
+            <View style={[styles.modalView, { backgroundColor: theme.background, height: '92%' }]}>
+              <View style={[styles.modalHeader, { backgroundColor: theme.primary }]}>
                 <Text style={[styles.modalTitle, { color: 'white' }]}>MovieBot</Text>
                 <TouchableOpacity onPress={() => setModalVisible(false)}>
                   <Ionicons name="close" size={24} color="white" />
@@ -102,11 +102,11 @@ const ChatbotFloatingButton = () => {
                       styles.messageContainer,
                       item.isUser ? styles.userMessageContainer : styles.botMessageContainer,
                       {
-                        backgroundColor: item.isUser ? theme.primaryColor : theme.secondaryBackgroundColor,
+                        backgroundColor: item.isUser ? theme.primary : theme.card,
                       },
                     ]}
                   >
-                    <Text style={{ color: item.isUser ? '#fff' : theme.textColor }}>{item.text}</Text>
+                    <Text style={{ color: item.isUser ? '#fff' : theme.text }}>{item.text}</Text>
                   </View>
                 )}
                 style={[styles.messageList, { paddingHorizontal: 20 }]}
@@ -118,19 +118,19 @@ const ChatbotFloatingButton = () => {
                   style={[
                     styles.input,
                     {
-                      color: theme.textColor,
-                      borderColor: theme.textColor,
-                      backgroundColor: theme.secondaryBackgroundColor,
+                      color: theme.text,
+                      borderColor: theme.border,
+                      backgroundColor: theme.card,
                     },
                   ]}
                   value={input}
                   onChangeText={setInput}
                   placeholder="Ask MovieBot..."
-                  placeholderTextColor={theme.textMutedColor}
+                  placeholderTextColor={theme.subtext}
                   multiline
                 />
                 <TouchableOpacity
-                  style={[styles.sendButton, { backgroundColor: theme.primaryColor }]}
+                  style={[styles.sendButton, { backgroundColor: theme.primary }]}
                   onPress={handleSend}
                   disabled={loading}
                 >

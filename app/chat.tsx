@@ -3,7 +3,6 @@ import { View, TextInput, Button, FlatList, Text, StyleSheet, ActivityIndicator 
 import { Stack } from 'expo-router';
 import { useAppSelector } from '../src/hooks/redux';
 import { lightTheme, darkTheme } from '../src/themes';
-import { ThemeProvider } from 'styled-components/native';
 import { sendMessage } from '../src/services/chatService';
 
 interface Message {
@@ -55,9 +54,9 @@ const ChatScreen = () => {
   }, [input]);
 
   return (
-    <ThemeProvider theme={theme}>
+    <>
       <Stack.Screen options={{ title: 'MovieBot' }} />
-      <View style={[styles.container, { backgroundColor: theme.backgroundColor }]}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id}
@@ -65,26 +64,26 @@ const ChatScreen = () => {
             <View
               style={[
                 styles.messageContainer,
-                item.isUser ? styles.userMessageContainer : [styles.botMessageContainer, { backgroundColor: theme.secondaryBackgroundColor }],
+                item.isUser ? styles.userMessageContainer : [styles.botMessageContainer, { backgroundColor: theme.card }],
               ]}
             >
-              <Text style={{ color: item.isUser ? '#fff' : theme.textColor }}>{item.text}</Text>
+              <Text style={{ color: item.isUser ? '#fff' : theme.text }}>{item.text}</Text>
             </View>
           )}
         />
-        <View style={[styles.inputContainer, { borderTopColor: theme.subtext }]}>
+        <View style={[styles.inputContainer, { borderTopColor: theme.border }]}>
           <TextInput
-            style={[styles.input, { color: theme.textColor, borderColor: theme.textColor }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
             value={input}
             onChangeText={setInput}
             placeholder="Ask MovieBot..."
-            placeholderTextColor={theme.textMutedColor}
+            placeholderTextColor={theme.subtext}
           />
           <Button title="Send" onPress={handleSend} disabled={loading} />
         </View>
-        {loading && <ActivityIndicator size="large" color={theme.primaryColor} />}
+        {loading && <ActivityIndicator size="large" color={theme.primary} />}
       </View>
-    </ThemeProvider>
+    </>
   );
 };
 

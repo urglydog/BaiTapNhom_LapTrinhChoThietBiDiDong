@@ -12,10 +12,10 @@ import {
     Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { movieService } from '../../src/services/movieService';
-import { Movie } from '../../src/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../src/store';
+import { movieService } from '../../src/services/movieService';
+import { Movie } from '../../src/types';
 import { useTranslation } from '../../src/localization';
 import { lightTheme, darkTheme } from '../../src/themes';
 
@@ -87,16 +87,16 @@ export default function MoviesScreen() {
     // Xác định trạng thái phim (đang chiếu hay sắp chiếu)
     const getMovieStatus = (movie: Movie): 'showing' | 'upcoming' | null => {
         if (!movie.releaseDate) return null;
-        
+
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         const releaseDate = new Date(movie.releaseDate);
         releaseDate.setHours(0, 0, 0, 0);
-        
+
         if (releaseDate > now) {
             return 'upcoming';
         }
-        
+
         if (movie.endDate) {
             const endDate = new Date(movie.endDate);
             endDate.setHours(23, 59, 59, 999);
@@ -106,13 +106,13 @@ export default function MoviesScreen() {
         } else if (releaseDate <= now) {
             return 'showing';
         }
-        
+
         return null;
     };
 
     const renderMovie = ({ item }: { item: Movie }) => {
         const movieStatus = getMovieStatus(item);
-        
+
         return (
             <TouchableOpacity
                 style={[styles.movieCard, { backgroundColor: currentTheme.card }]}
@@ -148,34 +148,34 @@ export default function MoviesScreen() {
                         </View>
                     )}
                 </View>
-            <View style={styles.movieInfo}>
-                <Text style={[styles.movieTitle, { color: currentTheme.text }]} numberOfLines={2}>
-                    {item.title}
-                </Text>
-                {item.genre && (
-                    <Text style={[styles.movieGenre, { color: currentTheme.primary }]} numberOfLines={1}>
-                        {item.genre}
+                <View style={styles.movieInfo}>
+                    <Text style={[styles.movieTitle, { color: currentTheme.text }]} numberOfLines={2}>
+                        {item.title}
                     </Text>
-                )}
-                {item.duration != null && item.duration > 0 && (
-                    <Text style={[styles.movieDuration, { color: currentTheme.subtext }]}>{item.duration} {t('phút')}</Text>
-                )}
-                {movieStatus === 'upcoming' && item.releaseDate && (
-                    <Text style={styles.releaseDateText}>
-                        {t('Khởi chiếu')}: {new Date(item.releaseDate).toLocaleDateString(t('vi-VN'), {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        })}
-                    </Text>
-                )}
-                {item.ageRating && (
-                    <View style={[styles.ageRatingContainer, { backgroundColor: currentTheme.primary }]}>
-                        <Text style={styles.ageRating}>{item.ageRating}</Text>
-                    </View>
-                )}
-            </View>
-        </TouchableOpacity>
+                    {item.genre && (
+                        <Text style={[styles.movieGenre, { color: currentTheme.subtext }]} numberOfLines={1}>
+                            {item.genre}
+                        </Text>
+                    )}
+                    {item.duration != null && item.duration > 0 && (
+                        <Text style={[styles.movieDuration, { color: currentTheme.subtext }]}>{item.duration} {t('phút')}</Text>
+                    )}
+                    {movieStatus === 'upcoming' && item.releaseDate && (
+                        <Text style={[styles.releaseDateText, { color: currentTheme.subtext }]}>
+                            {t('Khởi chiếu')}: {new Date(item.releaseDate).toLocaleDateString('vi-VN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            })}
+                        </Text>
+                    )}
+                    {item.ageRating && (
+                        <View style={[styles.ageRatingContainer, { backgroundColor: currentTheme.card }]}>
+                            <Text style={[styles.ageRating, { color: currentTheme.text }]}>{item.ageRating}</Text>
+                        </View>
+                    )}
+                </View>
+            </TouchableOpacity>
         );
     };
 
@@ -183,7 +183,7 @@ export default function MoviesScreen() {
         return (
             <View style={[styles.loadingContainer, { backgroundColor: currentTheme.background }]}>
                 <ActivityIndicator size="large" color={currentTheme.primary} />
-                <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải danh sách phim...')}</Text>
+                <Text style={[styles.loadingText, { color: currentTheme.text }]}>{t('Đang tải danh sách phim...')}</Text>
             </View>
         );
     }
@@ -191,25 +191,27 @@ export default function MoviesScreen() {
     return (
         <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
             <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
-                <Text style={styles.headerTitle}>{t('Danh Sách Phim')}</Text>
-                <Text style={styles.headerSubtitle}>{t('Khám phá bộ sưu tập phim đa dạng')}</Text>
+                <Text style={[styles.headerTitle, { color: '#fff' }]}>{t('Danh Sách Phim')}</Text>
+                <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.9)' }]}>{t('Khám phá bộ sưu tập phim đa dạng')}</Text>
             </View>
 
-            <View style={[styles.categoryContainer, { backgroundColor: currentTheme.card }]}>
+            <View style={[styles.categoryContainer, { backgroundColor: currentTheme.card, borderBottomColor: currentTheme.border }]}>
                 {categories.map((category) => (
                     <TouchableOpacity
                         key={category.key}
                         style={[
-                            styles.categoryButton, { backgroundColor: currentTheme.background },
-                            selectedCategory === category.key && [styles.categoryButtonActive, { backgroundColor: currentTheme.primary }],
+                            styles.categoryButton,
+                            { backgroundColor: currentTheme.background },
+                            selectedCategory === category.key && { backgroundColor: currentTheme.primary },
                         ]}
                         onPress={() => setSelectedCategory(category.key)}
                     >
                         <Text style={styles.categoryIcon}>{category.icon}</Text>
                         <Text
                             style={[
-                                styles.categoryLabel, { color: currentTheme.subtext },
-                                selectedCategory === category.key && styles.categoryLabelActive,
+                                styles.categoryLabel,
+                                { color: currentTheme.subtext },
+                                selectedCategory === category.key && { color: '#fff' },
                             ]}
                         >
                             {category.label}
@@ -284,7 +286,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#e5e5e5',
     },
     categoryButton: {
         flex: 1,
@@ -304,9 +305,6 @@ const styles = StyleSheet.create({
     categoryLabel: {
         fontSize: 13,
         fontWeight: '600',
-    },
-    categoryLabelActive: {
-        color: 'white',
     },
     listContainer: {
         paddingHorizontal: 12,

@@ -41,9 +41,9 @@ export default function RegisterScreen() {
     (state: RootState) => state.otp
   );
   const { theme } = useSelector((state: RootState) => state.theme);
+  const router = useRouter();
   const t = useTranslation();
   const currentTheme = theme === 'light' ? lightTheme : darkTheme;
-  const router = useRouter();
 
   const isPageLoading = isLoading;
 
@@ -344,31 +344,32 @@ export default function RegisterScreen() {
         <View style={styles.inputContainer}>
           <Text style={[styles.label, { color: currentTheme.text }]}>{t('Họ và tên')}</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.fullName && styles.inputError]}
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.border }, errors.fullName && styles.inputError]}
             placeholder={t('Nhập họ và tên')}
+            placeholderTextColor={currentTheme.subtext}
             value={formData.fullName}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, fullName: text }));
               if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined }));
             }}
           />
-          {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
+          {errors.fullName && <Text style={[styles.errorText, { color: currentTheme.error }]}>{errors.fullName}</Text>}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={[styles.label, { color: currentTheme.text }]}>{t('Giới tính')}</Text>
           <View style={styles.genderContainer}>
             <TouchableOpacity
-              style={[styles.genderButton, { backgroundColor: currentTheme.background }, formData.gender === 'MALE' && styles.genderButtonActive]}
+              style={[styles.genderButton, { backgroundColor: currentTheme.background, borderColor: currentTheme.border }, formData.gender === 'MALE' && { backgroundColor: currentTheme.primary }]}
               onPress={() => setFormData(prev => ({ ...prev, gender: 'MALE' }))}
             >
-              <Text style={[styles.genderText, { color: currentTheme.subtext }, formData.gender === 'MALE' && styles.genderTextActive]}>{t('Nam')}</Text>
+              <Text style={[styles.genderText, { color: currentTheme.text }, formData.gender === 'MALE' && { color: '#fff' }]}>{t('Nam')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.genderButton, { backgroundColor: currentTheme.background }, formData.gender === 'FEMALE' && styles.genderButtonActive]}
+              style={[styles.genderButton, { backgroundColor: currentTheme.background, borderColor: currentTheme.border }, formData.gender === 'FEMALE' && { backgroundColor: currentTheme.primary }]}
               onPress={() => setFormData(prev => ({ ...prev, gender: 'FEMALE' }))}
             >
-              <Text style={[styles.genderText, { color: currentTheme.subtext }, formData.gender === 'FEMALE' && styles.genderTextActive]}>{t('Nữ')}</Text>
+              <Text style={[styles.genderText, { color: currentTheme.text }, formData.gender === 'FEMALE' && { color: '#fff' }]}>{t('Nữ')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -376,8 +377,9 @@ export default function RegisterScreen() {
         <View style={styles.inputContainer}>
           <Text style={[styles.label, { color: currentTheme.text }]}>{t('Số điện thoại')}</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.phone && styles.inputError]}
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.border }, errors.phone && styles.inputError]}
             placeholder={t('Nhập số điện thoại')}
+            placeholderTextColor={currentTheme.subtext}
             value={formData.phone}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, phone: text.replace(/[^0-9]/g, '') }));
@@ -386,14 +388,15 @@ export default function RegisterScreen() {
             keyboardType="phone-pad"
             maxLength={11}
           />
-          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+          {errors.phone && <Text style={[styles.errorText, { color: currentTheme.error }]}>{errors.phone}</Text>}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={[styles.label, { color: currentTheme.text }]}>{t('Tên đăng nhập')}</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.username && styles.inputError]}
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.border }, errors.username && styles.inputError]}
             placeholder={t('Nhập tên đăng nhập')}
+            placeholderTextColor={currentTheme.subtext}
             value={formData.username}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, username: text }));
@@ -401,14 +404,15 @@ export default function RegisterScreen() {
             }}
             autoCapitalize="none"
           />
-          {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+          {errors.username && <Text style={[styles.errorText, { color: currentTheme.error }]}>{errors.username}</Text>}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mật khẩu')}</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.password && styles.inputError]}
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.border }, errors.password && styles.inputError]}
             placeholder={t('Nhập mật khẩu')}
+            placeholderTextColor={currentTheme.subtext}
             value={formData.password}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, password: text }));
@@ -416,14 +420,15 @@ export default function RegisterScreen() {
             }}
             secureTextEntry
           />
-          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+          {errors.password && <Text style={[styles.errorText, { color: currentTheme.error }]}>{errors.password}</Text>}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={[styles.label, { color: currentTheme.text }]}>{t('Xác nhận mật khẩu')}</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.confirmPassword && styles.inputError]}
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.border }, errors.confirmPassword && styles.inputError]}
             placeholder={t('Nhập lại mật khẩu')}
+            placeholderTextColor={currentTheme.subtext}
             value={formData.confirmPassword}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, confirmPassword: text }));
@@ -431,14 +436,15 @@ export default function RegisterScreen() {
             }}
             secureTextEntry
           />
-          {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+          {errors.confirmPassword && <Text style={[styles.errorText, { color: currentTheme.error }]}>{errors.confirmPassword}</Text>}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={[styles.label, { color: currentTheme.text }]}>{t('Ngày sinh')}</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }, errors.dateOfBirth && styles.inputError]}
+            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text, borderColor: currentTheme.border }, errors.dateOfBirth && styles.inputError]}
             placeholder={t('YYYY-MM-DD (ví dụ: 1990-01-15)')}
+            placeholderTextColor={currentTheme.subtext}
             value={formData.dateOfBirth}
             onChangeText={(text) => {
               setFormData(prev => ({ ...prev, dateOfBirth: text }));
@@ -451,7 +457,7 @@ export default function RegisterScreen() {
           <Text style={[styles.dateHint, { color: currentTheme.subtext }]}>
             {t('Định dạng: YYYY-MM-DD (ví dụ: 1990-01-15)')}
           </Text>
-          {errors.dateOfBirth && <Text style={styles.errorText}>{errors.dateOfBirth}</Text>}
+          {errors.dateOfBirth && <Text style={[styles.errorText, { color: currentTheme.error }]}>{errors.dateOfBirth}</Text>}
         </View>
 
         <TouchableOpacity
@@ -475,9 +481,9 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: currentTheme.text }]}>Movie Ticket Booking</Text>
-          <Text style={[styles.subtitle, { color: currentTheme.subtext }]}>{t('Đăng ký tài khoản mới')}</Text>
+        <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
+          <Text style={[styles.title, { color: '#fff' }]}>{t('Movie Ticket Booking')}</Text>
+          <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.9)' }]}>{t('Đăng ký tài khoản mới')}</Text>
         </View>
 
         <View style={[styles.form, { backgroundColor: currentTheme.card }]}>
@@ -486,12 +492,12 @@ export default function RegisterScreen() {
           {step === 'details' && renderDetailsStep()}
 
           {error && (
-            <Text style={styles.globalErrorText}>{error}</Text>
+            <Text style={[styles.globalErrorText, { color: currentTheme.error }]}>{error}</Text>
           )}
         </View>
 
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: currentTheme.subtext }]}>
+        <View style={[styles.footer, { backgroundColor: currentTheme.card }]}>
+          <Text style={[styles.footerText, { color: currentTheme.text }]}>
             {t('Đã có tài khoản?')}
             <TouchableOpacity onPress={() => router.replace('/login' as any)}>
               <Text style={[styles.linkText, { color: currentTheme.primary }]}> {t('Đăng nhập')}</Text>
@@ -500,9 +506,9 @@ export default function RegisterScreen() {
         </View>
       </ScrollView>
       {isPageLoading && (
-        <View style={styles.loadingOverlay}>
+        <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
           <ActivityIndicator size="large" color={currentTheme.primary} />
-          <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang xử lý...')}</Text>
+          <Text style={[styles.loadingText, { color: '#fff' }]}>{t('Đang xử lý...')}</Text>
         </View>
       )}
     </KeyboardAvoidingView>

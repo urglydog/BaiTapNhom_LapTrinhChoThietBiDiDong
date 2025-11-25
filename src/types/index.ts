@@ -139,15 +139,30 @@ export interface Booking {
   totalAmount: number;
   bookingDate: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
-  seats: BookingSeat[];
+  paymentMethod?: 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'CREDIT_CARD';
+  qrCode?: string;
+  bookingCode?: string;
+  seats?: BookingSeat[];
+  bookingItems?: BookingItem[]; // Backend trả về bookingItems
   user?: User;
   showtime?: Showtime;
+  promotion?: Promotion;
+  discountAmount?: number;
 }
 
 export interface BookingSeat {
   id: number;
   bookingId: number;
   seatId: number;
+  seat?: Seat;
+  seatNumber?: string; // Fallback nếu không có seat object
+  seatRow?: string;
+}
+
+export interface BookingItem {
+  id: number;
+  seatId: number;
+  price: number;
   seat?: Seat;
 }
 

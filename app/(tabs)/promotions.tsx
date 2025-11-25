@@ -8,10 +8,10 @@ import {
     RefreshControl,
     TouchableOpacity,
 } from 'react-native';
-import { promotionService } from '../../src/services/promotionService';
-import { Promotion } from '../../src/types';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../src/store';
+import { promotionService } from '../../src/services/promotionService';
+import { Promotion } from '../../src/types';
 import { useTranslation } from '../../src/localization';
 import { lightTheme, darkTheme } from '../../src/themes';
 
@@ -20,7 +20,6 @@ export default function PromotionsTabScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'available' | 'expired'>('active');
-
     const { theme } = useSelector((state: RootState) => state.theme);
     const t = useTranslation();
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
@@ -87,28 +86,28 @@ export default function PromotionsTabScreen() {
             item.usedCount >= item.usageLimit;
 
         return (
-            <View style={[styles.promotionCard, { backgroundColor: currentTheme.card, borderLeftColor: currentTheme.accent }, (isExpired || isUsedUp) && styles.expiredCard]}>
+            <View style={[styles.promotionCard, { backgroundColor: currentTheme.card }, (isExpired || isUsedUp) && styles.expiredCard]}>
                 <View style={styles.promotionHeader}>
-                    <View style={[styles.promotionBadge, { backgroundColor: currentTheme.accent }]}>
+                    <View style={[styles.promotionBadge, { backgroundColor: currentTheme.primary }]}>
                         <Text style={styles.promotionBadgeText}>
                             {getDiscountText(item)}
                         </Text>
                     </View>
                     {isExpired && (
-                        <View style={styles.expiredBadge}>
+                        <View style={[styles.expiredBadge, { backgroundColor: currentTheme.subtext }]}>
                             <Text style={styles.expiredBadgeText}>{t('Hết hạn')}</Text>
                         </View>
                     )}
                     {isUsedUp && !isExpired && (
-                        <View style={styles.usedUpBadge}>
+                        <View style={[styles.usedUpBadge, { backgroundColor: currentTheme.warning }]}>
                             <Text style={styles.usedUpBadgeText}>{t('Đã hết')}</Text>
                         </View>
                     )}
                 </View>
                 {item.code && (
                     <View style={[styles.codeContainer, { backgroundColor: currentTheme.background }]}>
-                        <Text style={[styles.codeLabel, { color: currentTheme.subtext }]}>{t('Mã:')}</Text>
-                        <Text style={[styles.codeText, { color: currentTheme.accent }]}>{item.code}</Text>
+                        <Text style={[styles.codeLabel, { color: currentTheme.text }]}>{t('Mã:')}</Text>
+                        <Text style={[styles.codeText, { color: currentTheme.primary }]}>{item.code}</Text>
                     </View>
                 )}
                 {item.name && (
@@ -117,41 +116,41 @@ export default function PromotionsTabScreen() {
                 {item.description && (
                     <Text style={[styles.promotionDescription, { color: currentTheme.subtext }]}>{item.description}</Text>
                 )}
-                <View style={[styles.promotionDetails, { borderTopColor: currentTheme.background }]}>
+                <View style={[styles.promotionDetails, { borderTopColor: currentTheme.border }]}>
                     {item.minAmount && (
                         <View style={styles.detailRow}>
                             <Text style={styles.detailIcon}>💰</Text>
-                            <Text style={[styles.promotionDetail, { color: currentTheme.subtext }]}>
-                                {t('Đơn tối thiểu')}: {item.minAmount.toLocaleString()} VNĐ
+                            <Text style={[styles.promotionDetail, { color: currentTheme.text }]}>
+                                {t('Đơn tối thiểu:')} {item.minAmount.toLocaleString()} {t('VNĐ')}
                             </Text>
                         </View>
                     )}
                     {item.maxDiscount && (
                         <View style={styles.detailRow}>
                             <Text style={styles.detailIcon}>🎯</Text>
-                            <Text style={[styles.promotionDetail, { color: currentTheme.subtext }]}>
-                                {t('Giảm tối đa')}: {item.maxDiscount.toLocaleString()} VNĐ
+                            <Text style={[styles.promotionDetail, { color: currentTheme.text }]}>
+                                {t('Giảm tối đa:')} {item.maxDiscount.toLocaleString()} {t('VNĐ')}
                             </Text>
                         </View>
                     )}
                     {item.endDate && (
                         <View style={styles.detailRow}>
                             <Text style={styles.detailIcon}>📅</Text>
-                            <Text style={[styles.promotionDetail, { color: currentTheme.subtext }]}>
-                                {t('Áp dụng đến')}: {formatDate(item.endDate)}
+                            <Text style={[styles.promotionDetail, { color: currentTheme.text }]}>
+                                {t('Áp dụng đến:')} {formatDate(item.endDate)}
                             </Text>
                         </View>
                     )}
                     {item.usageLimit && (
                         <View style={styles.detailRow}>
                             <Text style={styles.detailIcon}>🎫</Text>
-                            <Text style={[styles.promotionDetail, { color: currentTheme.subtext }]}>
-                                {t('Còn lại')}: {item.usageLimit - (item.usedCount || 0)} / {item.usageLimit} {t('lượt')}
+                            <Text style={[styles.promotionDetail, { color: currentTheme.text }]}>
+                                {t('Còn lại:')} {item.usageLimit - (item.usedCount || 0)} / {item.usageLimit} {t('lượt')}
                             </Text>
                         </View>
                     )}
                 </View>
-                <TouchableOpacity style={[styles.useButton, { backgroundColor: currentTheme.accent }]} disabled={isExpired || isUsedUp}>
+                <TouchableOpacity style={[styles.useButton, { backgroundColor: currentTheme.primary }, (isExpired || isUsedUp) && { backgroundColor: currentTheme.subtext }]} disabled={isExpired || isUsedUp}>
                     <Text style={styles.useButtonText}>
                         {isExpired ? t('Đã hết hạn') : isUsedUp ? t('Đã hết lượt') : t('Sử dụng mã')}
                     </Text>
@@ -163,17 +162,17 @@ export default function PromotionsTabScreen() {
     if (isLoading && promotions.length === 0) {
         return (
             <View style={[styles.loadingContainer, { backgroundColor: currentTheme.background }]}>
-                <ActivityIndicator size="large" color={currentTheme.accent} />
-                <Text style={[styles.loadingText, { color: currentTheme.subtext }]}>{t('Đang tải khuyến mãi...')}</Text>
+                <ActivityIndicator size="large" color={currentTheme.primary} />
+                <Text style={[styles.loadingText, { color: currentTheme.text }]}>{t('Đang tải khuyến mãi...')}</Text>
             </View>
         );
     }
 
     return (
         <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
-            <View style={[styles.header, { backgroundColor: currentTheme.accent }]}>
-                <Text style={styles.headerTitle}>{t('Khuyến Mãi')}</Text>
-                <Text style={styles.headerSubtitle}>
+            <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
+                <Text style={[styles.headerTitle, { color: '#fff' }]}>{t('Khuyến Mãi')}</Text>
+                <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.9)' }]}>
                     {promotions.length} {t('khuyến mãi')} {
                         selectedFilter === 'active' ? t('đang áp dụng') :
                             selectedFilter === 'available' ? t('có thể sử dụng') :
@@ -183,12 +182,12 @@ export default function PromotionsTabScreen() {
                 </Text>
             </View>
 
-            <View style={[styles.filterContainer, { backgroundColor: currentTheme.card }]}>
+            <View style={[styles.filterContainer, { backgroundColor: currentTheme.card, borderBottomColor: currentTheme.border }]}>
                 <TouchableOpacity
                     style={[
                         styles.filterButton,
                         { backgroundColor: currentTheme.background },
-                        selectedFilter === 'active' && [styles.filterButtonActive, { backgroundColor: currentTheme.accent }],
+                        selectedFilter === 'active' && { backgroundColor: currentTheme.primary },
                     ]}
                     onPress={() => setSelectedFilter('active')}
                 >
@@ -196,7 +195,7 @@ export default function PromotionsTabScreen() {
                         style={[
                             styles.filterText,
                             { color: currentTheme.subtext },
-                            selectedFilter === 'active' && styles.filterTextActive,
+                            selectedFilter === 'active' && { color: '#fff' },
                         ]}
                     >
                         {t('Đang áp dụng')}
@@ -330,13 +329,9 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
     },
-    filterButtonActive: {},
     filterText: {
         fontSize: 13,
         fontWeight: '600',
-    },
-    filterTextActive: {
-        color: 'white',
     },
     listContainer: {
         padding: 16,

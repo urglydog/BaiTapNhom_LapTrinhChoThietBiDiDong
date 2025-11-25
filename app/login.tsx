@@ -36,9 +36,9 @@ export default function LoginScreen() {
     const dispatch = useDispatch<AppDispatch>();
     const { error } = useSelector((state: RootState) => state.auth);
     const { theme } = useSelector((state: RootState) => state.theme);
+    const router = useRouter();
     const t = useTranslation();
     const currentTheme = theme === 'light' ? lightTheme : darkTheme;
-    const router = useRouter();
 
     const handleLogin = async () => {
         if (!username.trim() || !password.trim()) {
@@ -50,9 +50,9 @@ export default function LoginScreen() {
         try {
             const result = await dispatch(login({ username, password })).unwrap();
 
-            if(result) {
-                Alert.alert(t('Thành công'), t('Đăng nhập thành công'));
-                
+            if (result) {
+                Alert.alert('Thành công', 'Đăng nhập thành công');
+
                 router.replace('/(tabs)');
             }
 
@@ -137,7 +137,7 @@ export default function LoginScreen() {
             Alert.alert(t('Lỗi'), error);
             dispatch(clearError());
         }
-    }, [error, dispatch]);
+    }, [error, dispatch, t]);
 
     useEffect(() => {
         GoogleSignin.configure({
@@ -155,9 +155,9 @@ export default function LoginScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <View style={styles.header}>
-                    <Text style={[styles.title, { color: currentTheme.text }]}>Movie Ticket Booking</Text>
-                    <Text style={[styles.subtitle, { color: currentTheme.subtext }]}>{t('Đăng nhập để tiếp tục')}</Text>
+                <View style={[styles.header, { backgroundColor: currentTheme.primary }]}>
+                    <Text style={[styles.title, { color: '#fff' }]}>{t('Movie Ticket Booking')}</Text>
+                    <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.9)' }]}>{t('Đăng nhập để tiếp tục')}</Text>
                 </View>
 
                 <View style={[styles.form, { backgroundColor: currentTheme.card }]}>
@@ -226,31 +226,30 @@ export default function LoginScreen() {
                         </View>
                     </TouchableOpacity>
                     <Text
-                        style={{ marginTop: 20, textAlign: 'center', color: currentTheme.text }}
-                    >
-                        {t('Bạn chưa có tài khoản')} 
-                        <TouchableOpacity 
+                        style={[styles.registerPrompt, { color: currentTheme.text }]}
+                    >{t('Bạn chưa có tài khoản')}
+                        <TouchableOpacity
                             onPress={() => router.push('/register')}
                         >
-                                <Text style={{color: currentTheme.primary}}> {t('Đăng ký ngay')}</Text>
+                            <Text style={{ color: currentTheme.primary }}> {t('Đăng ký ngay')}</Text>
                         </TouchableOpacity>
                     </Text>
 
-                    <TouchableOpacity 
-                            onPress={() => router.push('/forgot-password')}
-                            style={{ marginTop: 10, alignSelf: 'center' }}
-                        >
-                                <Text style={{color: currentTheme.primary}}> {t('Quên mật khẩu?')}</Text>
-                        </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => router.push('/forgot-password')}
+                        style={{ marginTop: 10, alignSelf: 'center' }}
+                    >
+                        <Text style={{ color: currentTheme.primary }}> {t('Quên mật khẩu?')}</Text>
+                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.footer}>
-                    <Text style={[styles.footerText, { color: currentTheme.subtext }]}>
-                        Demo accounts:
+                <View style={[styles.footer, { backgroundColor: currentTheme.card }]}>
+                    <Text style={[styles.footerText, { color: currentTheme.text }]}>
+                        {t('Demo accounts:')}
                     </Text>
-                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>Admin: admin / password</Text>
-                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>Staff: staff1 / password</Text>
-                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>Customer: customer1 / password</Text>
+                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>{t('Admin:')} admin / password</Text>
+                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>{t('Staff:')} staff1 / password</Text>
+                    <Text style={[styles.demoText, { color: currentTheme.subtext }]}>{t('Customer:')} customer1 / password</Text>
                 </View>
         </ScrollView>
     </KeyboardAvoidingView>

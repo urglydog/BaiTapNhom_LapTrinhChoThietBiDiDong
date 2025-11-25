@@ -95,18 +95,31 @@ export const authService = {
 
   // Gửi OTP
   sendOtp: async (request: SendOtpRequest): Promise<SendOtpResponse> => {
-    // Backend expect query param, not body
-    const response = await api.post('/auth/send-otp', null, {
-      params: { email: request.email, type: request.type || 'REGISTER' }
-    });
-    if (response.data.code === 200) {
-      return {
-        success: true,
-        message: response.data.message || 'OTP sent successfully',
-        expiresIn: 300 // 5 phút
-      };
+    try {
+      // Backend expect query param, not body
+      const response = await api.post('/auth/send-otp', null, {
+        params: { email: request.email, type: request.type || 'REGISTER' }
+      });
+      if (response.data.code === 200) {
+        return {
+          success: true,
+          message: response.data.message || 'OTP sent successfully',
+          expiresIn: 300 // 5 phút
+        };
+      }
+      throw new Error(response.data.message || 'Failed to send OTP');
+    } catch (error: any) {
+      // Xử lý lỗi network hoặc server
+      if (error.isNetworkError) {
+        throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet và thử lại.');
+      }
+      if (error.isTimeoutError) {
+        throw new Error('Kết nối quá lâu. Server có thể đang tạm thời không phản hồi. Vui lòng thử lại sau.');
+      }
+      // Nếu có message từ server hoặc error object
+      const errorMessage = error.message || error.response?.data?.message || 'Không thể gửi OTP. Vui lòng thử lại.';
+      throw new Error(errorMessage);
     }
-    throw new Error(response.data.message || 'Failed to send OTP');
   },
 
   // Gửi OTP cho quên mật khẩu

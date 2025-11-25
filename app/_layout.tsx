@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { Provider, useDispatch, useSelector } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor, RootState } from '../src/store';
-import { loadStoredAuth }  from '../src/store/authSlice';
-import { useAppDispatch, useAppSelector } from '../src/hooks/redux';
-import { ThemeProvider } from 'styled-components/native';
+import { loadStoredAuth } from '../src/store/authSlice';
+import { useAppDispatch } from '../src/hooks/redux';
+import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../src/themes';
 import ChatbotFloatingButton from '../components/ChatbotFloatingButton';
 import { usePathname } from 'expo-router';

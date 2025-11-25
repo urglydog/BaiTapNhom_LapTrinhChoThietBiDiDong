@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { cinemaService } from '../src/services/cinemaService';
 import { showtimeService } from '../src/services/showtimeService';
+import { movieService } from '../src/services/movieService';
 import api from '../src/services/api';
 import { Cinema } from '../src/types';
 import { useSelector } from 'react-redux';
@@ -40,12 +41,74 @@ export default function CinemaSelectionScreen() {
         try {
             setLoading(true);
             console.log('🎬 Loading cinemas for movie:', movieId);
+            
+            // Wake up server bằng cách gọi một endpoint đơn giản trước (nếu là Render.com)
+            try {
+                console.log('🔔 Waking up server...');
+                const wakeResponse = await api.get('/movies', { timeout: 15000 }); // Quick check với movies endpoint
+                console.log('✅ Server is awake, got', wakeResponse.data?.result?.length || 0, 'movies');
+            } catch (wakeError: any) {
+                console.log('⚠️ Server wake up check failed, but continuing...', wakeError.message);
+                // Không throw error, tiếp tục thử load showtimes
+                // Có thể server đang sleep, nhưng vẫn thử load showtimes
+            }
 
-            // Lấy tất cả showtimes của phim
-            const allShowtimes = await showtimeService.getShowtimesByMovie(Number(movieId));
-            console.log('📋 Showtimes found:', allShowtimes.length);
+            // Lấy tất cả showtimes của phim - với retry logic cho Render.com
+            let allShowtimes: any[] = [];
+            let retryCount = 0;
+            const maxRetries = 2;
+            let startTime = Date.now();
+            
+            while (retryCount <= maxRetries) {
+                try {
+                    if (retryCount > 0) {
+                        const waitTime = retryCount * 5000; // Tăng thời gian đợi: 5s, 10s
+                        console.log(`🔄 Retry ${retryCount}/${maxRetries} - Waiting ${waitTime/1000} seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                    }
+                    
+                    console.log(`🔄 Fetching showtimes for movie: ${movieId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+                    startTime = Date.now();
+                    allShowtimes = await showtimeService.getShowtimesByMovie(Number(movieId));
+                    const elapsed = Date.now() - startTime;
+                    console.log(`✅ Showtimes found: ${allShowtimes.length} (took ${elapsed}ms)`);
+                    break; // Thành công, thoát khỏi loop
+                } catch (error: any) {
+                    const elapsed = Date.now() - startTime;
+                    console.error(`❌ Error fetching showtimes (attempt ${retryCount + 1}/${maxRetries + 1}, took ${elapsed}ms):`, error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        code: error.code,
+                        isNetworkError: (error as any).isNetworkError,
+                        isTimeoutError: (error as any).isTimeoutError,
+                        response: error.response?.data,
+                        status: error.response?.status,
+                    });
+                    
+                    // Nếu là network/timeout error và chưa hết số lần retry, thử lại
+                    if (((error as any).isNetworkError || (error as any).isTimeoutError) && retryCount < maxRetries) {
+                        retryCount++;
+                        console.log(`⚠️ ${(error as any).isNetworkError ? 'Network' : 'Timeout'} error, will retry (${retryCount}/${maxRetries})...`);
+                        continue;
+                    }
+                    
+                    // Nếu đã hết số lần retry hoặc là lỗi khác, hiển thị thông báo
+                    const errorMessage = error.message || 'Không thể tải lịch chiếu. Vui lòng thử lại sau.';
+                    console.error('❌ Final error after all retries:', errorMessage);
+                    Alert.alert(
+                        'Lỗi',
+                        errorMessage + '\n\nVui lòng kiểm tra:\n• Kết nối internet\n• Server có đang hoạt động không',
+                        [
+                            { text: 'Thử lại', onPress: () => loadCinemas() },
+                            { text: 'Quay lại', onPress: () => router.back() }
+                        ]
+                    );
+                    setLoading(false);
+                    return;
+                }
+            }
 
-            if (allShowtimes.length === 0) {
+            if (!allShowtimes || allShowtimes.length === 0) {
                 setCinemas([]);
                 Alert.alert(
                     t('Thông báo'),
@@ -106,9 +169,36 @@ export default function CinemaSelectionScreen() {
 
             console.log('🏛️ Cinema hall IDs:', cinemaHallIds);
 
-            // Lấy tất cả cinemas
-            const allCinemas = await cinemaService.getAllCinemas();
-            console.log('🏢 All cinemas:', allCinemas.length);
+            // Lấy tất cả cinemas - thử movieService trước, nếu fail thì dùng cinemaService
+            let allCinemas: Cinema[] = [];
+            try {
+                console.log('🔄 Trying movieService.getCinemas()...');
+                allCinemas = await movieService.getCinemas();
+                console.log('✅ movieService.getCinemas() succeeded:', allCinemas.length);
+            } catch (error: any) {
+                console.warn('⚠️ movieService.getCinemas() failed, trying cinemaService.getAllCinemas()...', error.message);
+                try {
+                    allCinemas = await cinemaService.getAllCinemas();
+                    console.log('✅ cinemaService.getAllCinemas() succeeded:', allCinemas.length);
+                } catch (fallbackError: any) {
+                    console.error('❌ Both methods failed:', fallbackError);
+                    throw new Error('Không thể tải danh sách rạp. Vui lòng thử lại sau.');
+                }
+            }
+
+            if (!allCinemas || allCinemas.length === 0) {
+                console.warn('⚠️ No cinemas returned from API');
+                Alert.alert(
+                    'Thông báo',
+                    'Hiện tại không có rạp nào có lịch chiếu cho phim này',
+                    [
+                        { text: 'OK', onPress: () => router.back() }
+                    ]
+                );
+                return;
+            }
+
+            console.log('🏢 All cinemas loaded:', allCinemas.length);
 
             // Mapping mặc định: Cinema halls -> Cinemas
             // Dựa trên data.sql: 
@@ -130,7 +220,7 @@ export default function CinemaSelectionScreen() {
                     // Ưu tiên lấy từ cinemaId (từ getter)
                     if (st.cinemaHall.cinemaId) {
                         hallToCinemaMap[showtime.cinemaHallId] = st.cinemaHall.cinemaId;
-                    } 
+                    }
                     // Hoặc từ cinema object
                     else if (st.cinemaHall.cinema && st.cinemaHall.cinema.id) {
                         hallToCinemaMap[showtime.cinemaHallId] = st.cinemaHall.cinema.id;

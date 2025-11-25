@@ -15,7 +15,7 @@ import languageReducer from './languageSlice';
 const persistConfig = {
   key: 'root',
   storage: storage,
-  whitelist: ['auth', 'theme', 'language'], // Chỉ persist auth, theme, and language state
+  whitelist: ['auth', 'theme', 'language'], // Persist auth, theme và language
 };
 
 const rootReducer = combineReducers({
