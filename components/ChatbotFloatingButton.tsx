@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     right: 20,
-    bottom: 20,
+    bottom: 100,
     // For web compatibility, use boxShadow instead of shadow* properties
     boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
     elevation: 8,

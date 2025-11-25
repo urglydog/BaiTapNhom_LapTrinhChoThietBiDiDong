@@ -1,7 +1,8 @@
 import { navigate } from 'expo-router/build/global-state/routing';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
+    Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -11,12 +12,21 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { 
+    GoogleSignin,
+    isSuccessResponse,
+    isErrorWithCode,
+    statusCodes
+ } from "@react-native-google-signin/google-signin"
+
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../src/store';
-import { clearError, login } from '../src/store/authSlice';
+import { clearError, login, googleLogin } from '../src/store/authSlice';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../src/localization';
 import { lightTheme, darkTheme } from '../src/themes';
+import { GoogleLoginRequest } from '../src/types';
+import { authService } from '../src/services/authService';
 
 export default function LoginScreen() {
     const [username, setUsername] = useState('');
@@ -56,12 +66,88 @@ export default function LoginScreen() {
         }
     };
 
+    const handleGoogleLogin = async () => {
+        try {
+            await GoogleSignin.hasPlayServices();
+
+            // Đăng xuất và revoke access để đảm bảo clean state và luôn hiển thị account picker
+            try {
+                await GoogleSignin.revokeAccess();
+                await GoogleSignin.signOut();
+            } catch (cleanupError) {
+                // Ignore cleanup errors
+                console.log('Cleanup error (expected):', cleanupError);
+            }
+
+            // Hiển thị dialog chọn tài khoản Google
+            const userInfo = await GoogleSignin.signIn();
+
+            if (isSuccessResponse(userInfo)) {
+                await processGoogleLogin(userInfo);
+            }
+        } catch (error: any) {
+            console.log('Google login error:', error);
+
+            if (isErrorWithCode(error)) {
+                switch (error.code) {
+                    case statusCodes.SIGN_IN_CANCELLED:
+                        Alert.alert('Lỗi', 'Đăng nhập đã bị hủy');
+                        break;
+                    case statusCodes.IN_PROGRESS:
+                        Alert.alert('Lỗi', 'Đăng nhập đang được xử lý');
+                        break;
+                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+                        Alert.alert('Lỗi', 'Google Play Services không khả dụng');
+                        break;
+                    default:
+                        Alert.alert('Lỗi', 'Đăng nhập Google thất bại');
+                }
+            } else {
+                Alert.alert('Lỗi', 'Đăng nhập Google thất bại');
+            }
+        }
+    };
+
+    const processGoogleLogin = async (userInfo: any) => {
+        try {
+            // Extract Google user data
+            const googleUser = userInfo.data?.user || userInfo.user;
+            const googleLoginData: GoogleLoginRequest = {
+                googleId: googleUser.id,
+                email: googleUser.email,
+                fullName: googleUser.name || googleUser.givenName + ' ' + googleUser.familyName,
+                avatarUrl: googleUser.photo || undefined
+            };
+
+            // Call backend API
+            const result = await dispatch(googleLogin(googleLoginData)).unwrap();
+
+            if (result) {
+                Alert.alert('Thành công', 'Đăng nhập thành công');
+                router.replace('/(tabs)');
+            }
+        } catch (error: any) {
+            console.error('Backend login error:', error);
+            Alert.alert('Lỗi', 'Đăng nhập thất bại. Vui lòng thử lại.');
+        }
+    };
+
     React.useEffect(() => {
         if (error) {
             Alert.alert(t('Lỗi'), error);
             dispatch(clearError());
         }
     }, [error, dispatch]);
+
+    useEffect(() => {
+        GoogleSignin.configure({
+            iosClientId: 
+            "20028934029-fjbtgpeo0uirh0nu7vnob3k8n45istj3.apps.googleusercontent.com",
+            webClientId:
+            "20028934029-jdc4pr5q7e92f0jhij7mjrflughq8j5v.apps.googleusercontent.com",
+            profileImageSize: 120,
+        })
+    }, [])
 
     return (
         <KeyboardAvoidingView
@@ -87,10 +173,11 @@ export default function LoginScreen() {
                     <View style={styles.inputContainer}>
                         <Text style={[styles.label, { color: currentTheme.text }]}>{t('Tên đăng nhập')}</Text>
                         <TextInput
-                            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }]}
+                            style={[styles.input, { backgroundColor: currentTheme.card, color: currentTheme.text, borderColor: currentTheme.subtext }]}
                             value={username}
                             onChangeText={setUsername}
                             placeholder={t('Nhập tên đăng nhập')}
+                            placeholderTextColor={currentTheme.subtext}
                             autoCapitalize="none"
                             autoCorrect={false}
                         />
@@ -99,10 +186,11 @@ export default function LoginScreen() {
                     <View style={styles.inputContainer}>
                         <Text style={[styles.label, { color: currentTheme.text }]}>{t('Mật khẩu')}</Text>
                         <TextInput
-                            style={[styles.input, { backgroundColor: currentTheme.background, color: currentTheme.text }]}
+                            style={[styles.input, { backgroundColor: currentTheme.card, color: currentTheme.text, borderColor: currentTheme.subtext }]}
                             value={password}
                             onChangeText={setPassword}
                             placeholder={t('Nhập mật khẩu')}
+                            placeholderTextColor={currentTheme.subtext}
                             secureTextEntry
                             autoCapitalize="none"
                             autoCorrect={false}
@@ -119,6 +207,24 @@ export default function LoginScreen() {
                         </Text>
                     </TouchableOpacity>
 
+                    <View style={styles.divider}>
+                        <View style={[styles.dividerLine, { backgroundColor: currentTheme.subtext }]} />
+                        <Text style={[styles.dividerText, { color: currentTheme.subtext }]}>{t('hoặc')}</Text>
+                        <View style={[styles.dividerLine, { backgroundColor: currentTheme.subtext }]} />
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.googleButton}
+                        onPress={handleGoogleLogin}
+                    >
+                        <View style={styles.googleButtonContent}>
+                            <Image
+                                source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                                style={styles.googleLogo}
+                            />
+                            <Text style={styles.googleButtonText}>{t('Đăng nhập với Google')}</Text>
+                        </View>
+                    </TouchableOpacity>
                     <Text
                         style={{ marginTop: 20, textAlign: 'center', color: currentTheme.text }}
                     >
@@ -146,8 +252,8 @@ export default function LoginScreen() {
                     <Text style={[styles.demoText, { color: currentTheme.subtext }]}>Staff: staff1 / password</Text>
                     <Text style={[styles.demoText, { color: currentTheme.subtext }]}>Customer: customer1 / password</Text>
                 </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+        </ScrollView>
+    </KeyboardAvoidingView>
     );
 }
 
@@ -159,6 +265,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         justifyContent: 'center',
         padding: 20,
+        paddingTop: 60,
     },
     header: {
         alignItems: 'center',
@@ -194,10 +301,17 @@ const styles = StyleSheet.create({
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ddd',
         borderRadius: 8,
         padding: 12,
         fontSize: 16,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
     loginButton: {
         borderRadius: 8,
@@ -239,5 +353,51 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 24,
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+    },
+    dividerText: {
+        marginHorizontal: 10,
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    googleButton: {
+        borderRadius: 8,
+        padding: 16,
+        alignItems: 'center',
+        marginTop: 10,
+        backgroundColor: 'white',
+        borderWidth: 1,
+        borderColor: '#dadce0',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    googleButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    googleLogo: {
+        width: 20,
+        height: 20,
+        marginRight: 12,
+    },
+    googleButtonText: {
+        color: '#3c4043',
+        fontSize: 16,
+        fontWeight: '500',
     },
 });

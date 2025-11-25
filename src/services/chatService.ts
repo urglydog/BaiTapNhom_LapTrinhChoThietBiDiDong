@@ -4,7 +4,7 @@ const sendMessage = async (message: string): Promise<string> => {
   console.log('Chat AI request:', message);
   
   try {
-    const response = await api.post('/api/chat/ai', message, {
+    const response = await api.post('/chat/ai', message, {
       headers: { 'Content-Type': 'text/plain' },
     });
     
@@ -17,3 +17,4 @@ const sendMessage = async (message: string): Promise<string> => {
 };
 
 export { sendMessage };
+

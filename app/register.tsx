@@ -191,11 +191,25 @@ export default function RegisterScreen() {
       };
 
       await authService.register(userData);
-      Alert.alert(t('Thành công'), t('Đăng ký tài khoản thành công!'), [
-        { text: 'OK', onPress: () => {
-          router.replace('/login');
-        }}
-      ]);
+      
+      // Hiển thị thông báo thành công và tự động chuyển về trang đăng nhập
+      Alert.alert(
+        'Đăng ký thành công!',
+        'Tài khoản của bạn đã được tạo thành công. Đang chuyển về trang đăng nhập...',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.replace('/login');
+            }
+          }
+        ]
+      );
+      
+      // Tự động chuyển về trang đăng nhập sau 2 giây
+      setTimeout(() => {
+        router.replace('/login');
+      }, 2000);
     } catch (error: any) {
       Alert.alert(t('Lỗi'), error || t('Đăng ký thất bại'));
     }

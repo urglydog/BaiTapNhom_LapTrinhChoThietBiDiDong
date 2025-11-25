@@ -8,6 +8,8 @@ export interface User {
   phone: string;
   dateOfBirth: string;
   gender: 'MALE' | 'FEMALE';
+  avatarUrl?: string;
+  googleId?: string;
   role: 'ADMIN' | 'STAFF' | 'CUSTOMER';
 }
 
@@ -19,6 +21,13 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   user: User;
+}
+
+export interface GoogleLoginRequest {
+  googleId: string;
+  email: string;
+  fullName: string;
+  avatarUrl?: string;
 }
 
 // OTP Types

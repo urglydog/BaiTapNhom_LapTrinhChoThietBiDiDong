@@ -1,4 +1,4 @@
-import { LoginRequest, LoginResponse, RegisterRequest, SendOtpRequest, SendOtpResponse, User, VerifyOtpRequest, VerifyOtpResponse } from '../types';
+import { LoginRequest, LoginResponse, RegisterRequest, SendOtpRequest, SendOtpResponse, User, VerifyOtpRequest, VerifyOtpResponse, GoogleLoginRequest } from '../types';
 import { storage } from '../utils/storage';
 import api from './api';
 
@@ -24,6 +24,29 @@ export const authService = {
       return result;
     }
     throw new Error(response.data.message || 'Login failed');
+  },
+
+  // Đăng nhập với Google
+  googleLogin: async (googleUserData: GoogleLoginRequest): Promise<LoginResponse> => {
+    console.log('Google login request:', googleUserData);
+    
+    const response = await api.post('/auth/google-login', googleUserData);
+    console.log('Google login response:', response.data);
+    
+    // Server trả về format: { code, message, result }
+    if (response.data.code === 200) {
+      const result = {
+        token: response.data.result.token,
+        user: response.data.result.user
+      };
+      
+      // Lưu token và user vào storage
+      await storage.setItem('authToken', result.token);
+      await storage.setItem('user', JSON.stringify(result.user));
+      
+      return result;
+    }
+    throw new Error(response.data.message || 'Google login failed');
   },
 
   // Đăng ký

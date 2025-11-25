@@ -19,7 +19,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../src/store';
 import { useTranslation } from '../../src/localization';
 import { lightTheme, darkTheme } from '../../src/themes';
-import ChatbotFloatingButton from '../../components/ChatbotFloatingButton'; // Import the new component
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -301,7 +300,6 @@ export default function HomeScreen() {
           }
         />
       )}
-      <ChatbotFloatingButton />
     </View>
   );
 }

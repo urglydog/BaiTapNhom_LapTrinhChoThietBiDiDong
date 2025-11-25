@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { authService } from '../services/authService';
-import { LoginRequest, SendOtpRequest, User, VerifyOtpRequest } from '../types';
+import { LoginRequest, SendOtpRequest, User, VerifyOtpRequest, GoogleLoginRequest } from '../types';
 import { storage } from '../utils/storage';
 
 interface AuthState {
@@ -28,6 +28,18 @@ export const login = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Login failed');
+    }
+  }
+);
+
+export const googleLogin = createAsyncThunk(
+  'auth/googleLogin',
+  async (googleUserData: GoogleLoginRequest, { rejectWithValue }) => {
+    try {
+      const response = await authService.googleLogin(googleUserData);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Google login failed');
     }
   }
 );
@@ -101,6 +113,23 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        state.isAuthenticated = false;
+      })
+      // Google Login
+      .addCase(googleLogin.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
         state.isAuthenticated = false;

@@ -5,7 +5,7 @@ import { storage } from "../utils/storage";
 // Server Render.com
 const API_BASE_URL = 
 "https://baitapnhom-laptrinhchothietbididong-omtc.onrender.com/api";
-// "http://localhost:8080/api";
+// "http://192.168.1.190:8080/api";
 
 const api = axios.create({
     baseURL: API_BASE_URL,
